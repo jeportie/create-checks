@@ -18,11 +18,14 @@
   "private": false,
   "type": "module",
   "bin": {
-    "create-checks": "./src/index.js"
+    "create-checks": "src/index.js"
   },
   "files": [
     "src"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "format": "prettier . --write",
     "lint": "eslint .",
