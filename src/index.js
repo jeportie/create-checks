@@ -37,6 +37,10 @@ await fs.copyFile(path.join(__dirname, 'templates/eslint.config.js'), path.join(
 
 await fs.copyFile(path.join(__dirname, 'templates/prettier.config.js'), path.join(cwd, 'prettier.config.js'));
 
+if (!(await fs.pathExists(path.join(cwd, '.editorconfig')))) {
+  await fs.copyFile(path.join(__dirname, 'templates/.editorconfig'), path.join(cwd, '.editorconfig'));
+}
+
 /* ---------------- UPDATE package.json ---------------- */
 
 const pkgPath = path.join(cwd, 'package.json');

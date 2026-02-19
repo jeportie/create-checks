@@ -42,6 +42,19 @@ describe('create-checks CLI', () => {
     expect(existsSync(join(tmpDir, 'prettier.config.js'))).toBe(true);
   });
 
+  it('copies .editorconfig when none exists', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir);
+    expect(existsSync(join(tmpDir, '.editorconfig'))).toBe(true);
+  });
+
+  it('does not overwrite an existing .editorconfig', () => {
+    tmpDir = createTmpProject();
+    writeFileSync(join(tmpDir, '.editorconfig'), 'root = false\n');
+    runCli(tmpDir);
+    expect(readFileSync(join(tmpDir, '.editorconfig'), 'utf-8')).toBe('root = false\n');
+  });
+
   it('injects lint, format, and typecheck scripts into package.json', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
