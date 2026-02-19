@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist/mjs",
+    "allowJs": false,
+    "noEmit": false
+  },
+  "exclude": ["node_modules", "dist", "./vitest.config.ts", "./__tests__/**"]
+}

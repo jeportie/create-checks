@@ -1,0 +1,118 @@
+{
+  "version": "0.0.0-semantically-released",
+  "name": "@mawhea/npm-package-starter",
+  "description": "A scaffolding for npm packages written in TypeScript",
+  "author": "Matthew Wheatley <mattjwheatley@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mjwheatley/npm-package-starter.git"
+  },
+  "keywords": [
+    "npm",
+    "package",
+    "node",
+    "module",
+    "scaffolding",
+    "starter",
+    "typescript",
+    "vitest",
+    "eslint",
+    "prettier",
+    "husky",
+    "commitlint",
+    "cspell",
+    "secretlint"
+  ],
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "main": "dist/cjs/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "packageManager": "pnpm@9.6.0+sha256.dae0f7e822c56b20979bb5965e3b73b8bdabb6b8b8ef121da6d857508599ca35",
+  "scripts": {
+    "check": "pnpm format && pnpm lint && pnpm typecheck && pnpm secretlint && pnpm spellcheck && pnpm test",
+    "build": "pnpm check && rimraf dist && pnpm build:cjs && pnpm build:mjs",
+    "build:cjs": "tsc -p ./tsconfig.build-cjs.json",
+    "build:mjs": "tsc -p ./tsconfig.build-mjs.json",
+    "postbuild:cjs": "echo '{\"type\":\"commonjs\"}' > ./dist/cjs/package.json",
+    "postbuild:mjs": "echo '{\"type\":\"module\"}' > ./dist/mjs/package.json",
+    "postbuild": "pnpm build:cjs && pnpm build:mjs && pnpm validate",
+    "format": "prettier . --write",
+    "lint": "eslint ./*.{ts,js,cjs,mjs} ./src ./__tests__ --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "secretlint": "secretlint ./src ./tests  --maskSecrets",
+    "spellcheck": "cspell --no-progress \"./**/*.ts\" \"./*.{md,js,cjs,mjs,ts,cts,mts,json,yml}\"",
+    "dev": "vitest unit",
+    "test": "vitest --no-cache --run --silent",
+    "test:coverage": "vitest --coverage --run --silent",
+    "test:unit": "vitest unit --run --silent",
+    "test:integration": "vitest int --run --silent",
+    "prepare": "husky || true",
+    "prepublishOnly": "pnpm build",
+    "validate": "validate-package-exports --check --verify"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "@secretlint/secretlint-rule-pattern": "^8.2.4",
+    "@secretlint/secretlint-rule-preset-recommend": "^8.2.4",
+    "@stylistic/eslint-plugin": "^2.3.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.12",
+    "@typescript-eslint/eslint-plugin": "^7.17.0",
+    "@typescript-eslint/parser": "^7.17.0",
+    "@vitest/coverage-v8": "^2.0.4",
+    "@webdeveric/eslint-config-ts": "^0.8.0",
+    "commitlint-plugin-cspell": "^0.1.1",
+    "conventional-changelog-conventionalcommits": "~8.0.0",
+    "cspell": "^8.12.1",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-import": "^2.29.1",
+    "husky": "^9.1.1",
+    "lint-staged": "^15.2.7",
+    "prettier": "^3.3.3",
+    "prettier-plugin-organize-imports": "^4.0.0",
+    "rimraf": "^3.0.2",
+    "secretlint": "^8.2.4",
+    "semantic-release": "~24.0.0",
+    "typescript": "~5.5.4",
+    "validate-package-exports": "~0.6.0",
+    "vite-tsconfig-paths": "^4.3.2",
+    "vitest": "^2.0.4"
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx}": [
+      "npx prettier --write",
+      "npx eslint --fix"
+    ]
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/mjs/index.js"
+    },
+    "./constants": {
+      "types": "./dist/types/constants.d.ts",
+      "require": "./dist/cjs/constants.js",
+      "import": "./dist/mjs/constants.js"
+    },
+    "./hello-world": {
+      "types": "./dist/types/hello-world.d.ts",
+      "require": "./dist/cjs/hello-world.js",
+      "import": "./dist/mjs/hello-world.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/mjs/*.js"
+    },
+    "./package.json": "./package.json"
+  }
+}

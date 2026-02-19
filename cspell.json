@@ -1,0 +1,49 @@
+{
+  "version": "0.2",
+  "words": [
+    "apigatewayv2",
+    "apigw",
+    "awslambda",
+    "cadienvan",
+    "cjs",
+    "commitlint",
+    "conventionalcommits",
+    "corepack",
+    "davelosert",
+    "dotenv",
+    "eslintcache",
+    "jwks",
+    "mawhea",
+    "mjwheatley",
+    "npmignore",
+    "npmrc",
+    "nvmrc",
+    "outdir",
+    "powertools",
+    "secretlintrc",
+    "tsx",
+    "typecheck",
+    "vite",
+    "vitest",
+    "webdeveric"
+  ],
+  "ignorePaths": [
+    ".vscode/",
+    ".secretlintrc.json",
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "private",
+    "package.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "__tests__/data"
+  ],
+  "languageSettings": [
+    {
+      "languageId": "commit-msg",
+      "ignoreRegExpList": ["/^#.*/gm"]
+    }
+  ]
+}
