@@ -23,6 +23,7 @@
     "outdir",
     "powertools",
     "secretlintrc",
+    "tseslint",
     "tsx",
     "typecheck",
     "vite",
