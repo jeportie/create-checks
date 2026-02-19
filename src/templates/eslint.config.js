@@ -4,7 +4,7 @@ import prettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
+export default tseslint.config([
   {
     ignores: [
       '**/dist/**',
@@ -16,8 +16,8 @@ export default tseslint.config(
 
   eslint.configs.recommended,
 
-  ...tseslint.configs.recommendedTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
+  tseslint.configs.recommendedTypeChecked,
+  tseslint.configs.stylisticTypeChecked,
 
   {
     plugins: {
@@ -92,4 +92,4 @@ export default tseslint.config(
 
   /* ---------------- PRETTIER MUST BE LAST ---------------- */
   prettier,
-);
+]);
