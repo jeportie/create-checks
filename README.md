@@ -1,101 +1,307 @@
-# npm-package-starter
+# create-checks
 
-## What is this?
-
-A simple scaffolding tool for creating a new project to be published to npm.  
-It provides a build command that will compile your code to a CommonJS Node target, allowing named imports for CommonJS packages inside ESM files.  
-The package contains a simple "hello world" based on TypeScript, tested through Vitest and linted with ESLint, Prettier, Secretlint, Cspell, and CommitLint.  
-It also provides a Husky pre-commit hook to run some linting based on prettier and eslint and run tests, so you can simply `git add` and `git commit` without worrying about anything else.
-
-## Local development
-
-Please make sure you have [`Node.js`](https://nodejs.org/) and [`pnpm`](https://pnpm.io/) installed.
-
-### Node.js
-
-You can use either `fnm` or `nvm` to install the version of Node defined in the [`.nvmrc`](.nvmrc) file.
-
-- [Fast Node Manager (fnm)](https://github.com/Schniz/fnm)
-  - `brew install fnm`
-  - `fnm use`
-- [Node Version Manager (nvm)](https://github.com/nvm-sh/nvm)
-  - `brew install nvm`
-  - `nvm use`
-
-### PNPM
+A zero-config scaffolding CLI that wires **ESLint + Prettier** into any Node.js project in one command.
 
 ```sh
-corepack enable
+npm create @jeportie/checks
 ```
 
-_Note:_ If you already have `pnpm` installed via `brew` or `npm i -g`, you should remove those versions as they are not needed anymore. Corepack will handle installing the correct version for you.
+---
 
-_Warning:_ If you get `command not found` when trying to run `corepack`, you probably didn't use `fnm`/`nvm` to install Node. The preferred fix is to use one of those tools to manage your installed Node versions. If you don't want to use them, you will need to install [`corepack`](https://github.com/nodejs/corepack) manually.
+## What it does
 
-- `npm install -g corepack`
+Running `npm create @jeportie/checks` inside an existing project will:
 
-## How To Install?
+1. **Install** ESLint, Prettier, and their plugins as dev dependencies
+2. **Copy** `eslint.config.js` and `prettier.config.js` into your project root
+3. **Inject** three scripts into your `package.json`:
+   - `lint` → `eslint .`
+   - `format` → `prettier . --write`
+   - `typecheck` → `tsc --noEmit`
 
-```bash
-git clone git://github.com/mjwheatley/npm-package-starter.git package_name
-cd npm-package-starter
-pnpm install
-npx husky install
+Everything runs in your project — nothing is installed globally.
+
+---
+
+## Quick start
+
+```sh
+# Inside your existing project
+npm create @jeportie/checks
+
+# Then use the injected scripts
+npm run lint
+npm run format
+npm run typecheck
 ```
 
-## What do you mean by `allowing named imports from CommonJS`?
+---
 
-If you try to run `npm run build` you will be able to import the `sayHello` function from the `index.js` file, both via `require` and `import` syntax.
+## How it works internally
 
-### Importing via `require`
+```
+npm create @jeportie/checks
+        │
+        └─▶ npm downloads the create-checks package
+            └─▶ node runs ./src/index.js  (registered via "bin" in package.json)
+                │
+                ├─ 1. npm install -D eslint prettier ...   (in YOUR project's CWD)
+                ├─ 2. copy src/templates/eslint.config.js  → YOUR project/eslint.config.js
+                ├─ 3. copy src/templates/prettier.config.js → YOUR project/prettier.config.js
+                └─ 4. read YOUR project/package.json → inject scripts → write it back
+```
+
+### Template path resolution
+
+Inside `src/index.js`:
 
 ```js
-const { sayHello } = require('my-package');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const cwd = process.cwd();
 ```
 
-### Importing via `import`
+- `__dirname` always points to `create-checks/src/` — the CLI's own files, wherever npm installed them
+- `cwd` is **your** project's directory — where files get copied and `package.json` gets updated
 
-```js
-import { sayHello } from 'my-package';
+This separation is what lets a `create-*` tool safely write into an unrelated target directory.
+
+### How `bin` mapping works in npm
+
+```json
+"bin": {
+  "create-checks": "./src/index.js"
+}
 ```
 
-# Why did you build it?
+When npm installs a package that has a `bin` field, it creates a symlink in `node_modules/.bin/`. When you run `npm create foo`, npm translates that into `npm exec create-foo` and executes the registered binary. The `#!/usr/bin/env node` shebang on line 1 of `src/index.js` tells the OS to run it with Node.
 
-I got tired of copying and pasting the same files over and over again.  
-This is a simple tool to create a new project with the basic files needed to publish to npm.
+---
 
-# How can I personalize it?
+## What gets installed in your project
 
-You can change the `package.json` file to your liking, bringing your own package name and description.
+| Package                             | Purpose                                           |
+| ----------------------------------- | ------------------------------------------------- |
+| `eslint`                            | JavaScript/TypeScript linter                      |
+| `prettier`                          | Opinionated code formatter                        |
+| `eslint-config-prettier`            | Disables ESLint rules that conflict with Prettier |
+| `typescript-eslint`                 | TypeScript parser and rules for ESLint            |
+| `@stylistic/eslint-plugin`          | Code style rules (quotes, spacing, etc.)          |
+| `eslint-plugin-import`              | Import order and resolution rules                 |
+| `eslint-import-resolver-typescript` | Resolves TypeScript paths in import plugin        |
 
-- Update package `name`
-- Update package `description`
-- Update `repository.url`
-- Update `author`
-- Update `exports` to represent your package's individual file exports
+---
 
-# What's Inside?
+## What the templates configure
 
-- Typescript
-- Vitest
-- Eslint
-- Prettier
-- Husky
-- Commitlint
-- Secretlint
-- Cspell
-- Semantic Release
+### `eslint.config.js`
 
-# How to push and release an update?
+Uses ESLint's flat config format (ESLint 9+). Includes:
 
-Merge or push changes to the `main` branch to trigger the `semantic-release` GitHub workflow.
+- `@eslint/js` recommended rules
+- Full TypeScript type-checked rules via `typescript-eslint`
+- Stylistic rules (single quotes, spaced comments)
+- Import ordering and cycle detection
+- Prettier compatibility (must be last)
+- Test file overrides (relaxed rules in `*.test.*`)
 
-If you are publishing to the public NPM registry, create an `NPM_TOKEN` secret in your GitHub repository with your NPM token.
+### `prettier.config.js`
 
-Commitlint will enforce [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) so `semantic-release` can automatically version your package.
+Standard Prettier settings:
 
-# How to run tests?
+- Single quotes, trailing commas, 80-char print width
+- No semicolons in prose, arrow parens always
 
-```bash
-pnpm test
+---
+
+## Next steps — optional tooling
+
+After running `create-checks`, here are recommended tools to layer on top:
+
+### Husky — git hooks
+
+Runs linting/tests automatically before every commit.
+
+```sh
+npm install -D husky
+npx husky init
 ```
+
+Add to `.husky/pre-commit`:
+
+```sh
+npx lint-staged
+```
+
+### lint-staged — only lint changed files
+
+Prevents the pre-commit hook from linting your entire codebase.
+
+```sh
+npm install -D lint-staged
+```
+
+Add to `package.json`:
+
+```json
+"lint-staged": {
+  "*.{js,ts}": ["eslint --fix", "prettier --write"],
+  "*.{json,yml,md}": ["prettier --write --ignore-unknown"]
+}
+```
+
+### Commitlint — enforce Conventional Commits
+
+Ensures commit messages follow the `feat:`, `fix:`, `chore:` convention required by semantic-release.
+
+```sh
+npm install -D @commitlint/cli @commitlint/config-conventional
+echo "export default { extends: ['@commitlint/config-conventional'] };" > commitlint.config.js
+```
+
+Add to `.husky/commit-msg`:
+
+```sh
+npx --no -- commitlint --edit $1
+```
+
+### Secretlint — prevent secret leaks
+
+Scans your files for accidentally committed API keys, tokens, and passwords.
+
+```sh
+npm install -D secretlint @secretlint/secretlint-rule-preset-recommend
+```
+
+Add a `.secretlintrc.json`:
+
+```json
+{
+  "rules": [{ "id": "@secretlint/secretlint-rule-preset-recommend" }]
+}
+```
+
+Add to `package.json` scripts:
+
+```json
+"secretlint": "secretlint ./src --maskSecrets"
+```
+
+### CSpell — spell checking
+
+Catches typos in source code, comments, and docs.
+
+```sh
+npm install -D cspell
+```
+
+Add to `package.json` scripts:
+
+```json
+"spellcheck": "cspell --no-progress \"./**/*.{js,ts,md,json}\""
+```
+
+### Semantic Release — automated versioning and publishing
+
+Reads your Conventional Commits and automatically bumps the version, generates a changelog, and publishes to npm.
+
+See [How to release](#how-to-release) below.
+
+---
+
+## How to release
+
+This repo is pre-configured with [semantic-release](https://semantic-release.gitbook.io/semantic-release/).
+
+### One-time setup
+
+1. Create an **npm access token** at [npmjs.com → Access Tokens](https://www.npmjs.com/settings/~/tokens) (type: **Automation**)
+2. Add it as a secret named `NPM_TOKEN` in your GitHub repo under **Settings → Secrets → Actions**
+3. `GITHUB_TOKEN` is provided automatically — no action needed
+
+### Release flow
+
+```
+git commit -m "feat: add support for --skip-install flag"
+git push origin main
+        │
+        └─▶ GitHub Actions: semantic-release.yml
+             ├─ Analyzes commits since last tag
+             │   feat  → minor bump  (0.1.0 → 0.2.0)
+             │   fix   → patch bump  (0.1.0 → 0.1.1)
+             │   feat! → major bump  (0.1.0 → 1.0.0)
+             ├─ Generates release notes
+             ├─ Publishes to npm registry
+             └─ Creates a GitHub Release + git tag (v0.2.0)
+```
+
+**Never bump the version in `package.json` manually** — semantic-release owns that. The placeholder `"0.0.0-semantically-released"` is intentional and gets replaced at publish time.
+
+### Commit message format
+
+```
+<type>(<scope>): <description>
+
+feat: add --dry-run flag
+fix: resolve template path on Windows
+docs: update README with next steps
+chore: upgrade eslint to v9
+```
+
+---
+
+## Development
+
+### Requirements
+
+- Node.js 20+ (see `.nvmrc`)
+- npm
+
+### Setup
+
+```sh
+git clone https://github.com/jeportie/create-checks.git
+cd create-checks
+npm install
+```
+
+### Run tests
+
+```sh
+npm test                  # all tests
+npm run test:integration  # integration tests only
+npm run test:coverage     # with coverage report
+```
+
+### Test a local build
+
+```sh
+mkdir /tmp/my-test-project
+cd /tmp/my-test-project
+npm init -y
+node /path/to/create-checks/src/index.js
+```
+
+### Project structure
+
+```
+create-checks/
+├── src/
+│   ├── index.js              # CLI entrypoint (#!/usr/bin/env node)
+│   └── templates/
+│       ├── eslint.config.js  # copied into the user's project
+│       └── prettier.config.js
+├── __tests__/
+│   └── integration/
+│       └── index.int.test.js # spawns the CLI in a temp dir
+├── .github/workflows/
+│   ├── pull-request-checks.yml
+│   └── semantic-release.yml
+├── release.config.mjs        # semantic-release configuration
+└── package.json
+```
+
+---
+
+## License
+
+MIT
