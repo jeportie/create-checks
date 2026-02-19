@@ -1,5 +1,5 @@
 {
-  "name": "@jeportie/create-checks",
+  "name": "create-checks",
   "version": "0.0.0-semantically-released",
   "description": "Scaffolding CLI that installs ESLint + Prettier and injects config into any project",
   "author": "jeportie",

@@ -37,8 +37,8 @@ if (!process.env.NO_INSTALL) {
 await fs.copyFile(path.join(__dirname, 'templates/eslint.config.js'), path.join(cwd, 'eslint.config.js'));
 console.log(pc.green('  ✔') + '  eslint.config.js');
 
-await fs.copyFile(path.join(__dirname, 'templates/prettier.config.mjs'), path.join(cwd, 'prettier.config.mjs'));
-console.log(pc.green('  ✔') + '  prettier.config.mjs');
+await fs.copyFile(path.join(__dirname, 'templates/prettier.config.js'), path.join(cwd, 'prettier.config.js'));
+console.log(pc.green('  ✔') + '  prettier.config.js');
 
 if (!(await fs.pathExists(path.join(cwd, '.editorconfig')))) {
   await fs.copyFile(path.join(__dirname, 'templates/.editorconfig'), path.join(cwd, '.editorconfig'));

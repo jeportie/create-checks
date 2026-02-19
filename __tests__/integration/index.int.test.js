@@ -36,10 +36,10 @@ describe('create-checks CLI', () => {
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(true);
   });
 
-  it('copies prettier.config.mjs to the target directory', () => {
+  it('copies prettier.config.js to the target directory', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
-    expect(existsSync(join(tmpDir, 'prettier.config.mjs'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'prettier.config.js'))).toBe(true);
   });
 
   it('copies .editorconfig when none exists', () => {
