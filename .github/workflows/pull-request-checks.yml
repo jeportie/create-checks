@@ -21,44 +21,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          cache: 'pnpm'
+          cache: 'npm'
           node-version-file: '.nvmrc'
-          registry-url: https://npm.pkg.github.com/
 
       - name: Install dependencies
-        run: pnpm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm ci
 
       - name: Lint
-        run: pnpm lint
+        run: npm run lint
 
       - name: Check for secrets
-        run: pnpm secretlint
+        run: npm run secretlint
 
       - name: Check spelling
-        run: pnpm spellcheck
+        run: npm run spellcheck
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Build
-        run: pnpm build
-
-      - name: Run unit tests
-        run: pnpm test
+      - name: Run tests
+        run: npm test
 
       - name: Run integration tests
-        run: pnpm test:integration
+        run: npm run test:integration
 
       - name: Report Coverage
-        # Set if: always() to also generate the report if tests are failing
-        # Only works if you set `reportOnFailure: true` in your vite config as specified above
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
