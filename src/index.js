@@ -22,11 +22,14 @@ if (!process.env.NO_INSTALL) {
       '-D',
       'eslint',
       'prettier',
-      'eslint-config-prettier',
+      'eslint-config-prettier@^9.1.0',
+      '@eslint/js',
       'typescript-eslint',
       '@stylistic/eslint-plugin',
       'eslint-plugin-import',
       'eslint-import-resolver-typescript',
+      'typescript',
+      '@types/node',
     ],
     { stdio: 'inherit' },
   );
@@ -45,6 +48,20 @@ if (!(await fs.pathExists(path.join(cwd, '.editorconfig')))) {
   console.log(pc.green('  ✔') + '  .editorconfig');
 } else {
   console.log(pc.dim('  –') + '  .editorconfig (already exists, skipped)');
+}
+
+if (!(await fs.pathExists(path.join(cwd, 'tsconfig.base.json')))) {
+  await fs.copyFile(path.join(__dirname, 'templates/tsconfig.base.json'), path.join(cwd, 'tsconfig.base.json'));
+  console.log(pc.green('  ✔') + '  tsconfig.base.json');
+} else {
+  console.log(pc.dim('  –') + '  tsconfig.base.json (already exists, skipped)');
+}
+
+if (!(await fs.pathExists(path.join(cwd, 'tsconfig.json')))) {
+  await fs.copyFile(path.join(__dirname, 'templates/tsconfig.json'), path.join(cwd, 'tsconfig.json'));
+  console.log(pc.green('  ✔') + '  tsconfig.json');
+} else {
+  console.log(pc.dim('  –') + '  tsconfig.json (already exists, skipped)');
 }
 
 /* ---------------- UPDATE package.json ---------------- */

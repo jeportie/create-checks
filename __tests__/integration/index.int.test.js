@@ -55,6 +55,32 @@ describe('create-checks CLI', () => {
     expect(readFileSync(join(tmpDir, '.editorconfig'), 'utf-8')).toBe('root = false\n');
   });
 
+  it('copies tsconfig.base.json to the target directory', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir);
+    expect(existsSync(join(tmpDir, 'tsconfig.base.json'))).toBe(true);
+  });
+
+  it('copies tsconfig.json to the target directory', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir);
+    expect(existsSync(join(tmpDir, 'tsconfig.json'))).toBe(true);
+  });
+
+  it('does not overwrite an existing tsconfig.base.json', () => {
+    tmpDir = createTmpProject();
+    writeFileSync(join(tmpDir, 'tsconfig.base.json'), '{ "compilerOptions": {} }\n');
+    runCli(tmpDir);
+    expect(readFileSync(join(tmpDir, 'tsconfig.base.json'), 'utf-8')).toBe('{ "compilerOptions": {} }\n');
+  });
+
+  it('does not overwrite an existing tsconfig.json', () => {
+    tmpDir = createTmpProject();
+    writeFileSync(join(tmpDir, 'tsconfig.json'), '{ "extends": "./other.json" }\n');
+    runCli(tmpDir);
+    expect(readFileSync(join(tmpDir, 'tsconfig.json'), 'utf-8')).toBe('{ "extends": "./other.json" }\n');
+  });
+
   it('injects lint, format, and typecheck scripts into package.json', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);

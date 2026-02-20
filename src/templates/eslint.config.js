@@ -4,7 +4,8 @@ import prettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config([
+export default tseslint.config(
+  /* ---------------- GLOBAL IGNORES ---------------- */
   {
     ignores: [
       '**/dist/**',
@@ -14,24 +15,25 @@ export default tseslint.config([
     ],
   },
 
+  /* ---------------- BASE CONFIGS ---------------- */
   eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
 
-  tseslint.configs.recommendedTypeChecked,
-  tseslint.configs.stylisticTypeChecked,
-
+  /* ---------------- TYPESCRIPT PARSER OPTIONS ---------------- */
   {
-    plugins: {
-      '@stylistic': stylistic,
-      import: importPlugin,
-    },
-
     languageOptions: {
       parserOptions: {
-        projectService: {
-          allowDefaultProject: ['*.ts'],
-        },
+        projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+  },
+
+  /* ---------------- IMPORT PLUGIN ---------------- */
+  {
+    plugins: {
+      import: importPlugin,
     },
 
     settings: {
@@ -42,7 +44,6 @@ export default tseslint.config([
     },
 
     rules: {
-      /* ---------------- IMPORTS ---------------- */
       'import/first': 'error',
       'import/no-cycle': 'error',
       'import/no-self-import': 'error',
@@ -63,12 +64,29 @@ export default tseslint.config([
           'newlines-between': 'always',
         },
       ],
+    },
+  },
 
-      /* ---------------- STYLISTIC ---------------- */
+  /* ---------------- STYLISTIC RULES ---------------- */
+  {
+    plugins: {
+      '@stylistic': stylistic,
+    },
+
+    rules: {
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
-      'spaced-comment': ['error', 'always'],
+    },
+  },
 
-      /* ---------------- TYPESCRIPT ---------------- */
+  /* ---------------- GENERAL RULES ---------------- */
+  {
+    rules: {
+      'sort-imports': 'off',
+      'spaced-comment': [
+        'error',
+        'always',
+        { block: { markers: ['!'], balanced: true } },
+      ],
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_' },
@@ -78,20 +96,25 @@ export default tseslint.config([
 
   /* ---------------- TEST OVERRIDES ---------------- */
   {
-    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    files: [
+      '**/__tests__/**/*.{ts,tsx}',
+      '**/*.test.{ts,tsx}',
+      '**/*.spec.{ts,tsx}',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
 
   /* ---------------- CONFIG FILES ---------------- */
   {
-    files: ['*.config.{js,mjs,cjs}'],
+    files: ['*.config.{js,mjs,cjs}', '**/*.config.{js,mjs,cjs}'],
     ...tseslint.configs.disableTypeChecked,
   },
 
   /* ---------------- PRETTIER MUST BE LAST ---------------- */
   prettier,
-]);
+);
