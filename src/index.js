@@ -8,8 +8,20 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const cwd = process.cwd();
+const pkgPath = path.join(cwd, 'package.json');
 
 console.log(pc.cyan('\n🔧 create-checks — setting up ESLint + Prettier\n'));
+
+/* ---------------- ENSURE package.json EXISTS ---------------- */
+
+if (!(await fs.pathExists(pkgPath))) {
+  console.log(pc.yellow('  No package.json found — running npm init -y...'));
+  await execa('npm', ['init', '-y'], { stdio: 'inherit' });
+  const pkg = await fs.readJson(pkgPath);
+  pkg.type = 'module';
+  await fs.writeJson(pkgPath, pkg, { spaces: 2 });
+  console.log(pc.green('  ✔') + '  package.json created with "type": "module"');
+}
 
 /* ---------------- INSTALL DEPENDENCIES ---------------- */
 
@@ -20,7 +32,8 @@ if (!process.env.NO_INSTALL) {
     [
       'install',
       '-D',
-      'eslint',
+
+      'eslint@^9',
       'prettier',
       'eslint-config-prettier@^9.1.0',
       '@eslint/js',
@@ -66,7 +79,6 @@ if (!(await fs.pathExists(path.join(cwd, 'tsconfig.json')))) {
 
 /* ---------------- UPDATE package.json ---------------- */
 
-const pkgPath = path.join(cwd, 'package.json');
 const pkg = await fs.readJson(pkgPath);
 
 pkg.scripts = {
