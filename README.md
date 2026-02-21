@@ -1,6 +1,6 @@
 # create-checks
 
-A zero-config scaffolding CLI that wires **ESLint + Prettier** into any Node.js project in one command.
+A zero-config scaffolding CLI that wires **ESLint + Prettier + TypeScript** into any Node.js project — and optionally sets up **Vitest** for testing — in one interactive command.
 
 ```sh
 npm create @jeportie/checks
@@ -13,13 +13,17 @@ npm create @jeportie/checks
 Running `npm create @jeportie/checks` inside an existing project will:
 
 1. **Install** ESLint, Prettier, and their plugins as dev dependencies
-2. **Copy** `eslint.config.js` and `prettier.config.js` into your project root
-3. **Inject** three scripts into your `package.json`:
+2. **Copy** config files into your project root:
+   - `eslint.config.js` and `prettier.config.js`
+   - `.editorconfig`, `tsconfig.base.json`, `tsconfig.json`
+   - `.eslintignore`, `.prettierignore`, `.gitignore`
+3. **Inject** scripts into your `package.json`:
    - `lint` → `eslint .`
    - `format` → `prettier . --write`
    - `typecheck` → `tsc --noEmit`
+4. **Prompt** you to optionally set up Vitest with a choice of presets
 
-Everything runs in your project — nothing is installed globally.
+All existing files are left untouched (the CLI skips them with a notice).
 
 ---
 
@@ -29,10 +33,18 @@ Everything runs in your project — nothing is installed globally.
 # Inside your existing project
 npm create @jeportie/checks
 
-# Then use the injected scripts
+# ESLint / Prettier / TypeScript scripts
 npm run lint
 npm run format
 npm run typecheck
+
+# If you chose the Native or Coverage Vitest preset
+npm test
+npm run test:unit
+npm run test:integration
+
+# If you chose the Coverage preset
+npm run test:coverage
 ```
 
 ---
@@ -46,9 +58,9 @@ npm create @jeportie/checks
             └─▶ node runs ./src/index.js  (registered via "bin" in package.json)
                 │
                 ├─ 1. npm install -D eslint prettier ...   (in YOUR project's CWD)
-                ├─ 2. copy src/templates/eslint.config.js  → YOUR project/eslint.config.js
-                ├─ 3. copy src/templates/prettier.config.js → YOUR project/prettier.config.js
-                └─ 4. read YOUR project/package.json → inject scripts → write it back
+                ├─ 2. copy template config files → YOUR project root
+                ├─ 3. read YOUR project/package.json → inject scripts → write it back
+                └─ 4. ask interactively whether to set up Vitest (and which preset)
 ```
 
 ### Template path resolution
@@ -88,6 +100,21 @@ When npm installs a package that has a `bin` field, it creates a symlink in `nod
 | `@stylistic/eslint-plugin`          | Code style rules (quotes, spacing, etc.)          |
 | `eslint-plugin-import`              | Import order and resolution rules                 |
 | `eslint-import-resolver-typescript` | Resolves TypeScript paths in import plugin        |
+| `typescript`                        | TypeScript compiler                               |
+| `@types/node`                       | Node.js type definitions                          |
+
+**Vitest preset — Native** (when selected):
+
+| Package   | Purpose                      |
+| --------- | ---------------------------- |
+| `vitest`  | Fast, Vite-native test runner |
+
+**Vitest preset — Coverage** (when selected):
+
+| Package                 | Purpose                                    |
+| ----------------------- | ------------------------------------------ |
+| `vitest`                | Fast, Vite-native test runner              |
+| `@vitest/coverage-v8`   | Code coverage powered by V8                |
 
 ---
 
@@ -110,6 +137,119 @@ Standard Prettier settings:
 
 - Single quotes, trailing commas, 80-char print width
 - No semicolons in prose, arrow parens always
+
+### `.eslintignore` / `.prettierignore`
+
+Both ignore files are pre-populated with:
+
+```
+dist
+node_modules
+package-lock.json
+coverage
+```
+
+### `.gitignore`
+
+Includes `node_modules`, `dist`, `coverage`, `.env*`, and `*.log`.
+
+### `tsconfig.base.json` / `tsconfig.json`
+
+Strict TypeScript configuration. `tsconfig.json` includes `src`, `test`, `__tests__`, and root-level `*.ts` / `*.js` files.
+
+### `vitest.config.ts` (Vitest presets only)
+
+Both presets create a `vitest.config.ts` in your project root with:
+
+- A `resolve.alias` mapping `@` → `src/` so your tests can import using the same path alias as your source code:
+
+  ```ts
+  import { myUtil } from '@/utils/myUtil';
+  ```
+
+- A `test.include` that covers both `__tests__/` and `test/` directory conventions:
+
+  ```ts
+  include: [
+    '**/__tests__/**/*.{test,spec}.{ts,tsx,js}',
+    '**/test/**/*.{test,spec}.{ts,tsx,js}',
+  ]
+  ```
+
+**Coverage preset** additionally adds:
+
+```ts
+coverage: {
+  enabled: true,
+  reporter: ['json-summary', 'json', 'html'],
+  include: ['src/**/*'],
+  reportOnFailure: true,
+},
+```
+
+The `coverage/` output folder is automatically excluded from ESLint, Prettier, and Git via the installed ignore files.
+
+---
+
+## Vitest presets in detail
+
+When the CLI runs interactively it asks:
+
+```
+? Do you want to set up Vitest for testing? (Y/n)
+? Which Vitest configuration would you like?
+  ❯ Native — vitest + path alias (@→src), test/test:unit/test:integration scripts
+    Coverage — adds @vitest/coverage-v8, HTML/JSON reports, test:coverage script
+```
+
+### Native preset
+
+Installs `vitest` and adds these scripts:
+
+```json
+"test":             "vitest --run",
+"test:unit":        "vitest unit --run",
+"test:integration": "vitest int --run"
+```
+
+`test:unit` matches any file whose path contains `unit`.
+`test:integration` matches any file whose path contains `int`.
+
+### Coverage preset
+
+Installs `vitest` + `@vitest/coverage-v8` and adds:
+
+```json
+"test":             "vitest --run",
+"test:unit":        "vitest unit --run",
+"test:integration": "vitest int --run",
+"test:coverage":    "vitest --coverage --run"
+```
+
+Coverage reports are written to `coverage/` and include HTML, JSON, and a JSON summary (compatible with GitHub Actions PR annotations).
+
+---
+
+## Non-interactive / CI usage
+
+Set the `VITEST_PRESET` environment variable to bypass the interactive prompt:
+
+```sh
+# Skip Vitest setup
+VITEST_PRESET=none node ./src/index.js
+
+# Install vitest with path alias only
+VITEST_PRESET=native node ./src/index.js
+
+# Install vitest with coverage reporting
+VITEST_PRESET=coverage node ./src/index.js
+```
+
+Set `NO_INSTALL=1` to skip all `npm install` calls (useful for testing):
+
+```sh
+NO_INSTALL=1 node ./src/index.js
+```
 
 ---
 
@@ -267,7 +407,7 @@ npm install
 ### Run tests
 
 ```sh
-npm test                  # all tests
+npm test                  # all tests (30 integration tests)
 npm run test:integration  # integration tests only
 npm run test:coverage     # with coverage report
 ```
@@ -281,22 +421,36 @@ npm init -y
 node /path/to/create-checks/src/index.js
 ```
 
+To test non-interactively:
+
+```sh
+VITEST_PRESET=coverage NO_INSTALL=1 node /path/to/create-checks/src/index.js
+```
+
 ### Project structure
 
 ```
 create-checks/
 ├── src/
-│   ├── index.js              # CLI entrypoint (#!/usr/bin/env node)
+│   ├── index.js                          # CLI entrypoint (#!/usr/bin/env node)
 │   └── templates/
-│       ├── eslint.config.js  # copied into the user's project
-│       └── prettier.config.js
+│       ├── eslint.config.js              # copied into the user's project
+│       ├── prettier.config.js
+│       ├── .editorconfig
+│       ├── .eslintignore                 # dist, node_modules, package-lock.json, coverage
+│       ├── .prettierignore              # dist, node_modules, package-lock.json, coverage
+│       ├── .gitignore                   # node_modules, dist, coverage, .env*, *.log
+│       ├── tsconfig.base.json
+│       ├── tsconfig.json                # includes src, test, __tests__
+│       ├── vitest.config.native.ts      # resolve alias + test:unit/integration
+│       └── vitest.config.coverage.ts    # + coverage block and test:coverage
 ├── __tests__/
 │   └── integration/
-│       └── index.int.test.js # spawns the CLI in a temp dir
+│       └── index.int.test.js            # 30 integration tests
 ├── .github/workflows/
 │   ├── pull-request-checks.yml
 │   └── semantic-release.yml
-├── release.config.mjs        # semantic-release configuration
+├── release.config.mjs                   # semantic-release configuration
 └── package.json
 ```
 

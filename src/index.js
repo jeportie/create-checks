@@ -2,6 +2,7 @@
 
 import fs from 'fs-extra';
 import { execa } from 'execa';
+import inquirer from 'inquirer';
 import pc from 'picocolors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,6 +64,27 @@ if (!(await fs.pathExists(path.join(cwd, '.editorconfig')))) {
   console.log(pc.dim('  –') + '  .editorconfig (already exists, skipped)');
 }
 
+if (!(await fs.pathExists(path.join(cwd, '.eslintignore')))) {
+  await fs.copyFile(path.join(__dirname, 'templates/.eslintignore'), path.join(cwd, '.eslintignore'));
+  console.log(pc.green('  ✔') + '  .eslintignore');
+} else {
+  console.log(pc.dim('  –') + '  .eslintignore (already exists, skipped)');
+}
+
+if (!(await fs.pathExists(path.join(cwd, '.prettierignore')))) {
+  await fs.copyFile(path.join(__dirname, 'templates/.prettierignore'), path.join(cwd, '.prettierignore'));
+  console.log(pc.green('  ✔') + '  .prettierignore');
+} else {
+  console.log(pc.dim('  –') + '  .prettierignore (already exists, skipped)');
+}
+
+if (!(await fs.pathExists(path.join(cwd, '.gitignore')))) {
+  await fs.copyFile(path.join(__dirname, 'templates/.gitignore'), path.join(cwd, '.gitignore'));
+  console.log(pc.green('  ✔') + '  .gitignore');
+} else {
+  console.log(pc.dim('  –') + '  .gitignore (already exists, skipped)');
+}
+
 if (!(await fs.pathExists(path.join(cwd, 'tsconfig.base.json')))) {
   await fs.copyFile(path.join(__dirname, 'templates/tsconfig.base.json'), path.join(cwd, 'tsconfig.base.json'));
   console.log(pc.green('  ✔') + '  tsconfig.base.json');
@@ -90,5 +112,78 @@ pkg.scripts = {
 
 await fs.writeJson(pkgPath, pkg, { spaces: 2 });
 console.log(pc.green('  ✔') + '  package.json  (scripts: lint, format, typecheck)');
+
+/* ---------------- VITEST SETUP ---------------- */
+
+// VITEST_PRESET can be set to 'native', 'coverage', or 'none' to bypass the prompt
+// (used by tests and CI environments where stdin is not a TTY)
+let vitestPreset = process.env.VITEST_PRESET;
+
+if (!vitestPreset && process.stdin.isTTY) {
+  const { setupVitest } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'setupVitest',
+      message: 'Do you want to set up Vitest for testing?',
+      default: true,
+    },
+  ]);
+
+  if (setupVitest) {
+    const { preset } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'preset',
+        message: 'Which Vitest configuration would you like?',
+        choices: [
+          {
+            name: 'Native — vitest + path alias (@→src), test/test:unit/test:integration scripts',
+            value: 'native',
+          },
+          {
+            name: 'Coverage — adds @vitest/coverage-v8, HTML/JSON reports, test:coverage script',
+            value: 'coverage',
+          },
+        ],
+      },
+    ]);
+    vitestPreset = preset;
+  }
+}
+
+if (vitestPreset === 'native' || vitestPreset === 'coverage') {
+  console.log(pc.cyan('\n🧪 Setting up Vitest...\n'));
+
+  if (!process.env.NO_INSTALL) {
+    const vitestDeps = ['vitest'];
+    if (vitestPreset === 'coverage') {
+      vitestDeps.push('@vitest/coverage-v8');
+    }
+    console.log(pc.dim('  Installing vitest dependencies...'));
+    await execa('npm', ['install', '-D', ...vitestDeps], { stdio: 'inherit' });
+  }
+
+  await fs.copyFile(
+    path.join(__dirname, `templates/vitest.config.${vitestPreset}.ts`),
+    path.join(cwd, 'vitest.config.ts'),
+  );
+  console.log(pc.green('  ✔') + '  vitest.config.ts');
+
+  const updatedPkg = await fs.readJson(pkgPath);
+  updatedPkg.scripts = {
+    ...updatedPkg.scripts,
+    test: 'vitest --run',
+    'test:unit': 'vitest unit --run',
+    'test:integration': 'vitest int --run',
+  };
+  if (vitestPreset === 'coverage') {
+    updatedPkg.scripts['test:coverage'] = 'vitest --coverage --run';
+  }
+  await fs.writeJson(pkgPath, updatedPkg, { spaces: 2 });
+
+  const addedScripts = ['test', 'test:unit', 'test:integration'];
+  if (vitestPreset === 'coverage') addedScripts.push('test:coverage');
+  console.log(pc.green('  ✔') + `  package.json  (scripts: ${addedScripts.join(', ')})`);
+}
 
 console.log(pc.green('\n✅ Done!\n'));

@@ -1,13 +1,29 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    "module": "ESNExt",
+    "moduleResolution": "Bundler",
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     },
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src", "./*.ts", "./*.js", "./*.mjs", "./*.cjs"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src",
+    "test",
+    "__tests__",
+    "./*.ts",
+    "./*.js",
+    "./*.mjs",
+    "./*.cjs"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
