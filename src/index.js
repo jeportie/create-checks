@@ -37,7 +37,6 @@ if (!process.env.NO_INSTALL) {
       'eslint@^9',
       'prettier',
       'eslint-config-prettier@^9.1.0',
-      '@eslint/js',
       'typescript-eslint',
       '@stylistic/eslint-plugin',
       'eslint-plugin-import',
