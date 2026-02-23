@@ -67,12 +67,20 @@ if (!(await fs.pathExists(pkgPath))) {
 if (!process.env.NO_INSTALL) {
   const deps = [
     'eslint@^9',
+    '@eslint/js@^9',
     'prettier',
     'eslint-config-prettier@^9.1.0',
     'typescript-eslint',
     '@stylistic/eslint-plugin',
     'eslint-plugin-import',
     'eslint-import-resolver-typescript',
+    'secretlint',
+    '@secretlint/secretlint-rule-preset-recommend',
+    'cspell',
+    'cspell/eslint-plugin',
+    '@commitlint/cli',
+    '@commitlint/config-conventional',
+    'commitlint-plugin-cspell',
     'typescript',
     '@types/node',
   ];
@@ -115,6 +123,13 @@ if (!(await fs.pathExists(path.join(cwd, '.prettierignore')))) {
   console.log(pc.green('  ✔') + '  .prettierignore');
 } else {
   console.log(pc.dim('  –') + '  .prettierignore (already exists, skipped)');
+}
+
+if (!(await fs.pathExists(path.join(cwd, '.secretlintrc.json')))) {
+  await fs.copyFile(path.join(__dirname, 'templates/.secretlintrc'), path.join(cwd, '.secretlintrc'));
+  console.log(pc.green('  ✔') + '  .secretlintrc');
+} else {
+  console.log(pc.dim('  –') + '  .secretlintrc (already exists, skipped)');
 }
 
 if (!(await fs.pathExists(path.join(cwd, '.gitignore')))) {

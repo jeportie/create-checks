@@ -1,0 +1,15 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "dictionaries": ["typescript", "node", "bash"],
+  "words": ["commitlint", "jeportie"],
+  "ignorePaths": [
+    "cspell.json",
+    "node_modules/**",
+    "coverage",
+    "package.json",
+    "package-lock.json",
+    "*ignore"
+  ],
+  "flagWords": ["hte"]
+}

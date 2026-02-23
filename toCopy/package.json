@@ -1,0 +1,54 @@
+{
+  "name": "2026-02-21-cicd",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "check": "npm run format && npm run lint && npm run typecheck && npm run spellcheck && npm run secretlint && npm run test",
+    "format": "prettier . --write",
+    "lint": "eslint .",
+    "secretlint": "secretlint **/*",
+    "spellcheck": "cspell lint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest --run",
+    "test:unit": "vitest unit --run",
+    "test:integration": "vitest int --run",
+    "test:coverage": "vitest --coverage --run",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
+    "@cspell/eslint-plugin": "^9.6.4",
+    "@eslint/js": "^9.39.3",
+    "@secretlint/secretlint-rule-preset-recommend": "^11.3.1",
+    "@stylistic/eslint-plugin": "^5.9.0",
+    "@types/node": "^25.3.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "commitlint-plugin-cspell": "^0.5.0",
+    "cspell": "^9.6.4",
+    "eslint": "^9.39.3",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
+    "secretlint": "^11.3.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0",
+    "vitest": "^4.0.18"
+  },
+  "lint-staged": {
+    "**/*": [
+      "npm run format",
+      "npm run lint",
+      "npm run spellcheck",
+      "npm run secretlint"
+    ]
+  }
+}

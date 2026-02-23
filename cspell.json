@@ -31,6 +31,7 @@
     "webdeveric"
   ],
   "ignorePaths": [
+    "toCopy/",
     ".vscode/",
     ".secretlintrc.json",
     "node_modules",
