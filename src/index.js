@@ -15,8 +15,12 @@ const answers = {
 };
 
 if (projectType === 'frontend') {
-  const { askFrontendQuestions } = await import('./prompts/frontend.js');
-  Object.assign(answers, await askFrontendQuestions());
+  try {
+    const { askFrontendQuestions } = await import('./prompts/frontend.js');
+    Object.assign(answers, await askFrontendQuestions());
+  } catch {
+    // Frontend module is optional until feature branch is merged.
+  }
 }
 
 if (projectType === 'frontend' || projectType === 'fullstack') {
@@ -31,8 +35,12 @@ if (projectType === 'frontend' || projectType === 'fullstack') {
 await generateCommon(answers, process.cwd());
 
 if (projectType === 'frontend') {
-  const { generateFrontend } = await import('./generators/frontend.js');
-  await generateFrontend(answers, process.cwd());
+  try {
+    const { generateFrontend } = await import('./generators/frontend.js');
+    await generateFrontend(answers, process.cwd());
+  } catch {
+    // Frontend module is optional until feature branch is merged.
+  }
 }
 
 if (answers.setupPlaywright) {
