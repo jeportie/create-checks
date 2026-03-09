@@ -18,6 +18,7 @@
     "iconify",
     "Iconify",
     "jwks",
+    "jeromevdb",
     "mawhea",
     "mjwheatley",
     "npmignore",
@@ -35,6 +36,8 @@
     "vite",
     "vitest",
     "webdeveric",
+    "worktree",
+    "worktrees",
     "xlink"
   ],
   "ignorePaths": [
