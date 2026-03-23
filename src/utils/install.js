@@ -61,7 +61,6 @@ export async function installDeps(answers, options = {}) {
       '@testing-library/user-event',
       '@testing-library/dom',
       'happy-dom',
-      'vite-tsconfig-paths',
       '@types/react',
       '@types/react-dom',
       'eslint-plugin-react-hooks',

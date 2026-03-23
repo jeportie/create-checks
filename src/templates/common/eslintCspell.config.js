@@ -97,7 +97,10 @@ export default tseslint.config(
       'spaced-comment': [
         'error',
         'always',
-        { block: { markers: ['!'], balanced: true } },
+        {
+          line: { markers: ['/'] },
+          block: { markers: ['!'], balanced: true },
+        },
       ],
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -109,7 +112,7 @@ export default tseslint.config(
   /* ---------------- TEST OVERRIDES ---------------- */
   {
     files: [
-      '**/__tests__/**/*.{ts,tsx}',
+      '**/tests/**/*.{ts,tsx}',
       '**/*.test.{ts,tsx}',
       '**/*.spec.{ts,tsx}',
     ],

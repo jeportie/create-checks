@@ -19,7 +19,7 @@ export default tseslint.config(
 
   // TypeScript parser options for source files
   {
-    files: ['src/**/*.{ts,tsx}', '__tests__/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -56,9 +56,9 @@ export default tseslint.config(
 
   // General rules for TypeScript files
   {
-    files: ['src/**/*.{ts,tsx}', '__tests__/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
     rules: {
-      'spaced-comment': ['error', 'always', { block: { markers: ['!'], balanced: true } }],
+      'spaced-comment': ['error', 'always', { line: { markers: ['/'] }, block: { markers: ['!'], balanced: true } }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       // Relaxed for React components
       '@typescript-eslint/explicit-function-return-type': 'off',
@@ -70,7 +70,7 @@ export default tseslint.config(
 
   // Test files - relaxed rules
   {
-    files: ['__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    files: ['tests/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',

@@ -91,7 +91,6 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   await copyIfMissing(templatePath('common', '.editorconfig'), path.join(cwd, '.editorconfig'), '.editorconfig');
   await copyIfMissing(templatePath('common', '_gitignore'), path.join(cwd, '.gitignore'), '.gitignore');
   await copyIfMissing(templatePath('common', '.prettierignore'), path.join(cwd, '.prettierignore'), '.prettierignore');
-  await copyIfMissing(templatePath('common', '.eslintignore'), path.join(cwd, '.eslintignore'), '.eslintignore');
 
   if (lintOption.includes('secretlint')) {
     await copyIfMissing(

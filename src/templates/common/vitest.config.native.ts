@@ -10,8 +10,9 @@ export default defineConfig({
   },
   test: {
     include: [
-      '**/__tests__/**/*.{test,spec}.{ts,tsx,js}',
+      '**/tests/**/*.{test,spec}.{ts,tsx,js}',
       '**/test/**/*.{test,spec}.{ts,tsx,js}',
     ],
+    exclude: ['node_modules/**'],
   },
 });

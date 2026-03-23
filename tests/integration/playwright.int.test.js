@@ -34,7 +34,7 @@ describe('playwright scaffold option', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { PLAYWRIGHT: '1' });
     expect(existsSync(join(tmpDir, 'playwright.config.ts'))).toBe(true);
-    expect(existsSync(join(tmpDir, 'e2e', 'welcome.spec.ts'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'tests', 'e2e', 'welcome.spec.ts'))).toBe(true);
   });
 
   it('adds Playwright scripts when enabled', () => {
@@ -57,14 +57,14 @@ describe('playwright scaffold option', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { PLAYWRIGHT: '0' });
     expect(existsSync(join(tmpDir, 'playwright.config.ts'))).toBe(false);
-    expect(existsSync(join(tmpDir, 'e2e', 'welcome.spec.ts'))).toBe(false);
+    expect(existsSync(join(tmpDir, 'tests', 'e2e', 'welcome.spec.ts'))).toBe(false);
   });
 
   it('does not set up Playwright by default in non-TTY mode', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
     expect(existsSync(join(tmpDir, 'playwright.config.ts'))).toBe(false);
-    expect(existsSync(join(tmpDir, 'e2e', 'welcome.spec.ts'))).toBe(false);
+    expect(existsSync(join(tmpDir, 'tests', 'e2e', 'welcome.spec.ts'))).toBe(false);
   });
 
   it('does not add Playwright scripts when disabled', () => {

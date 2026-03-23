@@ -10,14 +10,6 @@
     },
     "types": ["node"]
   },
-  "include": [
-    "src",
-    "test",
-    "__tests__",
-    "./*.ts",
-    "./*.js",
-    "./*.mjs",
-    "./*.cjs"
-  ],
+  "include": ["src", "test", "tests", "./*.ts", "./*.js", "./*.mjs", "./*.cjs"],
   "exclude": ["node_modules"]
 }

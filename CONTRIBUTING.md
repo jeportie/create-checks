@@ -47,7 +47,7 @@ src/
     vitest.config.native.ts         # resolve alias + test:unit/integration
     vitest.config.coverage.ts       # + coverage block and test:coverage
 
-__tests__/
+tests/
   integration/
     index.int.test.js   # Integration tests — spawn the CLI in a tmp dir, assert file output
 
@@ -67,7 +67,7 @@ commitlint.config.js        # Commit message rules
 
 1. Add the file to `src/templates/`
 2. Add a `fs.copyFile(...)` call in `src/index.js` to copy it into `cwd`
-3. Add a test assertion in `__tests__/integration/index.int.test.js` that checks the file exists
+3. Add a test assertion in `tests/integration/index.int.test.js` that checks the file exists
 
 Example — adding a `.editorconfig` template:
 
@@ -77,7 +77,7 @@ await fs.copyFile(path.join(__dirname, 'templates/.editorconfig'), path.join(cwd
 ```
 
 ```js
-// __tests__/integration/index.int.test.js
+// tests/integration/index.int.test.js
 it('copies .editorconfig to the target directory', () => {
   // ...
   expect(existsSync(join(tmpDir, '.editorconfig'))).toBe(true);

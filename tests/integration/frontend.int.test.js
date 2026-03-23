@@ -62,9 +62,9 @@ describe('frontend starter scaffold', () => {
   it('creates frontend test files', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
-    expect(existsSync(join(tmpDir, '__tests__', 'setup.ts'))).toBe(true);
-    expect(existsSync(join(tmpDir, '__tests__', 'unit', 'App.unit.test.tsx'))).toBe(true);
-    expect(existsSync(join(tmpDir, '__tests__', 'integration', 'App.int.test.tsx'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'tests', 'setup.ts'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'tests', 'unit', 'App.unit.test.tsx'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'tests', 'integration', 'App.int.test.tsx'))).toBe(true);
   });
 
   it('skips common starter source files for frontend', () => {
@@ -86,7 +86,6 @@ describe('frontend starter scaffold', () => {
     expect(existsSync(join(tmpDir, '.editorconfig'))).toBe(true);
     expect(existsSync(join(tmpDir, '.gitignore'))).toBe(true);
     expect(existsSync(join(tmpDir, '.prettierignore'))).toBe(true);
-    expect(existsSync(join(tmpDir, '.eslintignore'))).toBe(true);
     expect(existsSync(join(tmpDir, 'prettier.config.js'))).toBe(true);
   });
 

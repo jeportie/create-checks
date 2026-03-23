@@ -21,9 +21,9 @@ const FRONTEND_FILES = [
   'src/assets/react.svg',
   'src/assets/tailwind.svg',
   'src/assets/vite.svg',
-  '__tests__/setup.ts',
-  '__tests__/unit/App.unit.test.tsx',
-  '__tests__/integration/App.int.test.tsx',
+  'tests/setup.ts',
+  'tests/unit/App.unit.test.tsx',
+  'tests/integration/App.int.test.tsx',
 ];
 
 async function copyFrontendFile(relativePath, cwd) {

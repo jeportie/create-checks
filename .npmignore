@@ -4,11 +4,10 @@
 .husky
 .nvmrc
 .editorconfig
-.eslintignore
 .prettierignore
 .secretlintignore
 .secretlintrc.json
-__tests__
+tests
 coverage
 node_modules
 vitest.config.js
@@ -19,3 +18,8 @@ lint-staged.config.mjs
 cspell.json
 commit.hbs
 release.config.mjs
+CLAUDE.md
+NEXT.md
+TODO.md
+ESLINTRULES.md
+CONTRIBUTING.md

@@ -43,9 +43,9 @@ export async function generatePlaywright(answers, cwd = process.cwd()) {
     'playwright.config.ts',
   );
 
-  await fs.ensureDir(path.join(cwd, 'e2e'));
+  await fs.ensureDir(path.join(cwd, 'tests', 'e2e'));
 
-  const specFile = projectType === 'frontend' ? 'e2e/welcome.spec.ts' : 'e2e/example.spec.ts';
+  const specFile = projectType === 'frontend' ? 'tests/e2e/welcome.spec.ts' : 'tests/e2e/example.spec.ts';
   await copyIfMissing(templatePath('playwright', specFile), path.join(cwd, specFile), specFile);
 
   await appendGitignoreEntries(cwd);

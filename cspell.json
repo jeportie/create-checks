@@ -9,6 +9,7 @@
     "jeportie",
     "npmjs",
     "commitlint",
+    "detoxrc",
     "conventionalcommits",
     "corepack",
     "davelosert",
@@ -33,6 +34,7 @@
     "testuser",
     "tskickstart",
     "typecheck",
+    "ultrafast",
     "vite",
     "vitest",
     "webdeveric",
@@ -51,7 +53,7 @@
     "package.json",
     "package-lock.json",
     "pnpm-lock.yaml",
-    "__tests__/data"
+    "tests/data"
   ],
   "languageSettings": [
     {

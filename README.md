@@ -228,7 +228,7 @@ Includes `node_modules`, `dist`, `coverage`, `.env*`, and `*.log`.
 
 ### `tsconfig.base.json` / `tsconfig.json`
 
-Strict TypeScript configuration. `tsconfig.json` includes `src`, `test`, `__tests__`, and root-level `*.ts` / `*.js` files.
+Strict TypeScript configuration. `tsconfig.json` includes `src`, `test`, `tests`, and root-level `*.ts` / `*.js` files.
 
 ### `commitlint.config.js` (commitlint only)
 
@@ -252,10 +252,10 @@ Both presets create a `vitest.config.ts` in your project root with:
   import { myUtil } from '@/utils/myUtil';
   ```
 
-- A `test.include` that covers both `__tests__/` and `test/` directory conventions:
+- A `test.include` that covers both `tests/` and `test/` directory conventions:
 
   ```ts
-  include: ['**/__tests__/**/*.{test,spec}.{ts,tsx,js}', '**/test/**/*.{test,spec}.{ts,tsx,js}'];
+  include: ['**/tests/**/*.{test,spec}.{ts,tsx,js}', '**/test/**/*.{test,spec}.{ts,tsx,js}'];
   ```
 
 **Coverage preset** additionally adds:
@@ -296,7 +296,7 @@ Installs `vitest` and adds these scripts:
 
 `test:unit` matches any file whose path contains `unit`. `test:integration` matches any file whose path contains `int`.
 
-Also adds a `@` → `src/` path alias in `vitest.config.ts` and configures test discovery for both `__tests__/` and `test/` directories.
+Also adds a `@` → `src/` path alias in `vitest.config.ts` and configures test discovery for both `tests/` and `test/` directories.
 
 ### Coverage preset
 
@@ -410,7 +410,7 @@ tskickstart/
 │       │   └── commit-msg               # template (written only when commitlint selected)
 │       ├── vitest.config.native.ts       # resolve alias + test:unit/integration
 │       └── vitest.config.coverage.ts    # + coverage block and test:coverage
-├── __tests__/
+├── tests/
 │   └── integration/
 │       └── index.int.test.js
 ├── .github/workflows/

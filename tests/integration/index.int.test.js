@@ -61,14 +61,10 @@ describe('tskickstart CLI', () => {
 
   /* ---------------- Ignore files ---------------- */
 
-  it('.eslintignore contains expected entries', () => {
+  it('does not create .eslintignore (flat config uses ignores array)', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
-    const content = readFileSync(join(tmpDir, '.eslintignore'), 'utf-8');
-    expect(content).toContain('dist');
-    expect(content).toContain('node_modules');
-    expect(content).toContain('package-lock.json');
-    expect(content).toContain('coverage');
+    expect(existsSync(join(tmpDir, '.eslintignore'))).toBe(false);
   });
 
   it('.prettierignore contains expected entries', () => {
@@ -105,12 +101,12 @@ describe('tskickstart CLI', () => {
     expect(existsSync(join(tmpDir, 'tsconfig.base.json'))).toBe(true);
   });
 
-  it('tsconfig.json includes both test and __tests__ directories', () => {
+  it('tsconfig.json includes both test and tests directories', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
     const tsconfig = JSON.parse(readFileSync(join(tmpDir, 'tsconfig.json'), 'utf-8'));
     expect(tsconfig.include).toContain('test');
-    expect(tsconfig.include).toContain('__tests__');
+    expect(tsconfig.include).toContain('tests');
   });
 
   it('does not overwrite an existing tsconfig.json', () => {
@@ -155,11 +151,11 @@ describe('tskickstart CLI', () => {
     expect(content).toContain("'@'");
   });
 
-  it('native vitest.config.ts includes both test and __tests__ directories', () => {
+  it('native vitest.config.ts includes both test and tests directories', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { VITEST_PRESET: 'native' });
     const content = readFileSync(join(tmpDir, 'vitest.config.ts'), 'utf-8');
-    expect(content).toContain('__tests__');
+    expect(content).toContain('**/tests/**');
     expect(content).toContain('test/**');
   });
 

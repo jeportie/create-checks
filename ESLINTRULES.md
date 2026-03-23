@@ -85,7 +85,7 @@ type         →  import type { Foo }
 
 ## Test File Overrides
 
-Applies to: `**/__tests__/**/*.{ts,tsx}`, `**/*.test.{ts,tsx}`, `**/*.spec.{ts,tsx}`
+Applies to: `**/tests/**/*.{ts,tsx}`, `**/*.test.{ts,tsx}`, `**/*.spec.{ts,tsx}`
 
 | Rule                                         | Relaxed to                                          |
 | -------------------------------------------- | --------------------------------------------------- |

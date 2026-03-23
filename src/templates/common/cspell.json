@@ -9,7 +9,8 @@
     "coverage",
     "package.json",
     "package-lock.json",
-    "*ignore"
+    "*ignore",
+    "*.svg"
   ],
   "flagWords": ["hte"]
 }
