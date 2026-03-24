@@ -123,6 +123,12 @@ export function buildScripts(pkg, answers) {
     pkg.scripts.start = 'node dist/index.cjs';
   }
 
+  if (projectType === 'backend') {
+    pkg.scripts.dev = 'tsx watch src/index.ts';
+    pkg.scripts.build = 'tsc';
+    pkg.scripts.start = 'node dist/index.js';
+  }
+
   if (setupPlaywright) {
     pkg.scripts['test:e2e'] = 'npx playwright test';
     pkg.scripts['test:e2e:ui'] = 'npx playwright test --ui';
@@ -138,7 +144,7 @@ export function buildScripts(pkg, answers) {
   if (authorName && !pkg.author) pkg.author = authorName;
   if (!pkg.license) pkg.license = 'MIT';
   if (!pkg.keywords) pkg.keywords = [];
-  if (!['frontend', 'npm-lib', 'cli'].includes(projectType) && (!pkg.main || pkg.main === 'index.js')) {
+  if (!['frontend', 'npm-lib', 'cli', 'backend'].includes(projectType) && (!pkg.main || pkg.main === 'index.js')) {
     pkg.main = 'src/main.ts';
   }
 

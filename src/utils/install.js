@@ -87,6 +87,13 @@ export async function installDeps(answers, options = {}) {
     devDeps.push('tsup', 'tsx');
   }
 
+  if (projectType === 'backend') {
+    devDeps.push('tsx');
+    if (answers.backendFramework === 'express') {
+      devDeps.push('@types/express');
+    }
+  }
+
   if (setupPlaywright) {
     devDeps.push('@playwright/test');
   }
@@ -99,6 +106,17 @@ export async function installDeps(answers, options = {}) {
       prodDeps.push('@clack/prompts');
     } else {
       prodDeps.push('commander');
+    }
+  }
+
+  if (projectType === 'backend') {
+    prodDeps.push('zod');
+    if (answers.backendFramework === 'fastify') {
+      prodDeps.push('fastify');
+    } else if (answers.backendFramework === 'express') {
+      prodDeps.push('express');
+    } else {
+      prodDeps.push('hono', '@hono/node-server');
     }
   }
 

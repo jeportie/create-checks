@@ -56,7 +56,9 @@ export async function generateCommon(answers, cwd = process.cwd()) {
       path.join(cwd, 'tsconfig.base.json'),
       'tsconfig.base.json',
     );
-    await copyIfMissing(templatePath('common', 'tsconfig.json'), path.join(cwd, 'tsconfig.json'), 'tsconfig.json');
+    if (projectType !== 'backend') {
+      await copyIfMissing(templatePath('common', 'tsconfig.json'), path.join(cwd, 'tsconfig.json'), 'tsconfig.json');
+    }
   }
 
   await fs.copyFile(templatePath('common', 'prettier.config.js'), path.join(cwd, 'prettier.config.js'));
@@ -124,7 +126,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   console.log(pc.green('→') + '  creating project directories:');
 
-  if (!isFrontend && projectType !== 'cli') {
+  if (!isFrontend && projectType !== 'cli' && projectType !== 'backend') {
     const srcDir = path.join(cwd, 'src');
     await fs.ensureDir(srcDir);
     const mainTs = path.join(srcDir, 'main.ts');

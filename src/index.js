@@ -41,6 +41,15 @@ if (projectType === 'cli') {
   }
 }
 
+if (projectType === 'backend') {
+  try {
+    const { askBackendQuestions } = await import('./prompts/backend.js');
+    Object.assign(answers, await askBackendQuestions());
+  } catch {
+    // Backend module is optional until feature branch is merged.
+  }
+}
+
 await generateCommon(answers, process.cwd());
 
 if (projectType === 'frontend') {
@@ -67,6 +76,15 @@ if (projectType === 'cli') {
     await generateCli(answers, process.cwd());
   } catch {
     // CLI module is optional until feature branch is merged.
+  }
+}
+
+if (projectType === 'backend') {
+  try {
+    const { generateBackend } = await import('./generators/backend.js');
+    await generateBackend(answers, process.cwd());
+  } catch {
+    // Backend module is optional until feature branch is merged.
   }
 }
 
