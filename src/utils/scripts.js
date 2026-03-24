@@ -13,10 +13,13 @@ export function orderScripts(scripts) {
     'test:coverage',
     'test:e2e',
     'test:e2e:ui',
+    'test:e2e:build',
     'build',
     'dev',
     'preview',
     'start',
+    'android',
+    'ios',
   ];
 
   const ordered = {};
@@ -76,6 +79,7 @@ export function buildScripts(pkg, answers) {
   if (lintOption.includes('cspell')) checkParts.push('npm run spellcheck');
   if (lintOption.includes('secretlint')) checkParts.push('npm run secretlint');
   if (vitestPreset === 'native' || vitestPreset === 'coverage') checkParts.push('npm run test');
+  if (projectType === 'app') checkParts.push('npm run test');
 
   pkg.scripts = {
     ...pkg.scripts,
@@ -129,6 +133,16 @@ export function buildScripts(pkg, answers) {
     pkg.scripts.start = 'node dist/index.js';
   }
 
+  if (projectType === 'app') {
+    pkg.scripts.start = 'expo start';
+    pkg.scripts.android = 'expo run:android';
+    pkg.scripts.ios = 'expo run:ios';
+    pkg.scripts.test = 'jest';
+    pkg.scripts['test:e2e:build'] = 'detox build --configuration ios.sim.debug';
+    pkg.scripts['test:e2e'] = 'detox test --configuration ios.sim.debug';
+    pkg.scripts.typecheck = 'tsc --noEmit';
+  }
+
   if (setupPlaywright) {
     pkg.scripts['test:e2e'] = 'npx playwright test';
     pkg.scripts['test:e2e:ui'] = 'npx playwright test --ui';
@@ -144,7 +158,10 @@ export function buildScripts(pkg, answers) {
   if (authorName && !pkg.author) pkg.author = authorName;
   if (!pkg.license) pkg.license = 'MIT';
   if (!pkg.keywords) pkg.keywords = [];
-  if (!['frontend', 'npm-lib', 'cli', 'backend'].includes(projectType) && (!pkg.main || pkg.main === 'index.js')) {
+  if (
+    !['frontend', 'npm-lib', 'cli', 'backend', 'app'].includes(projectType) &&
+    (!pkg.main || pkg.main === 'index.js')
+  ) {
     pkg.main = 'src/main.ts';
   }
 

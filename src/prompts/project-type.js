@@ -19,6 +19,7 @@ export async function askProjectType() {
         { name: 'CLI tool', value: 'cli' },
         { name: 'backend service', value: 'backend' },
         { name: 'frontend app', value: 'frontend' },
+        { name: 'mobile app', value: 'app' },
         { name: 'fullstack app', value: 'fullstack' },
       ],
     },

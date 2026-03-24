@@ -44,13 +44,14 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   const pkgPath = path.join(cwd, 'package.json');
   const { lintOption = [], vitestPreset, setupPrecommit = true, authorName, projectType } = answers;
   const isFrontend = projectType === 'frontend';
+  const isApp = projectType === 'app';
 
   await ensurePackageJson(pkgPath);
   await installDeps(answers);
 
   console.log(pc.green('→') + '  copying config files...');
 
-  if (!isFrontend) {
+  if (!isFrontend && !isApp) {
     await copyIfMissing(
       templatePath('common', 'tsconfig.base.json'),
       path.join(cwd, 'tsconfig.base.json'),
@@ -64,7 +65,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   await fs.copyFile(templatePath('common', 'prettier.config.js'), path.join(cwd, 'prettier.config.js'));
   console.log(pc.green('✔') + '    prettier.config.js');
 
-  if (!isFrontend) {
+  if (!isFrontend && !isApp) {
     const eslintTemplate = lintOption.includes('cspell') ? 'eslintCspell.config.js' : 'eslint.config.js';
     await fs.copyFile(templatePath('common', eslintTemplate), path.join(cwd, 'eslint.config.js'));
     console.log(pc.green('✔') + '    eslint.config.js');
@@ -77,7 +78,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     }
   }
 
-  if (!isFrontend && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+  if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
     await fs.copyFile(templatePath('common', `vitest.config.${vitestPreset}.ts`), path.join(cwd, 'vitest.config.ts'));
     console.log(pc.green('✔') + '    vitest.config.ts');
   }
@@ -109,7 +110,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     const preCommitDest = path.join(huskyDir, 'pre-commit');
     if (!(await fs.pathExists(preCommitDest))) {
       const lines = ['npx lint-staged', 'npm run typecheck'];
-      if (!isFrontend && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+      if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
         lines.push('npm run test');
       }
       await fs.writeFile(preCommitDest, `${lines.join('\n')}\n`);
@@ -126,7 +127,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   console.log(pc.green('→') + '  creating project directories:');
 
-  if (!isFrontend && projectType !== 'cli' && projectType !== 'backend') {
+  if (!isFrontend && !isApp && projectType !== 'cli' && projectType !== 'backend') {
     const srcDir = path.join(cwd, 'src');
     await fs.ensureDir(srcDir);
     const mainTs = path.join(srcDir, 'main.ts');

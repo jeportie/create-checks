@@ -94,6 +94,18 @@ export async function installDeps(answers, options = {}) {
     }
   }
 
+  if (projectType === 'app') {
+    devDeps.push(
+      'jest',
+      '@jest/globals',
+      '@testing-library/react-native',
+      '@types/react',
+      'detox',
+      'react-test-renderer',
+      'babel-preset-expo',
+    );
+  }
+
   if (setupPlaywright) {
     devDeps.push('@playwright/test');
   }
@@ -118,6 +130,20 @@ export async function installDeps(answers, options = {}) {
     } else {
       prodDeps.push('hono', '@hono/node-server');
     }
+  }
+
+  if (projectType === 'app') {
+    prodDeps.push(
+      'expo',
+      'expo-status-bar',
+      'react',
+      'react-native',
+      '@react-navigation/native',
+      '@react-navigation/native-stack',
+      'react-native-screens',
+      'react-native-safe-area-context',
+      '@tanstack/react-query',
+    );
   }
 
   if (projectType === 'frontend') {

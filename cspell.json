@@ -40,7 +40,12 @@
     "webdeveric",
     "worktree",
     "worktrees",
-    "xlink"
+    "xlink",
+    "iphonesimulator",
+    "xcworkspace",
+    "gradlew",
+    "Dtest",
+    "myapp"
   ],
   "ignorePaths": [
     ".vscode/",

@@ -50,6 +50,15 @@ if (projectType === 'backend') {
   }
 }
 
+if (projectType === 'app') {
+  try {
+    const { askAppQuestions } = await import('./prompts/app.js');
+    Object.assign(answers, await askAppQuestions());
+  } catch {
+    // App module is optional until feature branch is merged.
+  }
+}
+
 await generateCommon(answers, process.cwd());
 
 if (projectType === 'frontend') {
@@ -85,6 +94,15 @@ if (projectType === 'backend') {
     await generateBackend(answers, process.cwd());
   } catch {
     // Backend module is optional until feature branch is merged.
+  }
+}
+
+if (projectType === 'app') {
+  try {
+    const { generateApp } = await import('./generators/app.js');
+    await generateApp(answers, process.cwd());
+  } catch {
+    // App module is optional until feature branch is merged.
   }
 }
 
