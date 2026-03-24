@@ -40,6 +40,18 @@ export async function generateCli(answers, cwd) {
     console.log(pc.dim('–') + '    src/commands/hello.ts (already exists, skipped)');
   }
 
+  // Framework-specific test file
+  const testDir = path.join(cwd, 'tests/unit');
+  await fs.ensureDir(testDir);
+
+  const testDest = path.join(cwd, 'tests/unit/hello.unit.test.ts');
+  if (!(await fs.pathExists(testDest))) {
+    await fs.copyFile(cliTemplatePath(`tests/unit/hello.${cliFramework}.ts`), testDest);
+    console.log(pc.green('✔') + '    tests/unit/hello.unit.test.ts');
+  } else {
+    console.log(pc.dim('–') + '    tests/unit/hello.unit.test.ts (already exists, skipped)');
+  }
+
   // Update package.json bin field
   const pkgPath = path.join(cwd, 'package.json');
   const pkg = await fs.readJson(pkgPath);

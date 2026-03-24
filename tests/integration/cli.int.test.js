@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -129,5 +129,35 @@ describe('cli project scaffold', () => {
     runCli(tmpDir, { CLI_NAME: 'my-tool' });
     const content = readFileSync(join(tmpDir, 'src/index.ts'), 'utf-8');
     expect(content).toContain('commander');
+  });
+
+  it('creates tests/unit/hello.unit.test.ts for commander', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { CLI_FRAMEWORK: 'commander', CLI_NAME: 'my-tool' });
+    expect(existsSync(join(tmpDir, 'tests/unit/hello.unit.test.ts'))).toBe(true);
+    const content = readFileSync(join(tmpDir, 'tests/unit/hello.unit.test.ts'), 'utf-8');
+    expect(content).toContain('hello');
+    expect(content).toContain('vitest');
+  });
+
+  it('creates tests/unit/hello.unit.test.ts for inquirer', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { CLI_FRAMEWORK: 'inquirer', CLI_NAME: 'my-tool' });
+    expect(existsSync(join(tmpDir, 'tests/unit/hello.unit.test.ts'))).toBe(true);
+  });
+
+  it('creates tests/unit/hello.unit.test.ts for clack', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { CLI_FRAMEWORK: 'clack', CLI_NAME: 'my-tool' });
+    expect(existsSync(join(tmpDir, 'tests/unit/hello.unit.test.ts'))).toBe(true);
+  });
+
+  it('does not overwrite existing test file', () => {
+    tmpDir = createTmpProject();
+    mkdirSync(join(tmpDir, 'tests/unit'), { recursive: true });
+    writeFileSync(join(tmpDir, 'tests/unit/hello.unit.test.ts'), 'existing');
+    runCli(tmpDir, { CLI_FRAMEWORK: 'commander', CLI_NAME: 'my-tool' });
+    const content = readFileSync(join(tmpDir, 'tests/unit/hello.unit.test.ts'), 'utf-8');
+    expect(content).toBe('existing');
   });
 });
