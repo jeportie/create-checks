@@ -97,15 +97,13 @@ export async function installDeps(answers, options = {}) {
   }
 
   if (projectType === 'app') {
-    devDeps.push(
-      'jest',
-      '@jest/globals',
-      '@testing-library/react-native',
-      '@types/react',
-      'detox',
-      'react-test-renderer',
-      'babel-preset-expo',
-    );
+    devDeps.push('@types/react', 'babel-preset-expo');
+    if (answers.setupAppJest) {
+      devDeps.push('jest', '@jest/globals', '@testing-library/react-native', 'react-test-renderer');
+    }
+    if (answers.setupAppDetox) {
+      devDeps.push('detox');
+    }
   }
 
   if (setupPlaywright) {

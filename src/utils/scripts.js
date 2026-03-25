@@ -73,13 +73,15 @@ export function buildScripts(pkg, answers) {
     authorName,
     projectType,
     setupPlaywright = false,
+    setupAppJest = true,
+    setupAppDetox = true,
   } = answers;
 
   const checkParts = ['npm run format', 'npm run lint', 'npm run typecheck'];
   if (lintOption.includes('cspell')) checkParts.push('npm run spellcheck');
   if (lintOption.includes('secretlint')) checkParts.push('npm run secretlint');
   if (vitestPreset === 'native' || vitestPreset === 'coverage') checkParts.push('npm run test');
-  if (projectType === 'app') checkParts.push('npm run test');
+  if (projectType === 'app' && setupAppJest) checkParts.push('npm run test');
 
   pkg.scripts = {
     ...pkg.scripts,
@@ -143,10 +145,14 @@ export function buildScripts(pkg, answers) {
     pkg.scripts.start = 'expo start';
     pkg.scripts.android = 'expo run:android';
     pkg.scripts.ios = 'expo run:ios';
-    pkg.scripts.test = 'jest';
-    pkg.scripts['test:e2e:build'] = 'detox build --configuration ios.sim.debug';
-    pkg.scripts['test:e2e'] = 'detox test --configuration ios.sim.debug';
     pkg.scripts.typecheck = 'tsc --noEmit';
+    if (setupAppJest) {
+      pkg.scripts.test = 'jest';
+    }
+    if (setupAppDetox) {
+      pkg.scripts['test:e2e:build'] = 'detox build --configuration ios.sim.debug';
+      pkg.scripts['test:e2e'] = 'detox test --configuration ios.sim.debug';
+    }
   }
 
   if (setupPlaywright) {

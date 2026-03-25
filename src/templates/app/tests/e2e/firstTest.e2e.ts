@@ -6,6 +6,10 @@ describe('App', () => {
   });
 
   it('should show welcome screen', async () => {
-    await expect(element(by.text('Welcome'))).toBeVisible();
+    await expect(element(by.text('Welcome to Your App'))).toBeVisible();
+  });
+
+  it('should show counter button', async () => {
+    await expect(element(by.text('count is 0'))).toBeVisible();
   });
 });
