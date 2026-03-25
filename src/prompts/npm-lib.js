@@ -1,4 +1,4 @@
-import { prompt } from '../utils/prompt.js';
+import { prompt, BACK } from '../utils/prompt.js';
 
 export async function askNpmLibQuestions() {
   let setupSemanticRelease = true;
@@ -30,9 +30,12 @@ export async function askNpmLibQuestions() {
         choices: [
           { name: 'npm', value: 'npm' },
           { name: 'pnpm', value: 'pnpm' },
+          { type: 'separator' },
+          { name: '← Back', value: BACK },
         ],
       },
     ]);
+    if (result.packageManager === BACK) return BACK;
     packageManager = result.packageManager;
   }
 

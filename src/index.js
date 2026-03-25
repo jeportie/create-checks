@@ -6,62 +6,45 @@ import { generateCommon } from './generators/common.js';
 import { askCommonQuestions } from './prompts/common.js';
 import { askProjectType } from './prompts/project-type.js';
 import { offerReadmePreview } from './utils/readme.js';
+import { runWizard } from './utils/wizard.js';
 
 console.log(pc.cyan('\n🔧 tskickstart — setting up the project...\n'));
 
-const projectType = await askProjectType();
-const answers = { projectType };
+const typeSpecificAskers = {
+  backend: () => import('./prompts/backend.js').then((m) => m.askBackendQuestions()),
+  frontend: () => import('./prompts/frontend.js').then((m) => m.askFrontendQuestions()),
+  'npm-lib': () => import('./prompts/npm-lib.js').then((m) => m.askNpmLibQuestions()),
+  cli: () => import('./prompts/cli.js').then((m) => m.askCliQuestions()),
+  app: () => import('./prompts/app.js').then((m) => m.askAppQuestions()),
+};
 
-if (projectType === 'backend') {
-  try {
-    const { askBackendQuestions } = await import('./prompts/backend.js');
-    Object.assign(answers, await askBackendQuestions());
-  } catch {
-    // Backend module is optional until feature branch is merged.
-  }
-}
+const answers = await runWizard([
+  // Step 0: project type (no back — first step)
+  async () => {
+    const projectType = await askProjectType();
+    return { projectType };
+  },
 
-Object.assign(answers, await askCommonQuestions(projectType));
+  // Step 1: type-specific questions
+  async (collected) => {
+    const asker = typeSpecificAskers[collected.projectType];
+    if (!asker) return {};
+    try {
+      return await asker();
+    } catch {
+      return {};
+    }
+  },
 
-if (projectType === 'frontend') {
-  try {
-    const { askFrontendQuestions } = await import('./prompts/frontend.js');
-    Object.assign(answers, await askFrontendQuestions());
-  } catch {
-    // Frontend module is optional until feature branch is merged.
-  }
-}
-
-if (projectType === 'npm-lib') {
-  try {
-    const { askNpmLibQuestions } = await import('./prompts/npm-lib.js');
-    Object.assign(answers, await askNpmLibQuestions());
-  } catch {
-    // npm-lib module is optional until feature branch is merged.
-  }
-}
-
-if (projectType === 'cli') {
-  try {
-    const { askCliQuestions } = await import('./prompts/cli.js');
-    Object.assign(answers, await askCliQuestions());
-  } catch {
-    // CLI module is optional until feature branch is merged.
-  }
-}
-
-if (projectType === 'app') {
-  try {
-    const { askAppQuestions } = await import('./prompts/app.js');
-    Object.assign(answers, await askAppQuestions());
-  } catch {
-    // App module is optional until feature branch is merged.
-  }
-}
+  // Step 2: common questions (lint, vitest, playwright, precommit, author)
+  async (collected) => {
+    return await askCommonQuestions(collected.projectType);
+  },
+]);
 
 await generateCommon(answers, process.cwd());
 
-if (projectType === 'frontend') {
+if (answers.projectType === 'frontend') {
   try {
     const { generateFrontend } = await import('./generators/frontend.js');
     await generateFrontend(answers, process.cwd());
@@ -70,7 +53,7 @@ if (projectType === 'frontend') {
   }
 }
 
-if (projectType === 'npm-lib') {
+if (answers.projectType === 'npm-lib') {
   try {
     const { generateNpmLib } = await import('./generators/npm-lib.js');
     await generateNpmLib(answers, process.cwd());
@@ -79,7 +62,7 @@ if (projectType === 'npm-lib') {
   }
 }
 
-if (projectType === 'cli') {
+if (answers.projectType === 'cli') {
   try {
     const { generateCli } = await import('./generators/cli.js');
     await generateCli(answers, process.cwd());
@@ -88,7 +71,7 @@ if (projectType === 'cli') {
   }
 }
 
-if (projectType === 'backend') {
+if (answers.projectType === 'backend') {
   try {
     const { generateBackend } = await import('./generators/backend.js');
     await generateBackend(answers, process.cwd());
@@ -97,7 +80,7 @@ if (projectType === 'backend') {
   }
 }
 
-if (projectType === 'app') {
+if (answers.projectType === 'app') {
   try {
     const { generateApp } = await import('./generators/app.js');
     await generateApp(answers, process.cwd());

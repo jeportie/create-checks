@@ -1,4 +1,4 @@
-import { prompt } from '../utils/prompt.js';
+import { prompt, BACK } from '../utils/prompt.js';
 
 export async function askCliQuestions() {
   let cliFramework = 'commander';
@@ -14,9 +14,12 @@ export async function askCliQuestions() {
           { name: 'commander — argument parsing with subcommands', value: 'commander' },
           { name: 'inquirer — interactive prompts', value: 'inquirer' },
           { name: '@clack/prompts — modern interactive CLI', value: 'clack' },
+          { type: 'separator' },
+          { name: '← Back', value: BACK },
         ],
       },
     ]);
+    if (result.cliFramework === BACK) return BACK;
     cliFramework = result.cliFramework;
   }
 
