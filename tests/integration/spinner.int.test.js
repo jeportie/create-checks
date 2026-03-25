@@ -65,6 +65,21 @@ describe('startSpinner', () => {
     writeSpy.mockRestore();
   });
 
+  it('hides cursor on start and shows it on stop', () => {
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const stop = startSpinner('Loading...');
+
+    const firstCall = writeSpy.mock.calls[0][0];
+    // eslint-disable-next-line no-control-regex
+    expect(firstCall).toMatch(/\x1B\[\?25l/); // hide cursor
+
+    stop('Done');
+    const lastCall = writeSpy.mock.calls.at(-1)[0];
+    // eslint-disable-next-line no-control-regex
+    expect(lastCall).toMatch(/\x1B\[\?25h/); // show cursor
+    writeSpy.mockRestore();
+  });
+
   it('does not animate dots when text does not end with "..."', async () => {
     vi.useFakeTimers();
     const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);

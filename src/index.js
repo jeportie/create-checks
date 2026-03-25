@@ -5,6 +5,7 @@ import pc from 'picocolors';
 import { generateCommon } from './generators/common.js';
 import { askCommonQuestions } from './prompts/common.js';
 import { askProjectType } from './prompts/project-type.js';
+import { prompt, BACK } from './utils/prompt.js';
 import { offerReadmePreview } from './utils/readme.js';
 import { runWizard } from './utils/wizard.js';
 
@@ -27,6 +28,14 @@ const typeSpecificAskers = {
   app: () => import('./prompts/app.js').then((m) => m.askAppQuestions()),
 };
 
+const modeLabels = {
+  backend: 'backend service',
+  frontend: 'frontend app',
+  'npm-lib': 'npm library',
+  cli: 'CLI tool',
+  app: 'mobile app',
+};
+
 const answers = await runWizard([
   // Step 0: project type (no back — first step)
   async () => {
@@ -34,8 +43,25 @@ const answers = await runWizard([
     return { projectType };
   },
 
-  // Step 1: type-specific questions
+  // Step 1: confirm mode + type-specific questions (with back gate)
   async (collected) => {
+    // Show a back gate before type-specific questions (TTY only)
+    if (process.stdin.isTTY) {
+      const label = modeLabels[collected.projectType] || collected.projectType;
+      const { action } = await prompt([
+        {
+          type: 'list',
+          name: 'action',
+          message: `Configure ${label}`,
+          choices: [
+            { name: 'Continue →', value: 'continue' },
+            { name: pc.dim('← Back to project type'), value: BACK },
+          ],
+        },
+      ]);
+      if (action === BACK) return BACK;
+    }
+
     const asker = typeSpecificAskers[collected.projectType];
     if (!asker) return {};
     try {

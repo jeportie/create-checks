@@ -1356,7 +1356,6 @@ async function renderReadmeInTerminal(readmePath) {
     { command: 'glow', args: [readmePath] },
     { command: 'mdcat', args: [readmePath] },
     { command: 'bat', args: ['--paging=never', '--style=plain', '--language=markdown', readmePath] },
-    { command: 'cat', args: [readmePath] },
   ];
 
   for (const renderer of renderers) {
@@ -1388,7 +1387,7 @@ export async function offerReadmePreview(cwd) {
 
   if (!showReadme) return;
 
-  console.log(pc.cyan('\n\ud83d\udcd8 README.md preview\n'));
+  console.log(pc.cyan('\n📘 README.md preview\n'));
   const renderer = await renderReadmeInTerminal(readmePath);
 
   if (renderer) {
@@ -1396,6 +1395,8 @@ export async function offerReadmePreview(cwd) {
     return;
   }
 
+  // Fallback: raw output with install hint
   const content = await fs.readFile(readmePath, 'utf-8');
   console.log(content);
+  console.log(pc.dim('\nTip: install glow for a better preview → https://github.com/charmbracelet/glow\n'));
 }

@@ -1,6 +1,4 @@
-import pc from 'picocolors';
-
-import { prompt, BACK } from '../utils/prompt.js';
+import { prompt } from '../utils/prompt.js';
 
 export async function askAppQuestions() {
   let expoWorkflow = 'managed';
@@ -15,11 +13,9 @@ export async function askAppQuestions() {
         choices: [
           { name: 'Managed — easier setup, Expo handles native code', value: 'managed' },
           { name: 'Bare — full native project access', value: 'bare' },
-          { name: pc.dim('← Back'), value: BACK },
         ],
       },
     ]);
-    if (result.expoWorkflow === BACK) return BACK;
     expoWorkflow = result.expoWorkflow;
   }
 

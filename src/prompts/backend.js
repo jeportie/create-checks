@@ -1,6 +1,4 @@
-import pc from 'picocolors';
-
-import { prompt, BACK } from '../utils/prompt.js';
+import { prompt } from '../utils/prompt.js';
 
 export async function askBackendQuestions() {
   let backendFramework = 'hono';
@@ -17,11 +15,9 @@ export async function askBackendQuestions() {
           { name: 'Fastify — production-proven, excellent performance', value: 'fastify' },
           { name: 'Express — legacy/familiarity', value: 'express' },
           { name: 'Elysia — Bun-native, TypeScript-first, fast', value: 'elysia' },
-          { name: pc.dim('← Back'), value: BACK },
         ],
       },
     ]);
-    if (result.backendFramework === BACK) return BACK;
     backendFramework = result.backendFramework;
   }
 
