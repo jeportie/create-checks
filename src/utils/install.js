@@ -111,6 +111,16 @@ export async function installDeps(answers, options = {}) {
 
   if (projectType === 'cli') {
     devDeps.push('tsup', 'tsx');
+    if (answers.setupSemanticRelease) {
+      devDeps.push(
+        'semantic-release',
+        '@semantic-release/commit-analyzer',
+        '@semantic-release/release-notes-generator',
+        '@semantic-release/npm',
+        '@semantic-release/github',
+        'conventional-changelog-conventionalcommits',
+      );
+    }
   }
 
   if (projectType === 'backend') {

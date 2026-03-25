@@ -173,4 +173,36 @@ describe('cli project scaffold', () => {
     expect(content).toContain('Commander');
     expect(content).toContain('tsup');
   });
+
+  it('creates release.config.mjs when SEMANTIC_RELEASE=1', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { CLI_FRAMEWORK: 'commander', CLI_NAME: 'my-tool', SEMANTIC_RELEASE: '1' });
+    expect(existsSync(join(tmpDir, 'release.config.mjs'))).toBe(true);
+    const content = readFileSync(join(tmpDir, 'release.config.mjs'), 'utf-8');
+    expect(content).toContain('conventionalcommits');
+    expect(content).toContain('@semantic-release/npm');
+  });
+
+  it('creates semantic-release workflow when SEMANTIC_RELEASE=1', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { CLI_FRAMEWORK: 'commander', CLI_NAME: 'my-tool', SEMANTIC_RELEASE: '1' });
+    expect(existsSync(join(tmpDir, '.github/workflows/semantic-release.yml'))).toBe(true);
+    const content = readFileSync(join(tmpDir, '.github/workflows/semantic-release.yml'), 'utf-8');
+    expect(content).toContain('semantic-release');
+    expect(content).toContain('NPM_TOKEN');
+  });
+
+  it('does not create release files when SEMANTIC_RELEASE=0', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { CLI_FRAMEWORK: 'commander', CLI_NAME: 'my-tool', SEMANTIC_RELEASE: '0' });
+    expect(existsSync(join(tmpDir, 'release.config.mjs'))).toBe(false);
+    expect(existsSync(join(tmpDir, '.github/workflows/semantic-release.yml'))).toBe(false);
+  });
+
+  it('README includes semantic-release section when enabled', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { CLI_FRAMEWORK: 'commander', CLI_NAME: 'my-tool', SEMANTIC_RELEASE: '1' });
+    const content = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
+    expect(content).toContain('semantic-release');
+  });
 });

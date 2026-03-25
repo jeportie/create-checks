@@ -8,6 +8,10 @@ function cliTemplatePath(file) {
   return templatePath('cli', file);
 }
 
+function npmLibTemplatePath(file) {
+  return templatePath('npm-lib', file);
+}
+
 export async function generateCli(answers, cwd) {
   const { cliFramework = 'commander', cliName = 'my-cli' } = answers;
 
@@ -15,6 +19,21 @@ export async function generateCli(answers, cwd) {
 
   await copyIfMissing(cliTemplatePath('tsup.config.ts'), path.join(cwd, 'tsup.config.ts'), 'tsup.config.ts');
   await copyIfMissing(cliTemplatePath('.mise.toml'), path.join(cwd, '.mise.toml'), '.mise.toml');
+
+  if (answers.setupSemanticRelease) {
+    await copyIfMissing(
+      npmLibTemplatePath('release.config.mjs'),
+      path.join(cwd, 'release.config.mjs'),
+      'release.config.mjs',
+    );
+    const workflowDir = path.join(cwd, '.github/workflows');
+    await fs.ensureDir(workflowDir);
+    await copyIfMissing(
+      npmLibTemplatePath('.github/workflows/semantic-release.yml'),
+      path.join(cwd, '.github/workflows/semantic-release.yml'),
+      '.github/workflows/semantic-release.yml',
+    );
+  }
 
   // Framework-specific entry point
   const srcDir = path.join(cwd, 'src');
