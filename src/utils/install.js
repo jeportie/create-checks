@@ -88,9 +88,11 @@ export async function installDeps(answers, options = {}) {
   }
 
   if (projectType === 'backend') {
-    devDeps.push('tsx');
+    if (answers.backendFramework !== 'elysia') {
+      devDeps.push('tsx');
+    }
     if (answers.backendFramework === 'express') {
-      devDeps.push('@types/express');
+      devDeps.push('@types/express', 'supertest', '@types/supertest');
     }
   }
 
@@ -127,6 +129,8 @@ export async function installDeps(answers, options = {}) {
       prodDeps.push('fastify');
     } else if (answers.backendFramework === 'express') {
       prodDeps.push('express');
+    } else if (answers.backendFramework === 'elysia') {
+      prodDeps.push('elysia');
     } else {
       prodDeps.push('hono', '@hono/node-server');
     }

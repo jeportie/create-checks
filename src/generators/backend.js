@@ -29,8 +29,9 @@ export async function generateBackend(answers, cwd) {
   // Backend-specific tsconfig.json (with outDir for emit)
   await copyIfMissing(backendTemplatePath('tsconfig.json'), path.join(cwd, 'tsconfig.json'), 'tsconfig.json');
 
-  // .mise.toml
-  await copyIfMissing(backendTemplatePath('.mise.toml'), path.join(cwd, '.mise.toml'), '.mise.toml');
+  // .mise.toml (elysia uses bun instead of node)
+  const miseFile = backendFramework === 'elysia' ? '.mise.elysia.toml' : '.mise.toml';
+  await copyIfMissing(backendTemplatePath(miseFile), path.join(cwd, '.mise.toml'), '.mise.toml');
 
   // Framework-specific entry point
   const srcDir = path.join(cwd, 'src');
@@ -57,5 +58,17 @@ export async function generateBackend(answers, cwd) {
     );
     await copyIfMissing(backendTemplatePath('.dockerignore'), path.join(cwd, '.dockerignore'), '.dockerignore');
     await appendGitignoreEntries(cwd);
+  }
+
+  // Framework-specific test file
+  const testDir = path.join(cwd, 'tests/unit');
+  await fs.ensureDir(testDir);
+
+  const testDest = path.join(cwd, 'tests/unit/server.unit.test.ts');
+  if (!(await fs.pathExists(testDest))) {
+    await fs.copyFile(backendTemplatePath(`tests/unit/server.${backendFramework}.ts`), testDest);
+    console.log(pc.green('✔') + '    tests/unit/server.unit.test.ts');
+  } else {
+    console.log(pc.dim('–') + '    tests/unit/server.unit.test.ts (already exists, skipped)');
   }
 }

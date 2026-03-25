@@ -151,4 +151,61 @@ describe('backend project scaffold', () => {
     runCli(tmpDir, { BACKEND_FRAMEWORK: 'hono', DOCKER: '0' });
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(true);
   });
+
+  // Elysia framework tests
+  it('creates src/index.ts for elysia', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { BACKEND_FRAMEWORK: 'elysia', DOCKER: '0' });
+    const content = readFileSync(join(tmpDir, 'src/index.ts'), 'utf-8');
+    expect(content).toContain('Elysia');
+  });
+
+  it('creates .mise.toml with bun for elysia', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { BACKEND_FRAMEWORK: 'elysia', DOCKER: '0' });
+    const content = readFileSync(join(tmpDir, '.mise.toml'), 'utf-8');
+    expect(content).toContain('bun');
+  });
+
+  it('adds bun-based scripts for elysia', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { BACKEND_FRAMEWORK: 'elysia', DOCKER: '0' });
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts.dev).toContain('bun');
+    expect(pkg.scripts.build).toContain('bun');
+    expect(pkg.scripts.start).toContain('bun');
+  });
+
+  // Test file assertions for all frameworks
+  it('creates tests/unit/server.unit.test.ts for hono', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { BACKEND_FRAMEWORK: 'hono', DOCKER: '0' });
+    expect(existsSync(join(tmpDir, 'tests/unit/server.unit.test.ts'))).toBe(true);
+    const content = readFileSync(join(tmpDir, 'tests/unit/server.unit.test.ts'), 'utf-8');
+    expect(content).toContain('app.request');
+  });
+
+  it('creates tests/unit/server.unit.test.ts for fastify', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { BACKEND_FRAMEWORK: 'fastify', DOCKER: '0' });
+    expect(existsSync(join(tmpDir, 'tests/unit/server.unit.test.ts'))).toBe(true);
+    const content = readFileSync(join(tmpDir, 'tests/unit/server.unit.test.ts'), 'utf-8');
+    expect(content).toContain('app.inject');
+  });
+
+  it('creates tests/unit/server.unit.test.ts for express', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { BACKEND_FRAMEWORK: 'express', DOCKER: '0' });
+    expect(existsSync(join(tmpDir, 'tests/unit/server.unit.test.ts'))).toBe(true);
+    const content = readFileSync(join(tmpDir, 'tests/unit/server.unit.test.ts'), 'utf-8');
+    expect(content).toContain('supertest');
+  });
+
+  it('creates tests/unit/server.unit.test.ts for elysia', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { BACKEND_FRAMEWORK: 'elysia', DOCKER: '0' });
+    expect(existsSync(join(tmpDir, 'tests/unit/server.unit.test.ts'))).toBe(true);
+    const content = readFileSync(join(tmpDir, 'tests/unit/server.unit.test.ts'), 'utf-8');
+    expect(content).toContain('app.handle');
+  });
 });

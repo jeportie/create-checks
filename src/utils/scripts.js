@@ -128,9 +128,15 @@ export function buildScripts(pkg, answers) {
   }
 
   if (projectType === 'backend') {
-    pkg.scripts.dev = 'tsx watch src/index.ts';
-    pkg.scripts.build = 'tsc';
-    pkg.scripts.start = 'node dist/index.js';
+    if (answers.backendFramework === 'elysia') {
+      pkg.scripts.dev = 'bun run --watch src/index.ts';
+      pkg.scripts.build = 'bun build src/index.ts --outdir dist';
+      pkg.scripts.start = 'bun dist/index.js';
+    } else {
+      pkg.scripts.dev = 'tsx watch src/index.ts';
+      pkg.scripts.build = 'tsc';
+      pkg.scripts.start = 'node dist/index.js';
+    }
   }
 
   if (projectType === 'app') {

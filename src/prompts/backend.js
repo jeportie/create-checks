@@ -14,6 +14,7 @@ export async function askBackendQuestions() {
           { name: 'Hono — ultrafast, TypeScript-first (recommended)', value: 'hono' },
           { name: 'Fastify — production-proven, excellent performance', value: 'fastify' },
           { name: 'Express — legacy/familiarity', value: 'express' },
+          { name: 'Elysia — Bun-native, TypeScript-first, fast', value: 'elysia' },
         ],
       },
     ]);
