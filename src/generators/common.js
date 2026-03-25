@@ -94,12 +94,27 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   if (lintOption.includes('cspell')) {
     await copyIfMissing(templatePath('common', 'cspell.json'), path.join(cwd, 'cspell.json'), 'cspell.json');
     await appendIgnorePathsToCspell(cwd, ['dist/**']);
-    await appendWordsToCspell(cwd, ['tskickstart']);
+    await appendWordsToCspell(cwd, ['tskickstart', 'composable', 'preconfigured', 'precommit', 'subroutes']);
     if (authorName) {
       await appendWordsToCspell(cwd, authorName.split(/\s+/).filter(Boolean));
     }
-    if (projectType === 'backend' && answers.backendFramework === 'elysia') {
-      await appendWordsToCspell(cwd, ['elysia', 'Elysia']);
+    if (projectType === 'backend') {
+      await appendWordsToCspell(cwd, ['middlewares', 'onboarding']);
+      if (answers.backendFramework === 'elysia') {
+        await appendWordsToCspell(cwd, ['elysia', 'Elysia']);
+      }
+      if (answers.backendFramework === 'hono') {
+        await appendWordsToCspell(cwd, ['Hono', 'hono']);
+      }
+      if (answers.backendFramework === 'fastify') {
+        await appendWordsToCspell(cwd, ['Fastify', 'fastify']);
+      }
+    }
+    if (isFrontend) {
+      await appendWordsToCspell(cwd, ['tailwindcss', 'Tailwind']);
+    }
+    if (projectType === 'cli') {
+      await appendWordsToCspell(cwd, ['shebang', 'subcommands']);
     }
     if (isApp) {
       await appendWordsToCspell(cwd, [
@@ -111,6 +126,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
         'ReactNative',
         'expo',
         'Expo',
+        'onboarding',
       ]);
     }
   }

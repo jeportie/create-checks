@@ -102,6 +102,66 @@ describe('cspell generation', () => {
     expect(cspell.ignorePaths).toContain('dist/**');
   });
 
+  it('adds backend-specific words for hono framework', async () => {
+    tmpDir = createTmpProject('hono-test-project');
+    process.env.NO_INSTALL = '1';
+
+    await generateCommon(
+      {
+        projectType: 'backend',
+        backendFramework: 'hono',
+        lintOption: ['cspell'],
+        setupPrecommit: false,
+        authorName: 'Test Author',
+      },
+      tmpDir,
+    );
+
+    const cspell = JSON.parse(readFileSync(join(tmpDir, 'cspell.json'), 'utf-8'));
+    expect(cspell.words).toContain('middlewares');
+    expect(cspell.words).toContain('Hono');
+    expect(cspell.words).toContain('composable');
+  });
+
+  it('adds cli-specific words for commander framework', async () => {
+    tmpDir = createTmpProject('cli-test-project');
+    process.env.NO_INSTALL = '1';
+
+    await generateCommon(
+      {
+        projectType: 'cli',
+        cliFramework: 'commander',
+        lintOption: ['cspell'],
+        setupPrecommit: false,
+        authorName: 'Test Author',
+      },
+      tmpDir,
+    );
+
+    const cspell = JSON.parse(readFileSync(join(tmpDir, 'cspell.json'), 'utf-8'));
+    expect(cspell.words).toContain('shebang');
+    expect(cspell.words).toContain('subcommands');
+  });
+
+  it('adds frontend-specific words', async () => {
+    tmpDir = createTmpProject('frontend-test-project');
+    process.env.NO_INSTALL = '1';
+
+    await generateCommon(
+      {
+        projectType: 'frontend',
+        lintOption: ['cspell'],
+        setupPrecommit: false,
+        authorName: 'Test Author',
+      },
+      tmpDir,
+    );
+
+    const cspell = JSON.parse(readFileSync(join(tmpDir, 'cspell.json'), 'utf-8'));
+    expect(cspell.words).toContain('tailwindcss');
+    expect(cspell.words).toContain('Tailwind');
+  });
+
   it('adds dist ignore path to existing cspell config', async () => {
     tmpDir = createTmpProject('existing-cspell-project');
     process.env.NO_INSTALL = '1';
