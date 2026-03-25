@@ -91,7 +91,7 @@ function getProjectSnapshot(answers) {
 // ---------------------------------------------------------------------------
 
 function getIntroduction(answers) {
-  const { projectType, backendFramework, cliFramework } = answers;
+  const { projectType, backendFramework, cliFramework, setupSemanticRelease } = answers;
 
   if (projectType === 'backend') {
     const fwNames = { hono: 'Hono', fastify: 'Fastify', express: 'Express', elysia: 'Elysia' };
@@ -119,11 +119,14 @@ function getIntroduction(answers) {
   if (projectType === 'cli') {
     const fwNames = { commander: 'Commander.js', inquirer: 'Inquirer.js', clack: '@clack/prompts' };
     const fwName = fwNames[cliFramework] || 'Commander.js';
+    const releaseNote = setupSemanticRelease
+      ? `Versioning and npm publishing are fully automated via semantic-release — just follow conventional commits and merge to \`main\`.`
+      : `Add new commands, wire up options and arguments, then ship with a single \`npm publish\`.`;
     return (
       `This is a Node.js command-line tool built with ${fwName}. ` +
       `It includes a working example command, a build pipeline via tsup, and is ready for npm publishing. ` +
       `The entry point has a shebang line for direct execution after global install. ` +
-      `Add new commands, wire up options and arguments, then ship with a single \`npm publish\`.`
+      releaseNote
     );
   }
 
