@@ -1,4 +1,12 @@
-# tskickstart
+```
+██████ █████  ██ ██  ██  ████  ██ ██  █████  ██████  ████  █████  ██████
+  ██   ██     ██ █   ██ ██     ██ █   ██       ██   ██  ██ ██  ██   ██
+  ██   █████  ███    ██ ██     ███    █████    ██   ██████ █████    ██
+  ██      ██  ██ █   ██ ██     ██ █      ██    ██   ██  ██ ██ ██    ██
+  ██   █████  ██ ██  ██  ████  ██ ██  █████    ██   ██  ██ ██  ██   ██
+```
+
+# What is it?
 
 A zero-config scaffolding CLI that sets up production-ready **TypeScript** projects in one interactive command. Pick your project type, answer a few questions, and get a fully wired dev environment with linting, formatting, testing, and git hooks.
 
@@ -23,43 +31,45 @@ The CLI first asks what you're building, then tailors everything to that choice:
 
 All project types share a common foundation: ESLint 9 flat config, Prettier, TypeScript strict mode, and optional tooling (Vitest, Husky, CSpell, Secretlint, Commitlint).
 
----
+### npm library
 
-## New in dev branch (vs main)
+- **Build:** `tsup` — dual CJS/ESM output with declaration files
+- **Package exports:** `main`, `module`, `types`, and conditional `exports` map pre-configured
+- **Versioning:** optional `semantic-release` + `conventional-changelog-conventionalcommits`
+- **CI:** GitHub Actions for PR checks + automated npm publish
 
-The `dev` branch now includes a large feature wave that is not in `main` yet:
+### CLI tool
 
-### New scaffolding targets
+- **Framework choice:** `commander`, `inquirer`, or `@clack/prompts`
+- **Build:** `tsup` with CJS-only output and `--shims` for Node compatibility
+- **Wiring:** `bin` field in `package.json`, shebang in entry file, dedicated command templates
+- **Versioning:** optional `semantic-release` for npm publishing
 
-- **`npm-lib` mode** now ships with proper packaging support (`tsup`), export-ready defaults, and optional semantic-release setup.
-- **`cli` mode** now supports framework-specific templates (`commander`, `inquirer`, `@clack/prompts`), dedicated command/test templates, and lint-safe async entrypoints.
-- **`backend` mode** now supports framework choice (`hono`, `fastify`, `express`, `elysia`) with framework-specific server/tests.
-- **`app` mode** now scaffolds React Native + Expo projects with navigation, a richer starter UI, and optional Jest/Detox test setup.
+### Backend service
 
-### README generation and onboarding
+- **Framework choice:** Hono, Fastify, Express, or Elysia (Bun)
+- **Dev server:** `tsx --watch` for hot reload
+- **Env validation:** optional Zod schema (`src/env.ts`) for type-safe environment variables
+- **Docker:** optional `Dockerfile` + `docker-compose.yml` + `Makefile` with lifecycle-safe setup
+- **Tests:** framework-specific test templates included
 
-- Generated project READMEs are now far more detailed: implementation workflow, testing workflow, scripts reference, and per-tool playbooks with practical examples.
-- The CLI now asks whether to preview the generated `README.md` in terminal after scaffolding, with Markdown renderer fallback support.
+### Frontend app
 
-### Backend and Docker reliability improvements
+- **Stack:** React 18 + Vite + Tailwind CSS v4 (Vite plugin)
+- **Routing:** React Router v7
+- **Async state:** TanStack Query v5
+- **Error handling:** `react-error-boundary`
+- **Tests:** happy-dom + Testing Library (unit + integration)
+- **E2E:** optional Playwright with `tests/e2e/` starter spec
+- **ESLint:** React Hooks + React Refresh plugins added to the common config
 
-- Backend prompt flow now asks framework-specific options first.
-- Zod is now optional in backend mode (with matching templates/dependencies/docs).
-- Docker support now includes generated `Makefile` targets and compose command compatibility scripts.
-- Docker templates were hardened for lifecycle script issues (`husky` in containers) and lockfile/no-lockfile scenarios.
-- Elysia Docker now uses a Bun-based runtime template to avoid Node WebStandard `listen()` runtime failures.
+### Mobile app
 
-### Mobile app stability fixes
-
-- App scaffolding now force-refreshes key app template files so stale files from previous non-app scaffolds do not leak into mobile projects.
-- App template set now includes explicit entrypoint/config files (`index.ts`, `.npmrc`, `jest.config.cjs`, Detox Jest config) to avoid runtime/test drift.
-- CSpell words now include mobile stack terms (`react`, `react-native`, `expo`) and ignores built output (`dist/**`) by default.
-
-### Quality gate and test coverage
-
-- Install flow now retries with visible npm error output for easier diagnosis when dependency installation fails.
-- Integration coverage expanded significantly across new project modes and regressions.
-- Current suite on `dev` is now **188 integration tests**.
+- **Framework:** React Native with Expo (managed or bare workflow)
+- **Navigation:** React Navigation v7 with native stack
+- **State:** TanStack Query v5
+- **Testing:** optional Jest + React Native Testing Library
+- **E2E:** optional Detox
 
 ---
 
@@ -67,25 +77,27 @@ The `dev` branch now includes a large feature wave that is not in `main` yet:
 
 Running `npm create @jeportie/tskickstart` inside a project directory will:
 
-1. **Ask your project type** — npm library, CLI tool, backend, frontend, or fullstack
+1. **Ask your project type** — npm library, CLI tool, backend, frontend, mobile, or fullstack
 2. **Ensure `package.json` exists** — creates one with `npm init -y` if missing, or patches `"type": "module"`
 3. **Install** all required dev dependencies for your selections
 4. **Copy** config files and starter templates into your project root
 5. **Inject scripts** into your `package.json`
 6. **Set up optional tooling** based on your answers
+7. **Generate a README** — comprehensive dev manual tailored to your project type
 
 ### Interactive prompts
 
 | Prompt | What it sets up |
 | --- | --- |
 | **What are you building?** | Project type — determines which templates and dependencies are used |
+| **Configure \<type\>** | Type-specific questions (framework, Docker, semantic-release, etc.) |
 | **Your name** | Reads from `git config github.user` (then `user.name`); added to `package.json` and cspell |
 | **Select more lint options** | Multi-select: `cspell`, `secretlint`, `commitlint` |
 | **Set up Vitest?** | Optional test runner — choose Native or Coverage preset |
 | **Set up pre-commit hook?** | Husky + lint-staged wired to your selected tools |
 | **Set up Playwright?** | E2E testing with Playwright (frontend/fullstack only) |
 
-All existing files are left untouched (the CLI skips them with a notice).
+All existing files are left untouched (the CLI skips them with a notice). The wizard supports `← Back` navigation to revisit previous choices.
 
 ---
 
@@ -183,6 +195,21 @@ The frontend starter includes a `welcome.spec.ts` that validates the Welcome pag
 
 ---
 
+## Generated README
+
+After scaffolding, the CLI generates a comprehensive `README.md` inside your project, tailored to the project type you chose. It includes:
+
+- **Project overview** with the selected stack
+- **Scripts reference** with every available command
+- **Implementation workflow** — step-by-step dev guide
+- **Testing workflow** — how to write and run unit, integration, and E2E tests
+- **Tool playbooks** — practical examples for ESLint, Prettier, CSpell, Secretlint, and Commitlint
+- **Project structure** — annotated directory tree
+
+You can preview the generated README in terminal after scaffolding (uses `glow`, `bat`, or `cat` as fallback).
+
+---
+
 ## How it works internally
 
 ```
@@ -191,30 +218,32 @@ npm create @jeportie/tskickstart
         └──▶ npm downloads the create-tskickstart package
             └──▶ node runs ./src/index.js
                 │
-                ├─ 1. prompt — project type (npm-lib / cli / backend / frontend / fullstack)
-                ├─ 2. prompt — author name (git config → prompt)
-                ├─ 3. prompt — lint options (cspell / secretlint / commitlint)
-                ├─ 4. prompt — Vitest preset (none / native / coverage)
-                ├─ 5. prompt — pre-commit hook (husky + lint-staged)
-                ├─ 6. prompt — Playwright E2E (frontend/fullstack only)
-                ├─ 7. ensure package.json + "type": "module"
-                ├─ 8. npm install all selected dependencies
-                ├─ 9. copy common config templates → project root
-                ├─ 10. copy project-type-specific templates (frontend starter, etc.)
-                ├─ 11. copy Playwright templates (if selected)
-                └─ 12. inject scripts + author + lint-staged → package.json
+                ├─ 1. prompt — project type (npm-lib / cli / backend / frontend / app / fullstack)
+                ├─ 2. prompt — type-specific options (framework, Docker, semantic-release, etc.)
+                ├─ 3. prompt — author name (git config → prompt)
+                ├─ 4. prompt — lint options (cspell / secretlint / commitlint)
+                ├─ 5. prompt — Vitest preset (none / native / coverage)
+                ├─ 6. prompt — pre-commit hook (husky + lint-staged)
+                ├─ 7. prompt — Playwright E2E (frontend/fullstack only)
+                ├─ 8. ensure package.json + "type": "module"
+                ├─ 9. npm install all selected dependencies
+                ├─ 10. copy common config templates → project root
+                ├─ 11. copy project-type-specific templates
+                ├─ 12. copy Playwright templates (if selected)
+                ├─ 13. inject scripts + author + lint-staged → package.json
+                └─ 14. generate README.md tailored to selections
 ```
 
 ### Modular architecture
 
 The codebase is organized into four layers:
 
-| Directory         | Purpose                                                                  |
-| ----------------- | ------------------------------------------------------------------------ |
-| `src/prompts/`    | Interactive prompt modules — one per concern                             |
-| `src/generators/` | File generation logic — common, frontend, playwright                     |
-| `src/templates/`  | Template files organized by type (`common/`, `frontend/`, `playwright/`) |
-| `src/utils/`      | Shared utilities — prompt wrapper, spinner, fs helpers, install, scripts |
+| Directory         | Purpose                                                                       |
+| ----------------- | ----------------------------------------------------------------------------- |
+| `src/prompts/`    | Interactive prompt modules — one per project type + common questions          |
+| `src/generators/` | File generation logic — common, frontend, backend, cli, npm-lib, app          |
+| `src/templates/`  | Template files organized by type (`common/`, `frontend/`, `backend/`, etc.)   |
+| `src/utils/`      | Shared utilities — prompt, wizard, spinner, fs, install, scripts, readme gen. |
 
 ### Template path resolution
 
@@ -507,7 +536,7 @@ Node.js 20+ required. Run `npm install` after cloning.
 ### Run tests
 
 ```sh
-npm test                  # all 188 integration tests
+npm test                  # all 262 integration tests
 npm run test:integration  # integration tests only
 npm run test:coverage     # with coverage report
 ```
@@ -517,35 +546,57 @@ npm run test:coverage     # with coverage report
 ```
 tskickstart/
 ├── src/
-│   ├── index.js                              # CLI entrypoint — thin orchestrator
+│   ├── index.js                     # CLI entrypoint — wizard orchestrator
 │   ├── prompts/
-│   │   ├── project-type.js                   # "What are you building?" prompt
-│   │   ├── common.js                         # Author, lint options, vitest, husky prompts
-│   │   ├── frontend.js                       # Frontend-specific prompts (placeholder)
-│   │   └── playwright.js                     # "Set up Playwright?" prompt
+│   │   ├── project-type.js          # "What are you building?" prompt
+│   │   ├── common.js               # Author, lint options, vitest, husky
+│   │   ├── npm-lib.js              # npm library options (semantic-release, pkg mgr)
+│   │   ├── cli.js                  # CLI options (framework, semantic-release)
+│   │   ├── backend.js              # Backend options (framework, Docker, Zod)
+│   │   ├── frontend.js             # Frontend-specific prompts
+│   │   ├── app.js                  # Mobile app options (workflow, testing)
+│   │   └── playwright.js           # "Set up Playwright?" prompt
 │   ├── generators/
-│   │   ├── common.js                         # Shared config generation (all project types)
-│   │   ├── frontend.js                       # React + Vite + Tailwind file generation
-│   │   └── playwright.js                     # Playwright config and spec generation
+│   │   ├── common.js               # Shared config generation (all types)
+│   │   ├── npm-lib.js              # tsup, exports, semantic-release setup
+│   │   ├── cli.js                  # bin wiring, command templates
+│   │   ├── backend.js              # Server, Docker, Makefile templates
+│   │   ├── frontend.js             # React + Vite + Tailwind generation
+│   │   ├── app.js                  # Expo + React Native generation
+│   │   └── playwright.js           # Playwright config and spec generation
 │   ├── templates/
-│   │   ├── common/                           # Shared templates (eslint, prettier, tsconfig, etc.)
-│   │   ├── frontend/                         # React starter (components, tests, configs)
-│   │   └── playwright/                       # Playwright config and example specs
+│   │   ├── common/                 # Shared templates (eslint, prettier, tsconfig)
+│   │   ├── npm-lib/                # tsup config, CI workflows
+│   │   ├── cli/                    # Command and test templates
+│   │   ├── backend/                # Server, Docker, Makefile templates
+│   │   ├── frontend/               # React starter (components, tests, configs)
+│   │   ├── app/                    # Expo starter (screens, navigation, configs)
+│   │   └── playwright/             # Playwright config and example specs
 │   └── utils/
-│       ├── file-system.js                    # copyIfMissing, templatePath helpers
-│       ├── install.js                        # npm install logic with dep selection
-│       ├── prompt.js                         # Inquirer wrapper
-│       ├── scripts.js                        # package.json script injection and ordering
-│       └── spinner.js                        # Terminal spinner for install progress
+│       ├── file-system.js          # copyIfMissing, templatePath helpers
+│       ├── install.js              # npm install logic with dep selection
+│       ├── prompt.js               # Inquirer wrapper with cancel handling
+│       ├── wizard.js               # Step-based wizard with ← Back navigation
+│       ├── spinner.js              # Terminal spinner with animated dots
+│       ├── scripts.js              # package.json script injection and ordering
+│       └── readme.js               # README.md generation per project type
 ├── tests/
 │   └── integration/
-│       ├── index.int.test.js                 # 47 tests — common scaffold
-│       ├── frontend.int.test.js              # 13 tests — frontend starter
-│       └── playwright.int.test.js            # 8 tests — Playwright scaffold
+│       ├── index.int.test.js       # Common scaffold tests
+│       ├── npm-lib.int.test.js     # npm library scaffold tests
+│       ├── cli.int.test.js         # CLI scaffold tests
+│       ├── backend.int.test.js     # Backend scaffold tests
+│       ├── frontend.int.test.js    # Frontend scaffold tests
+│       ├── app.int.test.js         # Mobile app scaffold tests
+│       ├── playwright.int.test.js  # Playwright scaffold tests
+│       ├── cspell.int.test.js      # CSpell integration tests
+│       ├── readme.int.test.js      # README generation tests
+│       ├── prompt-back.int.test.js # Wizard back navigation tests
+│       └── spinner.int.test.js     # Spinner animation tests
 ├── .github/workflows/
 │   ├── pull-request-checks.yml
 │   └── semantic-release.yml
-├── release.config.mjs                        # semantic-release configuration
+├── release.config.mjs              # semantic-release configuration
 └── package.json
 ```
 

@@ -7,12 +7,23 @@ function clearLines(count) {
   }
 }
 
-function countNewlines(str) {
-  let count = 0;
-  for (const ch of String(str)) {
-    if (ch === '\n') count++;
+function cursorRowDelta(chunk) {
+  const str = String(chunk);
+  let delta = 0;
+  for (const ch of str) {
+    if (ch === '\n') delta++;
   }
-  return count;
+  const esc = '\x1B';
+  const upRe = new RegExp(`${esc}\\[(\\d*)A`, 'g');
+  let m;
+  while ((m = upRe.exec(str))) {
+    delta -= parseInt(m[1] || '1', 10);
+  }
+  const downRe = new RegExp(`${esc}\\[(\\d*)B`, 'g');
+  while ((m = downRe.exec(str))) {
+    delta += parseInt(m[1] || '1', 10);
+  }
+  return delta;
 }
 
 export async function runWizard(steps) {
@@ -27,7 +38,7 @@ export async function runWizard(steps) {
     const originalWrite = process.stdout.write;
     if (process.stdout.isTTY) {
       process.stdout.write = function (chunk, ...args) {
-        linesWritten += countNewlines(chunk);
+        linesWritten += cursorRowDelta(chunk);
         return originalWrite.call(this, chunk, ...args);
       };
     }
