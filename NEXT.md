@@ -1,21 +1,26 @@
-# NEXT: tskickstart — Sprint Complete
+# NEXT: tskickstart — Sprint 2
 
-## Completed
+## Focus
 
-- [x] **Prompt system refactoring** — Modular `prompts/`, `generators/`, `templates/`, `utils/` architecture
-- [x] **Frontend starter** — React + Vite + Tailwind CSS v4 with component tests
-- [x] **Playwright E2E** — Optional scaffold for frontend/fullstack projects
-- [x] **Structural cleanup** — Directory renames, eslintignore removal, template bug fixes
-- [x] **`npm-lib` type** — tsup dual CJS/ESM build, semantic-release, package manager choice, GitHub Actions
-- [x] **`cli` type** — Commander/Inquirer/@clack, tsup build, shebang, bin field, optional semantic-release
-- [x] **`backend` type** — Hono/Fastify/Express/Elysia, Zod env validation, Docker, tsx watch, Makefile
-- [x] **`app` type** — React Native + Expo (managed/bare), React Navigation v7, Jest + Detox
-- [x] **Spinner animation** — Dots cycle `.` → `..` → `...` with hidden cursor
-- [x] **Back navigation** — Wizard-loop prompt system with `← Back` to project type selection
-- [x] **README generation** — Comprehensive mode-specific dev manual with deep project structure, contextualized tool playbooks, and common tasks how-to
-- [x] **ASCII art banner** — tskickstart logo on CLI startup
-- [x] **CSpell validation** — Mode-specific words added to cspell.json for all project types
+Database support, fullstack types, CI/CD pipeline, and Biome linter alternative.
 
----
+## Tasks
 
-All planned project types and UX improvements are implemented. Ready to merge `dev` → `main`.
+### Independent (can be parallelized)
+
+- [ ] **Biome alternative** — Offer Biome as alternative to ESLint + Prettier for all project types. `biome.json` config, single dev dependency, updated scripts and lint-staged. New prompt in common questions: "Linter & formatter? ESLint + Prettier / Biome"
+- [ ] **Database option (backend)** — Add database prompt to backend type. Drizzle (PostgreSQL/MySQL/SQLite), Prisma (PostgreSQL/MySQL/SQLite), MongoDB (Mongoose), Redis (ioredis). Scaffolds connection, schema/models, migrations, `.env.example`, Docker Compose services when Docker enabled.
+- [ ] **CI/CD pipeline option** — Cross-cutting for all project types. GitHub Actions for PR checks, staging deploy on dev push, production deploy on main push. Mode-specific deploy targets: Railway/Fly.io (backend), Vercel/Netlify/GitHub Pages (frontend), EAS (app). Secrets documentation.
+
+### Sequential (dependency chain)
+
+- [ ] **Fullstack type** — pnpm monorepo: `apps/backend/` + `apps/frontend/` + `packages/shared/`. Reuses backend + frontend generators. Root configs, workspace scripts, Docker Compose for full dev env, changesets for versioning.
+- [ ] **Fullstack + app type** — Extends fullstack with `apps/mobile/` workspace. Reuses app generator. Detox for mobile E2E, Playwright for web E2E, unified CI.
+
+## Architecture notes
+
+- Database module: backend-first design, extend to fullstack when that type ships.
+- Biome: conditional generation in `common.js` generator — if Biome selected, skip all ESLint/Prettier config and deps.
+- CI/CD: new `src/prompts/cicd.js` + `src/generators/cicd.js` + `src/templates/cicd/` directory.
+- Fullstack depends on database module being done (database prompt reused inside fullstack flow).
+- Fullstack + app depends on fullstack being done.

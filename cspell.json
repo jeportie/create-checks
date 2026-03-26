@@ -51,7 +51,14 @@
     "Dtest",
     "myapp",
     "mdcat",
-    "Pressable"
+    "Pressable",
+    "cicd",
+    "ioredis",
+    "changesets",
+    "ghcr",
+    "drizzle",
+    "biome",
+    "biomejs"
   ],
   "ignorePaths": [
     ".vscode/",

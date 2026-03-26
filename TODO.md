@@ -2,7 +2,7 @@
 
 ## Current State Assessment
 
-The current `tskickstart` is a **type-aware scaffolding CLI** (`@jeportie/create-tskickstart`) with a modular architecture. It supports a two-level prompt system that routes to type-specific generators. Implemented project types: `npm-lib`, `cli`, `backend`, `frontend`, and `app` (React Native). Features include a wizard-based prompt system with back navigation, animated spinner, comprehensive README generation, and optional tools per mode.
+The current `tskickstart` is a **type-aware scaffolding CLI** (`@jeportie/create-tskickstart`) with a modular architecture. It supports a two-level prompt system that routes to type-specific generators. Implemented project types: `npm-lib`, `cli`, `backend`, `frontend`, and `app` (React Native). Features include a wizard-based prompt system with back navigation, animated spinner, comprehensive README generation, and optional tools per mode. 262 integration tests across 11 test files.
 
 ---
 
@@ -21,9 +21,11 @@ Step 1: What are you building?
 Step 2: Type-specific questions (with ← Back navigation)
 
 Step 3: Common questions (always asked)
+  - Linter & formatter (ESLint + Prettier / Biome)
   - CSpell / Secretlint / Commitlint
   - Husky pre-commit hooks
   - Vitest setup
+  - CI/CD pipeline
 ```
 
 ---
@@ -85,47 +87,88 @@ Step 3: Common questions (always asked)
 ### 6. `fullstack` — Monorepo
 
 - [ ] **Package manager:** `pnpm` as default (disk space, strict hoisting, better workspace support)
-- [ ] **Workspace structure:** `backend/` + `frontend/` workspaces
-- [ ] **Root scripts:** Delegate to workspaces via `--workspace` / `--filter`
+- [ ] **Workspace structure:** `apps/backend/` + `apps/frontend/` + `packages/shared/`
+- [ ] **Root scripts:** Delegate to workspaces via `pnpm --filter`
 - [ ] **mise:** Always include
-- [ ] **Shared configs:** Root `tsconfig.base.json`, root `eslint.config.js`, shared `prettier.config`
-- [ ] **Docker:** Dockerfile for backend + `docker-compose.yml` for full dev env
+- [ ] **Shared configs:** Root `tsconfig.base.json`, root `eslint.config.js` (or `biome.json`), shared `prettier.config`
+- [ ] **Docker:** Dockerfile for backend + `docker-compose.yml` for full dev env (backend + database + Redis)
 - [ ] **Versioning:** `changesets` (better than semantic-release for monorepos — per-package control)
 - [ ] **CI:** Root PR check + separate deploy workflows per workspace
+- [ ] **Database:** Reuses database module from backend type
 
 ---
 
 ### 7. `fullstack + app` — Monorepo with Mobile
 
-- [ ] Extends `fullstack` with an additional `mobile/` workspace
-- [ ] Shared code packages (e.g., `packages/shared/` for types, utils)
+- [ ] Extends `fullstack` with an additional `apps/mobile/` workspace
+- [ ] Shared code packages (`packages/shared/` for types, utils)
 - [ ] Detox for mobile E2E, Playwright for web E2E
 - [ ] Unified CI pipeline across web + mobile
 
 ---
 
-## Upcoming Features
+## Cross-Cutting Features
+
+### Database Option (Backend-First)
+
+Add an optional database scaffold to the backend type. Extend to fullstack when that type ships.
+
+**ORM / driver combinations:**
+
+| Choice | Packages | What gets scaffolded |
+| --- | --- | --- |
+| Drizzle + PostgreSQL | `drizzle-orm`, `drizzle-kit`, `pg` | `drizzle.config.ts`, `src/db/index.ts`, `src/db/schema.ts`, migrate script |
+| Drizzle + MySQL | `drizzle-orm`, `drizzle-kit`, `mysql2` | Same as above with MySQL dialect |
+| Drizzle + SQLite | `drizzle-orm`, `drizzle-kit`, `better-sqlite3` | Same as above with SQLite dialect |
+| Prisma + PostgreSQL | `prisma`, `@prisma/client` | `prisma/schema.prisma`, `src/db/index.ts` (singleton), generate + migrate scripts |
+| Prisma + MySQL | `prisma`, `@prisma/client` | Same as above with MySQL provider |
+| Prisma + SQLite | `prisma`, `@prisma/client` | Same as above with SQLite provider |
+| MongoDB | `mongoose` | `src/db/index.ts` (connection), `src/db/models/example.ts` |
+| Redis | `ioredis` | `src/redis.ts` (connection helper) |
+
+**All database choices also scaffold:**
+
+- `.env.example` with connection string template
+- Docker Compose service for the database (if Docker is enabled)
+- Database section in generated README
+
+**Prompt design:**
+
+```
+? Set up a database? (Y/n)
+? Which database?
+  ❯ PostgreSQL (Drizzle)
+    PostgreSQL (Prisma)
+    MySQL (Drizzle)
+    MySQL (Prisma)
+    SQLite (Drizzle)
+    SQLite (Prisma)
+    MongoDB (Mongoose)
+? Set up Redis for caching? (Y/n)
+```
+
+**Files:**
+
+- `src/prompts/database.js`
+- `src/generators/database.js`
+- `src/templates/database/drizzle/`, `prisma/`, `mongoose/`, `redis/`
+- `tests/integration/database.int.test.js`
+
+---
 
 ### CI/CD Pipeline Option (All Modes)
 
-Add an optional CI/CD scaffold that generates a production-ready GitHub Actions pipeline with branch protection rules:
+Add an optional CI/CD scaffold that generates a production-ready GitHub Actions pipeline:
 
-- [ ] **PR checks workflow** — Runs `npm run check` on every pull request (lint, typecheck, test)
-- [ ] **Branch strategy enforcement** — Generate `.github/branch-protection.json` or setup instructions for:
-  - `main` protected: only `dev` can merge via PR, requires passing checks
-  - `dev` as integration branch: feature branches merge via PR, requires passing checks
-  - Feature branches: `feature/*` → PR to `dev`
-- [ ] **Deploy workflow** — Mode-specific deploy pipelines:
-  - `backend`: Docker build + push + deploy placeholder (Railway, Fly.io)
-  - `frontend`: Build + deploy (Vercel, Netlify, GitHub Pages)
+- [ ] **PR checks workflow** — `ci.yml`: Runs `npm run check` on every pull request (lint, typecheck, test)
+- [ ] **Staging deploy** — `deploy-staging.yml`: Deploy on `dev` push
+- [ ] **Production deploy** — `deploy-production.yml`: Deploy on `main` push
+- [ ] **Mode-specific deploy targets:**
+  - `backend`: Railway / Fly.io / Docker registry (ghcr.io)
+  - `frontend`: Vercel / Netlify / GitHub Pages
   - `app`: EAS Build + EAS Submit
   - `npm-lib` / `cli`: Already handled by semantic-release workflow
-- [ ] **Reusable workflow templates** — Shared `.github/workflows/` files:
-  - `ci.yml` — Base check workflow (lint, typecheck, test)
-  - `deploy-staging.yml` — Deploy to staging on `dev` push
-  - `deploy-production.yml` — Deploy to production on `main` push
-- [ ] **Docker registry integration** — Optional GitHub Container Registry (ghcr.io) push for backend/fullstack
-- [ ] **Environment secrets setup guide** — Generate a `.github/SECRETS.md` explaining required secrets per workflow (NPM_TOKEN, DEPLOY_KEY, etc.)
+- [ ] **Secrets documentation** — `.github/SECRETS.md` explaining required secrets per workflow
 
 **Prompt design:**
 
@@ -137,18 +180,51 @@ Add an optional CI/CD scaffold that generates a production-ready GitHub Actions 
   - app: EAS / None
 ```
 
+**Files:**
+
+- `src/prompts/cicd.js`
+- `src/generators/cicd.js`
+- `src/templates/cicd/` (workflow templates per target)
+- `tests/integration/cicd.int.test.js`
+
+---
+
+### Biome Alternative
+
+Offer Biome as an alternative to ESLint + Prettier for all project types.
+
+**What changes when Biome is selected:**
+
+- `biome.json` replaces `eslint.config.js` + `prettier.config.js` + `.prettierignore`
+- `@biomejs/biome` replaces 7+ ESLint/Prettier packages
+- Scripts: `lint` → `biome check`, `format` → `biome format --write`, `check` → `biome check --write`
+- Husky/lint-staged uses biome commands instead of eslint/prettier
+- CSpell runs standalone (no ESLint plugin integration)
+
+**Prompt design:**
+
+```
+? Linter & formatter?
+  ❯ ESLint + Prettier (default)
+    Biome (faster, single tool)
+```
+
+**Files:**
+
+- Update `src/prompts/common.js` (add linter choice)
+- `src/templates/common/biome.json`
+- Update `src/generators/common.js` (conditional generation)
+- Update `src/utils/install.js`, `scripts.js`, `readme.js`
+- `tests/integration/biome.int.test.js`
+
 ---
 
 ## Additional Features (Backlog)
 
 - [ ] **Vue 3 option** — Alternative to React for frontend mode
-- [ ] **Changesets** — Monorepo versioning alternative to semantic-release
-- [ ] **Biome** — Alternative to ESLint + Prettier combined (faster, simpler) — offer as option
 - [ ] **Storybook** — Component dev environment for React/Vue
 - [ ] **OpenAPI / zod-to-ts** — Schema-first API development for backend/fullstack
-- [ ] **Database options** — Drizzle or Prisma (optional, high complexity)
 - [ ] **Bun as runtime** — Offer Bun as an alternative runtime, not just for Elysia
-- [ ] **Deployment target prompt** — Railway, Fly.io, Vercel, Netlify (generate the right config)
 - [ ] **GitHub vs GitLab** — Affects CI/CD template choice
 - [ ] **`pkg` or `ncc`** — Standalone binary distribution for CLI tools
 
@@ -164,6 +240,8 @@ Add an optional CI/CD scaffold that generates a production-ready GitHub Actions 
 6. [x] **Add `backend` type** — Hono/Fastify/Express/Elysia + Docker + Zod
 7. [x] **Add `cli` type** — Commander/Inquirer/Clack + tsup + optional semantic-release
 8. [x] **UX polish** — Spinner animation, back navigation, ASCII banner, README deep-dive
-9. [ ] **CI/CD pipeline option** — GitHub Actions, branch protection, deploy workflows
-10. [ ] **Add `fullstack` type** — Monorepo with pnpm workspaces
-11. [ ] **Add `fullstack + app` type** — Extends fullstack with mobile workspace
+9. [ ] **Biome alternative** — ESLint+Prettier vs Biome choice (independent)
+10. [ ] **Database option** — Drizzle/Prisma/MongoDB/Redis for backend (independent)
+11. [ ] **CI/CD pipeline option** — GitHub Actions, deploy workflows (independent)
+12. [ ] **Add `fullstack` type** — pnpm monorepo with workspaces + changesets (depends on #10)
+13. [ ] **Add `fullstack + app` type** — Extends fullstack with mobile workspace (depends on #12)
