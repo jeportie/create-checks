@@ -113,18 +113,36 @@ Step 3: Common questions (always asked)
 
 Add an optional database scaffold to the backend type. Extend to fullstack when that type ships.
 
-**ORM / driver combinations:**
+**Multi-layer prompt — pick engine first, then ORM layer:**
 
-| Choice | Packages | What gets scaffolded |
+**Step 1 — Database engine:**
+
+| Engine     | Driver package         |
+| ---------- | ---------------------- |
+| PostgreSQL | `pg`                   |
+| MySQL      | `mysql2`               |
+| MariaDB    | `mysql2` (compatible)  |
+| SQLite     | `better-sqlite3`       |
+| MongoDB    | `mongodb` / `mongoose` |
+
+**Step 2 — ORM layer (depends on engine):**
+
+| Engine     | ORM choices                                                  |
+| ---------- | ------------------------------------------------------------ |
+| PostgreSQL | None (raw driver) / Drizzle / Prisma                         |
+| MySQL      | None (raw driver) / Drizzle / Prisma                         |
+| MariaDB    | None (raw driver) / Drizzle / Prisma                         |
+| SQLite     | None (raw driver) / Drizzle / Prisma                         |
+| MongoDB    | Mongoose (only — Prisma lacks migration support for MongoDB) |
+
+**What gets scaffolded per ORM choice:**
+
+| ORM choice | Packages | What gets scaffolded |
 | --- | --- | --- |
-| Drizzle + PostgreSQL | `drizzle-orm`, `drizzle-kit`, `pg` | `drizzle.config.ts`, `src/db/index.ts`, `src/db/schema.ts`, migrate script |
-| Drizzle + MySQL | `drizzle-orm`, `drizzle-kit`, `mysql2` | Same as above with MySQL dialect |
-| Drizzle + SQLite | `drizzle-orm`, `drizzle-kit`, `better-sqlite3` | Same as above with SQLite dialect |
-| Prisma + PostgreSQL | `prisma`, `@prisma/client` | `prisma/schema.prisma`, `src/db/index.ts` (singleton), generate + migrate scripts |
-| Prisma + MySQL | `prisma`, `@prisma/client` | Same as above with MySQL provider |
-| Prisma + SQLite | `prisma`, `@prisma/client` | Same as above with SQLite provider |
-| MongoDB | `mongoose` | `src/db/index.ts` (connection), `src/db/models/example.ts` |
-| Redis | `ioredis` | `src/redis.ts` (connection helper) |
+| None (raw driver) | `pg` / `mysql2` / `better-sqlite3` | `src/db/index.ts` (connection pool), `src/db/migrations/` dir, `src/db/migrate.ts` (custom migration runner), `src/db/migrations/001_initial.sql` (template) |
+| Drizzle | `drizzle-orm`, `drizzle-kit`, driver | `drizzle.config.ts`, `src/db/index.ts`, `src/db/schema.ts`, migrate script |
+| Prisma | `prisma`, `@prisma/client` | `prisma/schema.prisma`, `src/db/index.ts` (singleton), generate + migrate scripts |
+| Mongoose | `mongoose` | `src/db/index.ts` (connection), `src/db/models/example.ts` |
 
 **All database choices also scaffold:**
 
@@ -136,14 +154,17 @@ Add an optional database scaffold to the backend type. Extend to fullstack when 
 
 ```
 ? Set up a database? (Y/n)
-? Which database?
-  ❯ PostgreSQL (Drizzle)
-    PostgreSQL (Prisma)
-    MySQL (Drizzle)
-    MySQL (Prisma)
-    SQLite (Drizzle)
-    SQLite (Prisma)
-    MongoDB (Mongoose)
+? Which database engine?
+  ❯ PostgreSQL
+    MySQL
+    MariaDB
+    SQLite
+    MongoDB
+? ORM layer?                          ← adapts to engine
+  ❯ None (raw driver + migrations)    ← not shown for MongoDB
+    Drizzle                           ← not shown for MongoDB
+    Prisma                            ← not shown for MongoDB
+    Mongoose                          ← only shown for MongoDB
 ? Set up Redis for caching? (Y/n)
 ```
 
@@ -151,7 +172,7 @@ Add an optional database scaffold to the backend type. Extend to fullstack when 
 
 - `src/prompts/database.js`
 - `src/generators/database.js`
-- `src/templates/database/drizzle/`, `prisma/`, `mongoose/`, `redis/`
+- `src/templates/database/raw/`, `drizzle/`, `prisma/`, `mongoose/`, `redis/`
 - `tests/integration/database.int.test.js`
 
 ---
