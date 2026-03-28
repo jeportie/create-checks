@@ -56,6 +56,43 @@ async function appendIgnorePathsToCspell(cwd, ignorePaths) {
   await fs.writeJson(cspellPath, cspellJson, { spaces: 2 });
 }
 
+function normalizeEnvLines(content) {
+  return content
+    .split('\n')
+    .filter(Boolean)
+    .reduce((acc, line) => {
+      const [key] = line.split('=');
+      if (!key) return acc;
+      acc[key] = line.slice(key.length + 1);
+      return acc;
+    }, {});
+}
+
+async function bootstrapEnvFiles(cwd, answers) {
+  if (!answers.captureSecrets) return;
+
+  const secretValues = answers.secretValues ?? {};
+  const envExamplePath = path.join(cwd, '.env.example');
+  const envLocalPath = path.join(cwd, '.env.local');
+
+  const envExampleContent = (await fs.pathExists(envExamplePath)) ? await fs.readFile(envExamplePath, 'utf-8') : '';
+  const envLocalContent = (await fs.pathExists(envLocalPath)) ? await fs.readFile(envLocalPath, 'utf-8') : '';
+
+  const exampleMap = normalizeEnvLines(envExampleContent);
+  const localMap = normalizeEnvLines(envLocalContent);
+
+  for (const key of Object.keys(secretValues)) {
+    if (!(key in exampleMap)) exampleMap[key] = '';
+    if (!(key in localMap)) localMap[key] = secretValues[key] ?? '';
+  }
+
+  const exampleLines = Object.entries(exampleMap).map(([key, value]) => `${key}=${value}`);
+  const localLines = Object.entries(localMap).map(([key, value]) => `${key}=${value}`);
+
+  await fs.writeFile(envExamplePath, `${exampleLines.join('\n')}\n`);
+  await fs.writeFile(envLocalPath, `${localLines.join('\n')}\n`);
+}
+
 export async function generateCommon(answers, cwd = process.cwd()) {
   const pkgPath = path.join(cwd, 'package.json');
   const { lintOption = [], vitestPreset, setupPrecommit = true, authorName, projectType, linter = 'eslint' } = answers;
@@ -274,6 +311,8 @@ describe('helloWorld', () => {
   } else {
     console.log(pc.dim('–') + '    README.md (already exists, skipped)');
   }
+
+  await bootstrapEnvFiles(cwd, answers);
 
   await generateCicd(answers, cwd);
 }
