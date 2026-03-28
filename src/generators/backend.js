@@ -22,6 +22,77 @@ async function appendGitignoreEntries(cwd) {
   }
 }
 
+async function upsertEnvExampleEntries(cwd, entries) {
+  const envPath = path.join(cwd, '.env.example');
+  let content = '';
+  if (await fs.pathExists(envPath)) {
+    content = await fs.readFile(envPath, 'utf-8');
+  }
+
+  const lines = content.split('\n').filter(Boolean);
+  const map = new Map(
+    lines.map((line) => {
+      const [key, ...rest] = line.split('=');
+      return [key, rest.join('=')];
+    }),
+  );
+
+  for (const [key, value] of Object.entries(entries)) {
+    map.set(key, value);
+  }
+
+  const next = [...map.entries()].map(([key, value]) => `${key}=${value}`);
+  await fs.writeFile(envPath, `${next.join('\n')}\n`);
+}
+
+async function appendIntegrationReadme(cwd, name) {
+  const readmePath = path.join(cwd, 'README.md');
+  if (!(await fs.pathExists(readmePath))) return;
+
+  const content = await fs.readFile(readmePath, 'utf-8');
+  if (content.includes('## Integrations')) return;
+
+  const section = `
+
+## Integrations
+
+### ${name}
+
+- Starter wiring is generated in \`src/integrations/${name === 'Better Auth' ? 'better-auth' : 'integration'}.ts\`
+- Add provider credentials to \`.env.local\` and keep placeholders in \`.env.example\`
+`;
+  await fs.writeFile(readmePath, `${content}${section}`);
+}
+
+async function generateIntegrationPreset(answers, cwd) {
+  const preset = answers.integrationPreset ?? 'none';
+  if (preset !== 'better-auth') return;
+
+  const integrationsDir = path.join(cwd, 'src/integrations');
+  await fs.ensureDir(integrationsDir);
+  await fs.writeFile(
+    path.join(integrationsDir, 'better-auth.ts'),
+    `export type BetterAuthConfig = {
+  baseUrl: string;
+  secret: string;
+};
+
+export function getBetterAuthConfig(): BetterAuthConfig {
+  return {
+    baseUrl: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
+    secret: process.env.BETTER_AUTH_SECRET ?? '',
+  };
+}
+`,
+  );
+
+  await upsertEnvExampleEntries(cwd, {
+    BETTER_AUTH_URL: 'http://localhost:3000',
+    BETTER_AUTH_SECRET: '',
+  });
+  await appendIntegrationReadme(cwd, 'Better Auth');
+}
+
 export async function generateBackend(answers, cwd) {
   const { backendFramework = 'hono', setupDocker = true, setupZod = true } = answers;
 
@@ -77,4 +148,5 @@ export async function generateBackend(answers, cwd) {
   }
 
   await generateDatabase(answers, cwd);
+  await generateIntegrationPreset(answers, cwd);
 }
