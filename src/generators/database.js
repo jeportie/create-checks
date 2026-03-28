@@ -248,6 +248,51 @@ export default defineConfig({
 `;
 }
 
+function renderDbConnectivityTest(engine, orm) {
+  const importLine =
+    orm === 'mongoose' ? "import { connectDb } from '../../src/db';" : "import { db } from '../../src/db';";
+
+  let connectivityBody = '';
+  if (orm === 'mongoose') {
+    connectivityBody = `
+    await connectDb();
+    expect(true).toBe(true);
+`;
+  } else if (orm === 'prisma') {
+    connectivityBody = `
+    // Generic health check query through Prisma
+    const result = await db.$queryRaw\`SELECT 1 as ok\`;
+    expect(result).toBeDefined();
+`;
+  } else if (engine === 'sqlite') {
+    connectivityBody = `
+    const result = db.prepare('SELECT 1 as ok').get();
+    expect(result.ok).toBe(1);
+`;
+  } else {
+    connectivityBody = `
+    const result = await db.query('SELECT 1 as ok');
+    const row = Array.isArray(result?.rows) ? result.rows[0] : result?.[0]?.[0] ?? result?.[0];
+    expect(row).toBeDefined();
+`;
+  }
+
+  return `import { describe, expect, it } from 'vitest';
+
+${importLine}
+
+describe('database connectivity', () => {
+  it('executes a basic query path when DATABASE_URL is configured', async () => {
+    if (!process.env.DATABASE_URL && '${engine}' !== 'sqlite') {
+      // Starter guard: provide env then remove this guard for strict CI usage.
+      return;
+    }
+${connectivityBody}
+  });
+});
+`;
+}
+
 function renderPrismaSchema(engine) {
   const provider = engineMeta[engine].prismaProvider;
   return `generator client {
@@ -465,6 +510,8 @@ export async function generateDatabase(answers, cwd) {
 
   const dbDir = path.join(cwd, 'src/db');
   await fs.ensureDir(dbDir);
+  const testDir = path.join(cwd, 'tests/integration');
+  await fs.ensureDir(testDir);
 
   if (orm === 'none') {
     await fs.writeFile(path.join(dbDir, 'index.ts'), renderRawIndex(engine));
@@ -517,6 +564,8 @@ export const Example = model('Example', exampleSchema);
 `,
     );
   }
+
+  await fs.writeFile(path.join(testDir, 'db-connectivity.int.test.ts'), renderDbConnectivityTest(engine, orm));
 
   await upsertEnvExample(cwd, meta.url);
   await patchBackendEnvForDatabase(cwd);

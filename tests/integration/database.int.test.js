@@ -186,6 +186,24 @@ describe('database scaffold', () => {
     expect(migrate).toContain('readFile');
   });
 
+  it('creates a DB connectivity integration test starter', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, {
+      SETUP_DATABASE: '1',
+      DB_ENGINE: 'postgresql',
+      DB_ORM: 'drizzle',
+      DOCKER: '0',
+      VITEST_PRESET: 'native',
+    });
+
+    const testFile = join(tmpDir, 'tests/integration/db-connectivity.int.test.ts');
+    expect(existsSync(testFile)).toBe(true);
+    const content = readFileSync(testFile, 'utf-8');
+    expect(content).toContain('database connectivity');
+    expect(content).toContain('DATABASE_URL');
+    expect(content).toContain('SELECT 1');
+  });
+
   it('adds engine and ORM aware DB scripts for drizzle + postgresql', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, {
