@@ -6,14 +6,14 @@ Database support (multi-layer prompt + No ORM option), Biome linter alternative,
 
 ## Live Status (Updated)
 
-Phase 1 feature work has been implemented and merged to `dev`, and all four tracks are now in **WIP validation/fix mode**.
+Phase 1 feature work is implemented, fixed, and merged to `dev`.
 
-- [ ] DB-01 (WIP: implemented, pending CURRFIX closure)
-- [ ] BIOME-01 (WIP: implemented, pending CURRFIX closure)
-- [ ] CICD-01 (WIP: implemented, pending CURRFIX closure)
-- [ ] HOUSE-01 (WIP: implemented, pending CURRFIX closure)
+- [x] DB-01 (done)
+- [x] BIOME-01 (done)
+- [x] CICD-01 (done)
+- [x] HOUSE-01 (done)
 
-All sprint issues reported from this phase are tracked in `CURRFIX.md`. Once that list is fully closed, these four items can be marked done.
+All sprint issues from this phase were tracked in `CURRFIX.md` and are now closed.
 
 ---
 
@@ -93,13 +93,13 @@ This sprint uses the **full orchestrator pipeline** to parallelize independent w
 
 ---
 
-## Phase 1 — Parallel Features (Implemented, now WIP fix pass)
+## Phase 1 — Parallel Features (Completed)
 
 All four branches run simultaneously. Each feature branch gets a Thinker + Operator pair working in TDD (Red-Green-Refactor).
 
 ### Task DB-01: Database Option (`feature/database`)
 
-**Status:** WIP (implemented on `dev`, awaiting CURRFIX closure)
+**Status:** DONE (implemented, fixed, and merged to `dev`)
 
 **Multi-layer prompt system for backend type.**
 
@@ -148,7 +148,7 @@ All four branches run simultaneously. Each feature branch gets a Thinker + Opera
 
 ### Task BIOME-01: Biome Alternative (`feature/biome`)
 
-**Status:** WIP (implemented on `dev`, awaiting CURRFIX closure)
+**Status:** DONE (implemented, fixed, and merged to `dev`)
 
 **Offer Biome as single-tool alternative to ESLint + Prettier.**
 
@@ -178,7 +178,7 @@ All four branches run simultaneously. Each feature branch gets a Thinker + Opera
 
 ### Task CICD-01: CI/CD Pipeline Option (`feature/cicd`)
 
-**Status:** WIP (implemented on `dev`, awaiting CURRFIX closure)
+**Status:** DONE (implemented, fixed, and merged to `dev`)
 
 **GitHub Actions pipeline scaffold for all project types.**
 
@@ -211,7 +211,7 @@ All four branches run simultaneously. Each feature branch gets a Thinker + Opera
 
 ### Task HOUSE-01: Codebase Housekeeping (`feature/housekeeping`)
 
-**Status:** WIP (implemented on `dev`, awaiting CURRFIX closure)
+**Status:** DONE (implemented, fixed, and merged to `dev`)
 
 **Review agent runs a full codebase audit.** This is a refactoring and quality pass, not a feature.
 
@@ -240,7 +240,7 @@ All four branches run simultaneously. Each feature branch gets a Thinker + Opera
 
 ---
 
-## Phase 2 — Sequential (after Phase 1 merges and CURRFIX closure)
+## Phase 2 — Sequential (after Phase 1 completion)
 
 These depend on Phase 1 being complete. Quality agent validates `dev` before each starts.
 

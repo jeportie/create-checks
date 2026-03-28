@@ -10,25 +10,25 @@ Track every issue you report from the current sprint before we mark Sprint 2 Pha
 - `IN_PROGRESS`: Currently being fixed
 - `DONE`: Fixed and verified
 
-When all reported issues are `DONE`, we will mark DB-01, BIOME-01, CICD-01, and HOUSE-01 as done in `TODO.md` and `NEXT.md`.
+All reported issues are now `DONE` and merged into `dev`.
 
 ## Reported Issues
 
-- [ ] CF-001 | PROMPTS | Enter/default behavior is inconsistent on confirm prompts; Enter should always resolve to Yes | STATUS=OPEN | reported_by=user | GH=#8 | verified via prompt defaults: some confirms are `default: true` (e.g. backend/common/readme) while others are `default: false`
-- [ ] CF-002 | LINT | Generated `vitest.config.ts` uses `import { resolve } from 'path'`, causing Biome `useNodejsImportProtocol` noise in `npm run check` | STATUS=OPEN | reported_by=user | GH=#9 | reproduced in generated backend project; similar fix needed in both vitest templates (`native` and `coverage`)
-- [ ] CF-003 | LINT | Define and enforce one shared Node built-in import convention across ESLint and Biome (including templates) | STATUS=OPEN | reported_by=user | GH=#10 | currently Biome enforces `node:` protocol while ESLint path does not mirror that norm
-- [ ] CF-004 | DOCS/DB | README database section lacks actionable usage guidance (setup/connect/migrate/query workflow) | STATUS=OPEN | reported_by=user | GH=#11 | generated README currently only states engine + ORM with no practical DB commands
-- [ ] CF-005 | DX/DB | Missing DB-focused Docker/Makefile workflows for daily usage (db-only up/down/logs/shell/migrate helpers) | STATUS=OPEN | reported_by=user | GH=#12 | docker-compose includes a `db` service but generated scripts/Make targets expose only generic stack commands
-- [ ] CF-006 | DB/STARTER | No end-to-end DB proof-of-work starter (model/schema + query path + route + test) for generated DB setups | STATUS=OPEN | reported_by=user | GH=#13 | verified on generated backend+postgres+drizzle: `src/db/schema.ts` is placeholder and backend routes do not consume DB
-- [ ] CF-007 | DX/DB | Missing engine/ORM-specific DB scripts for run/migrate/monitor/edit flows from the backend project | STATUS=OPEN | reported_by=user | GH=#14 | `package.json` lacks scripts like `db:migrate`/`db:studio`/`db:shell`; only generic Docker scripts are generated
-- [ ] CF-008 | PRODUCT/ARCH | Decision: DB is a backend capability (not a standalone project type); future fullstack must reuse the backend DB module | STATUS=OPEN | reported_by=user | GH=#15 | rules: backend can enable DB; frontend/cli/npm-lib/app have no DB prompt; fullstack (when implemented) asks DB only in API/backend flow
-- [ ] CF-009 | PROMPTS/SECRETS | Add optional prompt-based secret capture and initial `.env*` file/bootstrap management generation | STATUS=OPEN | reported_by=user | GH=#16 | current prompts support feature toggles but not interactive secret entry or env-file policy setup
-- [ ] CF-010 | PROMPTS/INTEGRATIONS | Add optional third-party service presets in wizard (example: Better Auth) with starter wiring | STATUS=OPEN | reported_by=user | GH=#17 | currently no prompt path exists for auth/service integrations pre-install
-- [ ] CF-013 | DOCS/LINT | Scripts Reference docs are not linter-aware (`format`/`lint` descriptions always mention Prettier/ESLint even on Biome) | STATUS=OPEN | reported_by=assistant | GH=#18 | reproduced in generated backend+Biome README
-- [ ] CF-014 | DB/ENV | Selecting a database does not wire DB env vars into generated env config/validation (`DATABASE_URL`, etc.) | STATUS=OPEN | reported_by=assistant | GH=#19 | reproduced in backend+postgres+zod scaffold: `src/env.ts` validates only `NODE_ENV` and `PORT`
-- [ ] CF-015 | REDIS/STARTER | `Set up Redis` only installs dependency; no redis bootstrap code, docker service, env contract, or docs | STATUS=OPEN | reported_by=assistant | GH=#20 | reproduced in backend+redis scaffold: no redis references in generated `src/`
-- [ ] CF-016 | DOCS/DOCKER | Backend README claims docker-compose hot-reload mount, but generated compose has no volume/hot-reload setup | STATUS=OPEN | reported_by=assistant | GH=#21 | mismatch between README structure notes and `docker-compose.yml`
-- [ ] CF-017 | DB/TESTING | Generated project lacks DB-focused unit/integration test starter to prove DB connectivity and runtime readiness | STATUS=OPEN | reported_by=user | GH=#22 | add a baseline test that validates DB is reachable and basic query path works
+- [x] CF-001 | PROMPTS | Enter/default behavior is inconsistent on confirm prompts; Enter should always resolve to Yes | STATUS=DONE | reported_by=user | GH=#8 | PR=#23 merged to dev
+- [x] CF-002 | LINT | Generated `vitest.config.ts` uses `import { resolve } from 'path'`, causing Biome `useNodejsImportProtocol` noise in `npm run check` | STATUS=DONE | reported_by=user | GH=#9 | PR=#24 merged to dev
+- [x] CF-003 | LINT | Define and enforce one shared Node built-in import convention across ESLint and Biome (including templates) | STATUS=DONE | reported_by=user | GH=#10 | PR=#25 merged to dev
+- [x] CF-004 | DOCS/DB | README database section lacks actionable usage guidance (setup/connect/migrate/query workflow) | STATUS=DONE | reported_by=user | GH=#11 | PR=#26 merged to dev
+- [x] CF-005 | DX/DB | Missing DB-focused Docker/Makefile workflows for daily usage (db-only up/down/logs/shell/migrate helpers) | STATUS=DONE | reported_by=user | GH=#12 | PR=#32 merged to dev
+- [x] CF-006 | DB/STARTER | No end-to-end DB proof-of-work starter (model/schema + query path + route + test) for generated DB setups | STATUS=DONE | reported_by=user | GH=#13 | PR=#37 merged to dev
+- [x] CF-007 | DX/DB | Missing engine/ORM-specific DB scripts for run/migrate/monitor/edit flows from the backend project | STATUS=DONE | reported_by=user | GH=#14 | PR=#31 merged to dev
+- [x] CF-008 | PRODUCT/ARCH | Decision: DB is a backend capability (not a standalone project type); future fullstack must reuse the backend DB module | STATUS=DONE | reported_by=user | GH=#15 | PR=#34 merged to dev
+- [x] CF-009 | PROMPTS/SECRETS | Add optional prompt-based secret capture and initial `.env*` file/bootstrap management generation | STATUS=DONE | reported_by=user | GH=#16 | PR=#35 merged to dev
+- [x] CF-010 | PROMPTS/INTEGRATIONS | Add optional third-party service presets in wizard (example: Better Auth) with starter wiring | STATUS=DONE | reported_by=user | GH=#17 | PR=#36 merged to dev
+- [x] CF-013 | DOCS/LINT | Scripts Reference docs are not linter-aware (`format`/`lint` descriptions always mention Prettier/ESLint even on Biome) | STATUS=DONE | reported_by=assistant | GH=#18 | PR=#28 merged to dev
+- [x] CF-014 | DB/ENV | Selecting a database does not wire DB env vars into generated env config/validation (`DATABASE_URL`, etc.) | STATUS=DONE | reported_by=assistant | GH=#19 | PR=#29 merged to dev
+- [x] CF-015 | REDIS/STARTER | `Set up Redis` only installs dependency; no redis bootstrap code, docker service, env contract, or docs | STATUS=DONE | reported_by=assistant | GH=#20 | PR=#30 merged to dev
+- [x] CF-016 | DOCS/DOCKER | Backend README claims docker-compose hot-reload mount, but generated compose has no volume/hot-reload setup | STATUS=DONE | reported_by=assistant | GH=#21 | PR=#27 merged to dev
+- [x] CF-017 | DB/TESTING | Generated project lacks DB-focused unit/integration test starter to prove DB connectivity and runtime readiness | STATUS=DONE | reported_by=user | GH=#22 | PR=#33 merged to dev
 
 ## Issue Entry Template
 

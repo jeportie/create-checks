@@ -6,12 +6,12 @@ The current `tskickstart` is a **type-aware scaffolding CLI** (`@jeportie/create
 
 ## Sprint 2 Status (Current)
 
-Phase 1 was implemented and merged to `dev`, but we are keeping these items in **WIP** until sprint fixes are tracked and completed via `CURRFIX.md`.
+Phase 1 is implemented, fixed through `CURRFIX.md`, and merged to `dev`.
 
-- [ ] DB-01 Database option (WIP: implemented, pending CURRFIX closure)
-- [ ] BIOME-01 Biome alternative (WIP: implemented, pending CURRFIX closure)
-- [ ] CICD-01 CI/CD pipeline option (WIP: implemented, pending CURRFIX closure)
-- [ ] HOUSE-01 Codebase housekeeping (WIP: implemented, pending CURRFIX closure)
+- [x] DB-01 Database option (completed via CURRFIX campaign)
+- [x] BIOME-01 Biome alternative (completed via CURRFIX campaign)
+- [x] CICD-01 CI/CD pipeline option (completed via CURRFIX campaign)
+- [x] HOUSE-01 Codebase housekeeping (completed via CURRFIX campaign)
 
 ---
 
@@ -270,8 +270,8 @@ Offer Biome as an alternative to ESLint + Prettier for all project types.
 6. [x] **Add `backend` type** — Hono/Fastify/Express/Elysia + Docker + Zod
 7. [x] **Add `cli` type** — Commander/Inquirer/Clack + tsup + optional semantic-release
 8. [x] **UX polish** — Spinner animation, back navigation, ASCII banner, README deep-dive
-9. [ ] **Database option** — Drizzle/Prisma/MongoDB/Redis for backend (WIP: implemented on `dev`, pending CURRFIX closure)
-10. [ ] **Biome alternative** — ESLint+Prettier vs Biome choice (WIP: implemented on `dev`, pending CURRFIX closure)
-11. [ ] **CI/CD pipeline option** — GitHub Actions, deploy workflows (WIP: implemented on `dev`, pending CURRFIX closure)
-12. [ ] **Add `fullstack` type** — pnpm monorepo with workspaces + changesets (next after CURRFIX and depends on #10)
+9. [x] **Database option** — Drizzle/Prisma/MongoDB/Redis for backend
+10. [x] **Biome alternative** — ESLint+Prettier vs Biome choice
+11. [x] **CI/CD pipeline option** — GitHub Actions, deploy workflows
+12. [ ] **Add `fullstack` type** — pnpm monorepo with workspaces + changesets (next, depends on #10)
 13. [ ] **Add `fullstack + app` type** — Extends fullstack with mobile workspace (depends on #12)
