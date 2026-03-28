@@ -20,7 +20,7 @@ export async function askDatabaseQuestions() {
         type: 'confirm',
         name: 'setupDatabase',
         message: 'Set up a database?',
-        default: false,
+        default: true,
       },
     ]);
     setupDatabase = result.setupDatabase;
@@ -75,7 +75,7 @@ export async function askDatabaseQuestions() {
         type: 'confirm',
         name: 'setupRedis',
         message: 'Set up Redis for caching?',
-        default: false,
+        default: true,
       },
     ]);
     setupRedis = result.setupRedis;

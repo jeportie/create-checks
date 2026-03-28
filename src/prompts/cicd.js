@@ -21,7 +21,7 @@ export async function askCicdQuestions(projectType) {
         type: 'confirm',
         name: 'setupCicd',
         message: 'Set up CI/CD pipeline?',
-        default: false,
+        default: true,
       },
     ]);
     setupCicd = result.setupCicd;

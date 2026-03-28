@@ -62,7 +62,8 @@
     "autoincrement",
     "biome",
     "biomejs",
-    "currfix"
+    "currfix",
+    "unstub"
   ],
   "ignorePaths": [
     ".vscode/",
