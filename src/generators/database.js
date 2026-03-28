@@ -291,6 +291,31 @@ async function upsertEnvExample(cwd, url) {
   await fs.writeFile(envPath, `${lines.join('\n')}\n`);
 }
 
+async function patchBackendEnvForDatabase(cwd) {
+  const envPath = path.join(cwd, 'src/env.ts');
+  if (!(await fs.pathExists(envPath))) return;
+
+  const content = await fs.readFile(envPath, 'utf-8');
+  if (content.includes('DATABASE_URL')) return;
+
+  if (content.includes('const envSchema = z.object({')) {
+    const next = content.replace(
+      'const envSchema = z.object({',
+      'const envSchema = z.object({\n  DATABASE_URL: z.string().min(1),',
+    );
+    await fs.writeFile(envPath, next);
+    return;
+  }
+
+  if (content.includes('export const env = {')) {
+    const next = content.replace(
+      'export const env = {',
+      "export const env = {\n  DATABASE_URL: process.env.DATABASE_URL ?? '',",
+    );
+    await fs.writeFile(envPath, next);
+  }
+}
+
 async function appendReadmeSection(cwd, engine, orm) {
   const readmePath = path.join(cwd, 'README.md');
   if (!(await fs.pathExists(readmePath))) return;
@@ -429,6 +454,7 @@ export const Example = model('Example', exampleSchema);
   }
 
   await upsertEnvExample(cwd, meta.url);
+  await patchBackendEnvForDatabase(cwd);
   await appendReadmeSection(cwd, engine, orm);
 
   if (answers.setupDocker) {

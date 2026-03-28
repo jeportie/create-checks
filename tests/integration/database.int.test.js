@@ -106,6 +106,36 @@ describe('database scaffold', () => {
     expect(envExample).toContain('mysql://');
   });
 
+  it('wires DATABASE_URL into src/env.ts validation when zod is enabled', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, {
+      SETUP_DATABASE: '1',
+      DB_ENGINE: 'postgresql',
+      DB_ORM: 'drizzle',
+      DOCKER: '0',
+      BACKEND_ZOD: '1',
+    });
+
+    const envFile = readFileSync(join(tmpDir, 'src/env.ts'), 'utf-8');
+    expect(envFile).toContain('DATABASE_URL');
+    expect(envFile).toContain('z.string().min(1)');
+  });
+
+  it('wires DATABASE_URL into src/env.ts when zod is disabled', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, {
+      SETUP_DATABASE: '1',
+      DB_ENGINE: 'postgresql',
+      DB_ORM: 'drizzle',
+      DOCKER: '0',
+      BACKEND_ZOD: '0',
+    });
+
+    const envFile = readFileSync(join(tmpDir, 'src/env.ts'), 'utf-8');
+    expect(envFile).toContain('DATABASE_URL');
+    expect(envFile).toContain('process.env.DATABASE_URL');
+  });
+
   it('adds a README database section', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, {
