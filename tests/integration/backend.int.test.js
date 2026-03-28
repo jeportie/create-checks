@@ -321,4 +321,22 @@ describe('backend project scaffold', () => {
     const content = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
     expect(content).toContain('Docker');
   });
+
+  it('scaffolds Better Auth integration preset when selected', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, {
+      BACKEND_FRAMEWORK: 'hono',
+      DOCKER: '0',
+      INTEGRATION_PRESET: 'better-auth',
+    });
+
+    expect(existsSync(join(tmpDir, 'src/integrations/better-auth.ts'))).toBe(true);
+
+    const envExample = readFileSync(join(tmpDir, '.env.example'), 'utf-8');
+    expect(envExample).toContain('BETTER_AUTH_SECRET=');
+
+    const readme = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
+    expect(readme).toContain('## Integrations');
+    expect(readme).toContain('Better Auth');
+  });
 });

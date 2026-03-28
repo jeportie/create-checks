@@ -58,5 +58,24 @@ export async function askBackendQuestions() {
 
   const databaseAnswers = await askDatabaseQuestions();
 
-  return { backendFramework, setupZod, setupDocker, ...databaseAnswers };
+  let integrationPreset = 'none';
+  if (process.env.INTEGRATION_PRESET) {
+    integrationPreset = process.env.INTEGRATION_PRESET;
+  } else if (process.stdin.isTTY) {
+    const result = await prompt([
+      {
+        type: 'list',
+        name: 'integrationPreset',
+        message: 'Optional integration preset?',
+        choices: [
+          { name: 'None', value: 'none' },
+          { name: 'Better Auth starter', value: 'better-auth' },
+        ],
+        default: 'none',
+      },
+    ]);
+    integrationPreset = result.integrationPreset;
+  }
+
+  return { backendFramework, setupZod, setupDocker, integrationPreset, ...databaseAnswers };
 }
