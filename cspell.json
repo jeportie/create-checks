@@ -61,7 +61,8 @@
     "timestamptz",
     "autoincrement",
     "biome",
-    "biomejs"
+    "biomejs",
+    "currfix"
   ],
   "ignorePaths": [
     ".vscode/",

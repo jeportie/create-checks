@@ -2,7 +2,16 @@
 
 ## Current State Assessment
 
-The current `tskickstart` is a **type-aware scaffolding CLI** (`@jeportie/create-tskickstart`) with a modular architecture. It supports a two-level prompt system that routes to type-specific generators. Implemented project types: `npm-lib`, `cli`, `backend`, `frontend`, and `app` (React Native). Features include a wizard-based prompt system with back navigation, animated spinner, comprehensive README generation, and optional tools per mode. 262 integration tests across 11 test files.
+The current `tskickstart` is a **type-aware scaffolding CLI** (`@jeportie/create-tskickstart`) with a modular architecture. It supports a two-level prompt system that routes to type-specific generators. Implemented project types: `npm-lib`, `cli`, `backend`, `frontend`, and `app` (React Native). Features include a wizard-based prompt system with back navigation, animated spinner, comprehensive README generation, and optional tools per mode. 286 tests currently pass on `dev`.
+
+## Sprint 2 Status (Current)
+
+Phase 1 was implemented and merged to `dev`, but we are keeping these items in **WIP** until sprint fixes are tracked and completed via `CURRFIX.md`.
+
+- [ ] DB-01 Database option (WIP: implemented, pending CURRFIX closure)
+- [ ] BIOME-01 Biome alternative (WIP: implemented, pending CURRFIX closure)
+- [ ] CICD-01 CI/CD pipeline option (WIP: implemented, pending CURRFIX closure)
+- [ ] HOUSE-01 Codebase housekeeping (WIP: implemented, pending CURRFIX closure)
 
 ---
 
@@ -261,8 +270,8 @@ Offer Biome as an alternative to ESLint + Prettier for all project types.
 6. [x] **Add `backend` type** — Hono/Fastify/Express/Elysia + Docker + Zod
 7. [x] **Add `cli` type** — Commander/Inquirer/Clack + tsup + optional semantic-release
 8. [x] **UX polish** — Spinner animation, back navigation, ASCII banner, README deep-dive
-9. [ ] **Database option** — Drizzle/Prisma/MongoDB/Redis for backend (independent)
-10. [ ] **Biome alternative** — ESLint+Prettier vs Biome choice (independent)
-11. [ ] **CI/CD pipeline option** — GitHub Actions, deploy workflows (independent)
-12. [ ] **Add `fullstack` type** — pnpm monorepo with workspaces + changesets (depends on #10)
+9. [ ] **Database option** — Drizzle/Prisma/MongoDB/Redis for backend (WIP: implemented on `dev`, pending CURRFIX closure)
+10. [ ] **Biome alternative** — ESLint+Prettier vs Biome choice (WIP: implemented on `dev`, pending CURRFIX closure)
+11. [ ] **CI/CD pipeline option** — GitHub Actions, deploy workflows (WIP: implemented on `dev`, pending CURRFIX closure)
+12. [ ] **Add `fullstack` type** — pnpm monorepo with workspaces + changesets (next after CURRFIX and depends on #10)
 13. [ ] **Add `fullstack + app` type** — Extends fullstack with mobile workspace (depends on #12)

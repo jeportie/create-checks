@@ -4,6 +4,17 @@
 
 Database support (multi-layer prompt + No ORM option), Biome linter alternative, CI/CD pipeline, codebase housekeeping, then fullstack types.
 
+## Live Status (Updated)
+
+Phase 1 feature work has been implemented and merged to `dev`, and all four tracks are now in **WIP validation/fix mode**.
+
+- [ ] DB-01 (WIP: implemented, pending CURRFIX closure)
+- [ ] BIOME-01 (WIP: implemented, pending CURRFIX closure)
+- [ ] CICD-01 (WIP: implemented, pending CURRFIX closure)
+- [ ] HOUSE-01 (WIP: implemented, pending CURRFIX closure)
+
+All sprint issues reported from this phase are tracked in `CURRFIX.md`. Once that list is fully closed, these four items can be marked done.
+
 ---
 
 ## Tooling Requirements
@@ -82,11 +93,13 @@ This sprint uses the **full orchestrator pipeline** to parallelize independent w
 
 ---
 
-## Phase 1 — Parallel Features
+## Phase 1 — Parallel Features (Implemented, now WIP fix pass)
 
 All four branches run simultaneously. Each feature branch gets a Thinker + Operator pair working in TDD (Red-Green-Refactor).
 
 ### Task DB-01: Database Option (`feature/database`)
+
+**Status:** WIP (implemented on `dev`, awaiting CURRFIX closure)
 
 **Multi-layer prompt system for backend type.**
 
@@ -135,6 +148,8 @@ All four branches run simultaneously. Each feature branch gets a Thinker + Opera
 
 ### Task BIOME-01: Biome Alternative (`feature/biome`)
 
+**Status:** WIP (implemented on `dev`, awaiting CURRFIX closure)
+
 **Offer Biome as single-tool alternative to ESLint + Prettier.**
 
 **Modify:**
@@ -162,6 +177,8 @@ All four branches run simultaneously. Each feature branch gets a Thinker + Opera
 ---
 
 ### Task CICD-01: CI/CD Pipeline Option (`feature/cicd`)
+
+**Status:** WIP (implemented on `dev`, awaiting CURRFIX closure)
 
 **GitHub Actions pipeline scaffold for all project types.**
 
@@ -194,6 +211,8 @@ All four branches run simultaneously. Each feature branch gets a Thinker + Opera
 
 ### Task HOUSE-01: Codebase Housekeeping (`feature/housekeeping`)
 
+**Status:** WIP (implemented on `dev`, awaiting CURRFIX closure)
+
 **Review agent runs a full codebase audit.** This is a refactoring and quality pass, not a feature.
 
 **Scope:**
@@ -209,19 +228,19 @@ All four branches run simultaneously. Each feature branch gets a Thinker + Opera
 **Rules:**
 
 - No functional changes — refactoring only
-- All existing 262 tests must still pass
+- Baseline test suite on `dev` must still pass
 - No new features, no scope creep
 
 **Acceptance criteria:**
 
-- [ ] All 262 existing tests pass
+- [ ] Baseline test suite on `dev` passes
 - [ ] No new test failures introduced
 - [ ] Code review findings documented in PR description
 - [ ] Any extracted utilities have tests
 
 ---
 
-## Phase 2 — Sequential (after Phase 1 merges)
+## Phase 2 — Sequential (after Phase 1 merges and CURRFIX closure)
 
 These depend on Phase 1 being complete. Quality agent validates `dev` before each starts.
 
