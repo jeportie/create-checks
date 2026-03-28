@@ -338,7 +338,7 @@ tests/
     lines.push('    server.unit.test.ts  # Unit tests for route handlers');
     if (setupDocker) {
       lines.push('Dockerfile         # Multi-stage production build');
-      lines.push('docker-compose.yml # Local development with hot-reload mount');
+      lines.push('docker-compose.yml # Container orchestration for app + optional DB services');
       lines.push('Makefile           # Docker convenience targets: make docker-up, make docker-down');
     }
     lines.push('```');

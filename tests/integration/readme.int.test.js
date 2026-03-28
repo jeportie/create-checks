@@ -205,6 +205,7 @@ describe('deep project structure', () => {
     const structure = content.split('## Project Structure')[1];
     expect(structure).toContain('Dockerfile');
     expect(structure).toContain('docker-compose');
+    expect(structure).not.toContain('hot-reload mount');
   });
 
   it('backend structure omits Docker files when Docker disabled', () => {
