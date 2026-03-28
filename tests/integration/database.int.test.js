@@ -118,6 +118,10 @@ describe('database scaffold', () => {
     const readme = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
     expect(readme).toContain('## Database');
     expect(readme).toContain('SQLite');
+    expect(readme).toContain('### Quick start');
+    expect(readme).toContain('DATABASE_URL');
+    expect(readme).toContain('### Daily workflow');
+    expect(readme).toContain('### Basic query smoke test');
   });
 
   it('creates a raw migration runner that executes sql files in sorted order', () => {

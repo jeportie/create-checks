@@ -298,7 +298,57 @@ async function appendReadmeSection(cwd, engine, orm) {
   const content = await fs.readFile(readmePath, 'utf-8');
   if (content.includes('## Database')) return;
 
-  const section = `\n\n## Database\n\n- Engine: ${engineMeta[engine].label}\n- Data access: ${orm === 'none' ? 'Raw driver + SQL migrations' : orm}\n`;
+  const ormLabel = orm === 'none' ? 'Raw driver + SQL migrations' : orm;
+  const migrationCommand =
+    orm === 'none'
+      ? 'node --import tsx src/db/migrate.ts'
+      : orm === 'drizzle'
+        ? 'npx drizzle-kit generate && npx drizzle-kit migrate'
+        : orm === 'prisma'
+          ? 'npx prisma migrate dev'
+          : 'npx prisma db push';
+
+  const smokeExample =
+    engine === 'mongodb'
+      ? 'await connectDb();\nconst count = await Example.countDocuments();\nconsole.log({ count });'
+      : orm === 'prisma'
+        ? 'const rows = await db.example.findMany({ take: 1 });\nconsole.log({ rows });'
+        : "const rows = await db.query?.('SELECT 1 as ok') ?? [{ ok: 1 }];\nconsole.log({ rows });";
+
+  const section = `
+
+## Database
+
+- Engine: ${engineMeta[engine].label}
+- Data access: ${ormLabel}
+
+### Quick start
+
+1. Copy env values and set your connection string:
+
+\`\`\`bash
+cp .env.example .env
+# set DATABASE_URL in .env
+\`\`\`
+
+2. Apply schema/migrations:
+
+\`\`\`bash
+${migrationCommand}
+\`\`\`
+
+### Daily workflow
+
+- Update models/schema in \`src/db/\` (or \`prisma/schema.prisma\`)
+- Re-run migrations after schema changes
+- Keep \`DATABASE_URL\` aligned with your local/staging environment
+
+### Basic query smoke test
+
+\`\`\`ts
+${smokeExample}
+\`\`\`
+`;
   await fs.writeFile(readmePath, `${content}${section}`);
 }
 
