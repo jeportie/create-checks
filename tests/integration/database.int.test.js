@@ -204,6 +204,29 @@ describe('database scaffold', () => {
     expect(content).toContain('SELECT 1');
   });
 
+  it('creates DB proof-of-work starter files with route and test', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, {
+      SETUP_DATABASE: '1',
+      DB_ENGINE: 'postgresql',
+      DB_ORM: 'drizzle',
+      DOCKER: '0',
+      VITEST_PRESET: 'native',
+    });
+
+    const schema = readFileSync(join(tmpDir, 'src/db/schema.ts'), 'utf-8');
+    expect(schema).toContain('users');
+
+    expect(existsSync(join(tmpDir, 'src/db/proof-of-work.ts'))).toBe(true);
+
+    const indexFile = readFileSync(join(tmpDir, 'src/index.ts'), 'utf-8');
+    expect(indexFile).toContain('/db/proof');
+    expect(indexFile).toContain('runDbProof');
+
+    const proofTest = readFileSync(join(tmpDir, 'tests/integration/db-proof.int.test.ts'), 'utf-8');
+    expect(proofTest).toContain('/db/proof');
+  });
+
   it('adds engine and ORM aware DB scripts for drizzle + postgresql', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, {

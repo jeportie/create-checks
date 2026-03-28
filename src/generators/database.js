@@ -97,6 +97,192 @@ export const db = drizzle({ client: sqlite });
 `;
 }
 
+function renderDrizzleSchema(engine) {
+  if (engine === 'postgresql') {
+    return `import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+`;
+  }
+
+  if (engine === 'mysql' || engine === 'mariadb') {
+    return `import { int, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
+
+export const users = mysqlTable('users', {
+  id: int('id').autoincrement().primaryKey(),
+  email: varchar('email', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+`;
+  }
+
+  return `import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull(),
+  createdAt: text('created_at').notNull(),
+});
+`;
+}
+
+function renderDbProofOfWork(engine, orm) {
+  if (orm === 'mongoose') {
+    return `import { Example } from './models/example';
+import { connectDb } from './index';
+
+export async function runDbProof() {
+  await connectDb();
+  const count = await Example.countDocuments();
+  return { count };
+}
+`;
+  }
+
+  if (orm === 'prisma') {
+    return `import { db } from './index';
+
+export async function runDbProof() {
+  const rows = await db.$queryRaw\`SELECT 1 as ok\`;
+  return { rows };
+}
+`;
+  }
+
+  if (orm === 'drizzle') {
+    if (engine === 'sqlite') {
+      return `import { sql } from 'drizzle-orm';
+
+import { db } from './index';
+
+export async function runDbProof() {
+  const rows = await db.run(sql\`select 1 as ok\`);
+  return { rows };
+}
+`;
+    }
+    return `import { sql } from 'drizzle-orm';
+
+import { db } from './index';
+
+export async function runDbProof() {
+  const rows = await db.execute(sql\`select 1 as ok\`);
+  return { rows };
+}
+`;
+  }
+
+  if (engine === 'sqlite') {
+    return `import { db } from './index';
+
+export async function runDbProof() {
+  const row = db.prepare('SELECT 1 as ok').get();
+  return { row };
+}
+`;
+  }
+
+  return `import { db } from './index';
+
+export async function runDbProof() {
+  const result = await db.query('SELECT 1 as ok');
+  return { result };
+}
+`;
+}
+
+function renderDbProofTest(framework) {
+  if (framework === 'fastify') {
+    return `import { describe, expect, it } from 'vitest';
+
+import app from '../../src/index';
+
+describe('db proof route starter', () => {
+  it('responds on /db/proof', async () => {
+    const response = await app.inject({ method: 'GET', url: '/db/proof' });
+    expect([200, 500]).toContain(response.statusCode);
+  });
+});
+`;
+  }
+
+  if (framework === 'express') {
+    return `import request from 'supertest';
+import { describe, expect, it } from 'vitest';
+
+import app from '../../src/index';
+
+describe('db proof route starter', () => {
+  it('responds on /db/proof', async () => {
+    const response = await request(app).get('/db/proof');
+    expect([200, 500]).toContain(response.status);
+  });
+});
+`;
+  }
+
+  if (framework === 'elysia') {
+    return `import { describe, expect, it } from 'vitest';
+
+import app from '../../src/index';
+
+describe('db proof route starter', () => {
+  it('responds on /db/proof', async () => {
+    const response = await app.handle(new Request('http://localhost/db/proof'));
+    expect([200, 500]).toContain(response.status);
+  });
+});
+`;
+  }
+
+  return `import { describe, expect, it } from 'vitest';
+
+import app from '../../src/index';
+
+describe('db proof route starter', () => {
+  it('responds on /db/proof', async () => {
+    const response = await app.request('/db/proof');
+    expect([200, 500]).toContain(response.status);
+  });
+});
+`;
+}
+
+async function injectDbProofRoute(cwd, framework) {
+  const indexPath = path.join(cwd, 'src/index.ts');
+  if (!(await fs.pathExists(indexPath))) return;
+  let content = await fs.readFile(indexPath, 'utf-8');
+  if (content.includes('/db/proof')) return;
+
+  if (!content.includes("import { runDbProof } from './db/proof-of-work';")) {
+    content = `import { runDbProof } from './db/proof-of-work';\n${content}`;
+  }
+
+  const routeByFramework = {
+    hono: "\napp.get('/db/proof', async (c) => c.json(await runDbProof()));\n",
+    fastify: "\napp.get('/db/proof', async () => await runDbProof());\n",
+    express: "\napp.get('/db/proof', async (_req, res) => {\n  res.json(await runDbProof());\n});\n",
+    elysia: ".get('/db/proof', async () => await runDbProof())",
+  };
+
+  if (framework === 'elysia') {
+    content = content.replace('const app = new Elysia()', `const app = new Elysia()${routeByFramework.elysia}`);
+  } else {
+    const anchor = "app.get('/health'";
+    const index = content.indexOf(anchor);
+    if (index !== -1) {
+      const endLine = content.indexOf('\n', index);
+      content = `${content.slice(0, endLine + 1)}${routeByFramework[framework] || routeByFramework.hono}${content.slice(endLine + 1)}`;
+    }
+  }
+
+  await fs.writeFile(indexPath, content);
+}
+
 function renderRawMigrationRunner(engine) {
   if (engine === 'postgresql') {
     return `import fs from 'node:fs/promises';
@@ -512,6 +698,7 @@ export async function generateDatabase(answers, cwd) {
   await fs.ensureDir(dbDir);
   const testDir = path.join(cwd, 'tests/integration');
   await fs.ensureDir(testDir);
+  const backendFramework = answers.backendFramework ?? 'hono';
 
   if (orm === 'none') {
     await fs.writeFile(path.join(dbDir, 'index.ts'), renderRawIndex(engine));
@@ -525,10 +712,7 @@ export async function generateDatabase(answers, cwd) {
 
   if (orm === 'drizzle') {
     await fs.writeFile(path.join(dbDir, 'index.ts'), renderDrizzleIndex(engine));
-    await fs.writeFile(
-      path.join(dbDir, 'schema.ts'),
-      `// Add your Drizzle schema here.\nexport const schemaVersion = 1;\n`,
-    );
+    await fs.writeFile(path.join(dbDir, 'schema.ts'), renderDrizzleSchema(engine));
     await fs.writeFile(path.join(cwd, 'drizzle.config.ts'), renderDrizzleConfig(engine, meta.url));
   }
 
@@ -566,6 +750,9 @@ export const Example = model('Example', exampleSchema);
   }
 
   await fs.writeFile(path.join(testDir, 'db-connectivity.int.test.ts'), renderDbConnectivityTest(engine, orm));
+  await fs.writeFile(path.join(dbDir, 'proof-of-work.ts'), renderDbProofOfWork(engine, orm));
+  await injectDbProofRoute(cwd, backendFramework);
+  await fs.writeFile(path.join(testDir, 'db-proof.int.test.ts'), renderDbProofTest(backendFramework));
 
   await upsertEnvExample(cwd, meta.url);
   await patchBackendEnvForDatabase(cwd);
