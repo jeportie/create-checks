@@ -169,6 +169,54 @@ describe('database scaffold', () => {
     expect(migrate).toContain('readFile');
   });
 
+  it('adds engine and ORM aware DB scripts for drizzle + postgresql', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, {
+      SETUP_DATABASE: '1',
+      DB_ENGINE: 'postgresql',
+      DB_ORM: 'drizzle',
+      DOCKER: '0',
+    });
+
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts).toHaveProperty('db:generate');
+    expect(pkg.scripts).toHaveProperty('db:migrate');
+    expect(pkg.scripts).toHaveProperty('db:studio');
+    expect(pkg.scripts).toHaveProperty('db:shell');
+    expect(pkg.scripts['db:migrate']).toContain('drizzle-kit');
+    expect(pkg.scripts['db:shell']).toContain('psql');
+  });
+
+  it('adds engine and ORM aware DB scripts for prisma + mysql', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, {
+      SETUP_DATABASE: '1',
+      DB_ENGINE: 'mysql',
+      DB_ORM: 'prisma',
+      DOCKER: '0',
+    });
+
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts['db:generate']).toContain('prisma generate');
+    expect(pkg.scripts['db:migrate']).toContain('prisma migrate dev');
+    expect(pkg.scripts['db:studio']).toContain('prisma studio');
+    expect(pkg.scripts['db:shell']).toContain('mysql');
+  });
+
+  it('adds raw migration scripts for none ORM + sqlite', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, {
+      SETUP_DATABASE: '1',
+      DB_ENGINE: 'sqlite',
+      DB_ORM: 'none',
+      DOCKER: '0',
+    });
+
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts['db:migrate']).toContain('src/db/migrate.ts');
+    expect(pkg.scripts['db:shell']).toContain('sqlite3');
+  });
+
   it('generates redis starter files, env, docker service and docs when redis is enabled', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, {

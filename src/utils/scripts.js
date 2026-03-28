@@ -156,6 +156,33 @@ export function buildScripts(pkg, answers) {
       pkg.scripts['docker:build'] =
         'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose build; elif command -v docker-compose >/dev/null 2>&1; then docker-compose build; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
     }
+
+    if (answers.setupDatabase) {
+      const engine = answers.databaseEngine ?? 'postgresql';
+      const orm = answers.databaseOrm ?? (engine === 'mongodb' ? 'mongoose' : 'none');
+
+      if (orm === 'drizzle') {
+        pkg.scripts['db:generate'] = 'drizzle-kit generate';
+        pkg.scripts['db:migrate'] = 'drizzle-kit migrate';
+        pkg.scripts['db:studio'] = 'drizzle-kit studio';
+      } else if (orm === 'prisma') {
+        pkg.scripts['db:generate'] = 'prisma generate';
+        pkg.scripts['db:migrate'] = 'prisma migrate dev';
+        pkg.scripts['db:studio'] = 'prisma studio';
+      } else if (orm === 'none') {
+        pkg.scripts['db:migrate'] = 'node --import tsx src/db/migrate.ts';
+      }
+
+      if (engine === 'postgresql') {
+        pkg.scripts['db:shell'] = 'psql "$DATABASE_URL"';
+      } else if (engine === 'mysql' || engine === 'mariadb') {
+        pkg.scripts['db:shell'] = 'mysql "$DATABASE_URL"';
+      } else if (engine === 'sqlite') {
+        pkg.scripts['db:shell'] = 'sqlite3 dev.db';
+      } else if (engine === 'mongodb') {
+        pkg.scripts['db:shell'] = 'mongosh "$DATABASE_URL"';
+      }
+    }
   }
 
   if (projectType === 'app') {
