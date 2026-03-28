@@ -1242,14 +1242,15 @@ function getScriptsTable(answers) {
     setupAppDetox,
     setupDocker,
     lintOption = [],
+    linter = 'eslint',
   } = answers;
   const rows = [];
 
   rows.push('| Script | Description |');
   rows.push('| --- | --- |');
   rows.push('| `npm run check` | Run all quality checks |');
-  rows.push('| `npm run format` | Format code with Prettier |');
-  rows.push('| `npm run lint` | Lint with ESLint |');
+  rows.push(`| \`npm run format\` | Format code with ${linter === 'biome' ? 'Biome' : 'Prettier'} |`);
+  rows.push(`| \`npm run lint\` | Lint with ${linter === 'biome' ? 'Biome' : 'ESLint'} |`);
   rows.push('| `npm run typecheck` | Type-check with TypeScript |');
 
   if (lintOption.includes('cspell')) rows.push('| `npm run spellcheck` | Check spelling |');

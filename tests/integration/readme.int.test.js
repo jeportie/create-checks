@@ -453,6 +453,24 @@ describe('section ordering and overall structure', () => {
   });
 });
 
+describe('scripts reference is linter-aware', () => {
+  it('uses Biome wording when biome is selected', () => {
+    const content = generateReadme(backendAnswers({ linter: 'biome' }));
+    const scripts = content.split('## Scripts Reference')[1];
+    expect(scripts).toContain('Format code with Biome');
+    expect(scripts).toContain('Lint with Biome');
+    expect(scripts).not.toContain('Prettier');
+    expect(scripts).not.toContain('ESLint');
+  });
+
+  it('uses ESLint + Prettier wording when eslint is selected', () => {
+    const content = generateReadme(backendAnswers({ linter: 'eslint' }));
+    const scripts = content.split('## Scripts Reference')[1];
+    expect(scripts).toContain('Format code with Prettier');
+    expect(scripts).toContain('Lint with ESLint');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // 8. All backend framework variants produce valid README
 // ---------------------------------------------------------------------------
