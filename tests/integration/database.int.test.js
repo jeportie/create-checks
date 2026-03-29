@@ -107,6 +107,8 @@ describe('database scaffold', () => {
     expect(pkg.scripts).toHaveProperty('docker:db:logs');
     expect(pkg.scripts).toHaveProperty('docker:db:shell');
     expect(pkg.scripts).toHaveProperty('docker:db:migrate');
+    expect(pkg.scripts['docker:db:shell']).toContain('psql "$DATABASE_URL"');
+    expect(pkg.scripts['docker:db:migrate']).toBe('npm run db:migrate --if-present');
   });
 
   it('writes a connection string template in .env.example', () => {
@@ -135,7 +137,7 @@ describe('database scaffold', () => {
 
     const envFile = readFileSync(join(tmpDir, 'src/env.ts'), 'utf-8');
     expect(envFile).toContain('DATABASE_URL');
-    expect(envFile).toContain('z.string().min(1)');
+    expect(envFile).toContain('z.string().min(1).default(');
   });
 
   it('wires DATABASE_URL into src/env.ts when zod is disabled', () => {
@@ -151,6 +153,7 @@ describe('database scaffold', () => {
     const envFile = readFileSync(join(tmpDir, 'src/env.ts'), 'utf-8');
     expect(envFile).toContain('DATABASE_URL');
     expect(envFile).toContain('process.env.DATABASE_URL');
+    expect(envFile).toContain('postgresql://');
   });
 
   it('adds a README database section', () => {
@@ -165,10 +168,10 @@ describe('database scaffold', () => {
     const readme = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
     expect(readme).toContain('## Database');
     expect(readme).toContain('SQLite');
-    expect(readme).toContain('### Quick start');
-    expect(readme).toContain('DATABASE_URL');
-    expect(readme).toContain('### Daily workflow');
-    expect(readme).toContain('### Basic query smoke test');
+    expect(readme).toContain('### Configuration');
+    expect(readme).toContain('src/db/config.ts');
+    expect(readme).toContain('### Commands');
+    expect(readme).toContain('npm run db:migrate');
   });
 
   it('creates a raw migration runner that executes sql files in sorted order', () => {
@@ -204,7 +207,7 @@ describe('database scaffold', () => {
     expect(content).toContain('SELECT 1');
   });
 
-  it('creates DB proof-of-work starter files with route and test', () => {
+  it('creates DB config and unit test starters without injecting app routes', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, {
       SETUP_DATABASE: '1',
@@ -217,14 +220,16 @@ describe('database scaffold', () => {
     const schema = readFileSync(join(tmpDir, 'src/db/schema.ts'), 'utf-8');
     expect(schema).toContain('users');
 
-    expect(existsSync(join(tmpDir, 'src/db/proof-of-work.ts'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'src/db/config.ts'))).toBe(true);
+    const dbConfig = readFileSync(join(tmpDir, 'src/db/config.ts'), 'utf-8');
+    expect(dbConfig).toContain('getDatabaseUrl');
 
     const indexFile = readFileSync(join(tmpDir, 'src/index.ts'), 'utf-8');
-    expect(indexFile).toContain('/db/proof');
-    expect(indexFile).toContain('runDbProof');
+    expect(indexFile).not.toContain('/db/proof');
+    expect(indexFile).not.toContain('runDbProof');
 
-    const proofTest = readFileSync(join(tmpDir, 'tests/integration/db-proof.int.test.ts'), 'utf-8');
-    expect(proofTest).toContain('/db/proof');
+    const unitTest = readFileSync(join(tmpDir, 'tests/unit/db-config.unit.test.ts'), 'utf-8');
+    expect(unitTest).toContain('getDatabaseUrl');
   });
 
   it('adds engine and ORM aware DB scripts for drizzle + postgresql', () => {

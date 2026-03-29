@@ -174,9 +174,8 @@ export function buildScripts(pkg, answers) {
         pkg.scripts['docker:db:logs'] =
           'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose logs -f db; elif command -v docker-compose >/dev/null 2>&1; then docker-compose logs -f db; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
         pkg.scripts['docker:db:shell'] =
-          `sh -c 'if docker compose version >/dev/null 2>&1; then docker compose exec db sh -lc "${dbShellCmd}"; elif command -v docker-compose >/dev/null 2>&1; then docker-compose exec db sh -lc "${dbShellCmd}"; else echo "Docker Compose is not installed" >&2; exit 1; fi'`;
-        pkg.scripts['docker:db:migrate'] =
-          'sh -c \'if [ -n "$(npm run | grep -E " db:migrate")" ]; then npm run db:migrate; else echo "No db:migrate script defined for current ORM/engine"; fi\'';
+          `sh -c "if docker compose version >/dev/null 2>&1; then docker compose exec db sh -lc '${dbShellCmd}'; elif command -v docker-compose >/dev/null 2>&1; then docker-compose exec db sh -lc '${dbShellCmd}'; else echo 'Docker Compose is not installed' >&2; exit 1; fi"`;
+        pkg.scripts['docker:db:migrate'] = 'npm run db:migrate --if-present';
       }
     }
 

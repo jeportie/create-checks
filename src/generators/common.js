@@ -280,22 +280,17 @@ describe('helloWorld', () => {
   }
 
   const pkg = await fs.readJson(pkgPath);
+  const previousScripts = { ...(pkg.scripts ?? {}) };
   buildScripts(pkg, answers);
   const organizedPkg = orderPackageKeys(pkg);
   await fs.writeJson(pkgPath, organizedPkg, { spaces: 2 });
 
-  const addedScripts = ['check', 'lint', 'format', 'typecheck'];
-  if (lintOption.includes('cspell')) addedScripts.push('spellcheck');
-  if (lintOption.includes('secretlint')) addedScripts.push('secretlint');
-  if (vitestPreset === 'native' || vitestPreset === 'coverage') {
-    addedScripts.push('test', 'test:unit', 'test:integration');
-  }
-  if (vitestPreset === 'coverage') addedScripts.push('test:coverage');
-  if (isFrontend) addedScripts.push('build', 'dev', 'preview');
-  if (answers.setupPlaywright) addedScripts.push('test:e2e', 'test:e2e:ui');
+  const changedScripts = Object.entries(organizedPkg.scripts ?? {})
+    .filter(([name, command]) => previousScripts[name] !== command)
+    .map(([name]) => name);
 
   console.log(pc.green('→') + '  scripts added in package.json:');
-  for (const script of addedScripts) {
+  for (const script of changedScripts) {
     console.log(pc.green('✔') + `    ${script}`);
   }
 

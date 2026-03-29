@@ -1,5 +1,6 @@
 import fs from 'fs-extra';
 import path from 'node:path';
+import pc from 'picocolors';
 
 const engineMeta = {
   postgresql: {
@@ -49,24 +50,35 @@ const engineMeta = {
   },
 };
 
+function logGeneratedFile(cwd, absolutePath) {
+  const relative = path.relative(cwd, absolutePath).split(path.sep).join('/');
+  console.log(pc.green('✔') + `    ${relative}`);
+}
+
 function renderRawIndex(engine) {
   if (engine === 'postgresql') {
     return `import { Pool } from 'pg';
 
-export const db = new Pool({ connectionString: process.env.DATABASE_URL });
+import { getDatabaseUrl } from './config';
+
+export const db = new Pool({ connectionString: getDatabaseUrl() });
 `;
   }
 
   if (engine === 'mysql' || engine === 'mariadb') {
     return `import mysql from 'mysql2/promise';
 
-export const db = mysql.createPool(process.env.DATABASE_URL ?? '');
+import { getDatabaseUrl } from './config';
+
+export const db = mysql.createPool(getDatabaseUrl());
 `;
   }
 
   return `import Database from 'better-sqlite3';
 
-export const db = new Database('dev.db');
+import { getSqliteFilePath } from './config';
+
+export const db = new Database(getSqliteFilePath());
 `;
 }
 
@@ -75,7 +87,9 @@ function renderDrizzleIndex(engine) {
     return `import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+import { getDatabaseUrl } from './config';
+
+const pool = new Pool({ connectionString: getDatabaseUrl() });
 export const db = drizzle({ client: pool });
 `;
   }
@@ -84,7 +98,9 @@ export const db = drizzle({ client: pool });
     return `import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 
-const connection = mysql.createPool(process.env.DATABASE_URL ?? '');
+import { getDatabaseUrl } from './config';
+
+const connection = mysql.createPool(getDatabaseUrl());
 export const db = drizzle({ client: connection });
 `;
   }
@@ -92,7 +108,9 @@ export const db = drizzle({ client: connection });
   return `import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 
-const sqlite = new Database('dev.db');
+import { getSqliteFilePath } from './config';
+
+const sqlite = new Database(getSqliteFilePath());
 export const db = drizzle({ client: sqlite });
 `;
 }
@@ -130,157 +148,33 @@ export const users = sqliteTable('users', {
 `;
 }
 
-function renderDbProofOfWork(engine, orm) {
-  if (orm === 'mongoose') {
-    return `import { Example } from './models/example';
-import { connectDb } from './index';
-
-export async function runDbProof() {
-  await connectDb();
-  const count = await Example.countDocuments();
-  return { count };
-}
-`;
-  }
-
-  if (orm === 'prisma') {
-    return `import { db } from './index';
-
-export async function runDbProof() {
-  const rows = await db.$queryRaw\`SELECT 1 as ok\`;
-  return { rows };
-}
-`;
-  }
-
-  if (orm === 'drizzle') {
-    if (engine === 'sqlite') {
-      return `import { sql } from 'drizzle-orm';
-
-import { db } from './index';
-
-export async function runDbProof() {
-  const rows = await db.run(sql\`select 1 as ok\`);
-  return { rows };
-}
-`;
-    }
-    return `import { sql } from 'drizzle-orm';
-
-import { db } from './index';
-
-export async function runDbProof() {
-  const rows = await db.execute(sql\`select 1 as ok\`);
-  return { rows };
-}
-`;
-  }
+function renderDbConfig(engine) {
+  const defaultUrl = engineMeta[engine].url;
 
   if (engine === 'sqlite') {
-    return `import { db } from './index';
+    return `export const defaultDatabaseUrl = '${defaultUrl}';
 
-export async function runDbProof() {
-  const row = db.prepare('SELECT 1 as ok').get();
-  return { row };
+export function getDatabaseUrl() {
+  return process.env.DATABASE_URL ?? defaultDatabaseUrl;
+}
+
+export function getSqliteFilePath() {
+  const url = getDatabaseUrl();
+  if (url.startsWith('file:')) {
+    return url.slice('file:'.length);
+  }
+
+  return url;
 }
 `;
   }
 
-  return `import { db } from './index';
+  return `export const defaultDatabaseUrl = '${defaultUrl}';
 
-export async function runDbProof() {
-  const result = await db.query('SELECT 1 as ok');
-  return { result };
+export function getDatabaseUrl() {
+  return process.env.DATABASE_URL ?? defaultDatabaseUrl;
 }
 `;
-}
-
-function renderDbProofTest(framework) {
-  if (framework === 'fastify') {
-    return `import { describe, expect, it } from 'vitest';
-
-import app from '../../src/index';
-
-describe('db proof route starter', () => {
-  it('responds on /db/proof', async () => {
-    const response = await app.inject({ method: 'GET', url: '/db/proof' });
-    expect([200, 500]).toContain(response.statusCode);
-  });
-});
-`;
-  }
-
-  if (framework === 'express') {
-    return `import request from 'supertest';
-import { describe, expect, it } from 'vitest';
-
-import app from '../../src/index';
-
-describe('db proof route starter', () => {
-  it('responds on /db/proof', async () => {
-    const response = await request(app).get('/db/proof');
-    expect([200, 500]).toContain(response.status);
-  });
-});
-`;
-  }
-
-  if (framework === 'elysia') {
-    return `import { describe, expect, it } from 'vitest';
-
-import app from '../../src/index';
-
-describe('db proof route starter', () => {
-  it('responds on /db/proof', async () => {
-    const response = await app.handle(new Request('http://localhost/db/proof'));
-    expect([200, 500]).toContain(response.status);
-  });
-});
-`;
-  }
-
-  return `import { describe, expect, it } from 'vitest';
-
-import app from '../../src/index';
-
-describe('db proof route starter', () => {
-  it('responds on /db/proof', async () => {
-    const response = await app.request('/db/proof');
-    expect([200, 500]).toContain(response.status);
-  });
-});
-`;
-}
-
-async function injectDbProofRoute(cwd, framework) {
-  const indexPath = path.join(cwd, 'src/index.ts');
-  if (!(await fs.pathExists(indexPath))) return;
-  let content = await fs.readFile(indexPath, 'utf-8');
-  if (content.includes('/db/proof')) return;
-
-  if (!content.includes("import { runDbProof } from './db/proof-of-work';")) {
-    content = `import { runDbProof } from './db/proof-of-work';\n${content}`;
-  }
-
-  const routeByFramework = {
-    hono: "\napp.get('/db/proof', async (c) => c.json(await runDbProof()));\n",
-    fastify: "\napp.get('/db/proof', async () => await runDbProof());\n",
-    express: "\napp.get('/db/proof', async (_req, res) => {\n  res.json(await runDbProof());\n});\n",
-    elysia: ".get('/db/proof', async () => await runDbProof())",
-  };
-
-  if (framework === 'elysia') {
-    content = content.replace('const app = new Elysia()', `const app = new Elysia()${routeByFramework.elysia}`);
-  } else {
-    const anchor = "app.get('/health'";
-    const index = content.indexOf(anchor);
-    if (index !== -1) {
-      const endLine = content.indexOf('\n', index);
-      content = `${content.slice(0, endLine + 1)}${routeByFramework[framework] || routeByFramework.hono}${content.slice(endLine + 1)}`;
-    }
-  }
-
-  await fs.writeFile(indexPath, content);
 }
 
 function renderRawMigrationRunner(engine) {
@@ -437,12 +331,28 @@ export default defineConfig({
 function renderDbConnectivityTest(engine, orm) {
   const importLine =
     orm === 'mongoose' ? "import { connectDb } from '../../src/db';" : "import { db } from '../../src/db';";
+  const imports = ["import { describe, expect, it } from 'vitest';", importLine];
+
+  if (orm === 'drizzle') {
+    imports.unshift("import { sql } from 'drizzle-orm';");
+  }
 
   let connectivityBody = '';
   if (orm === 'mongoose') {
     connectivityBody = `
     await connectDb();
     expect(true).toBe(true);
+`;
+  } else if (orm === 'drizzle') {
+    connectivityBody =
+      engine === 'sqlite'
+        ? `
+    const result = await db.run(sql\`SELECT 1 as ok\`);
+    expect(result).toBeDefined();
+`
+        : `
+    const result = await db.execute(sql\`SELECT 1 as ok\`);
+    expect(result).toBeDefined();
 `;
   } else if (orm === 'prisma') {
     connectivityBody = `
@@ -463,17 +373,42 @@ function renderDbConnectivityTest(engine, orm) {
 `;
   }
 
-  return `import { describe, expect, it } from 'vitest';
-
-${importLine}
+  return `${imports.join('\n')}
 
 describe('database connectivity', () => {
   it('executes a basic query path when DATABASE_URL is configured', async () => {
-    if (!process.env.DATABASE_URL && '${engine}' !== 'sqlite') {
+    if (!process.env.DATABASE_URL && process.env.CI !== 'true') {
       // Starter guard: provide env then remove this guard for strict CI usage.
       return;
     }
 ${connectivityBody}
+  });
+});
+`;
+}
+
+function renderDbConfigUnitTest(engine) {
+  if (engine === 'sqlite') {
+    return `import { describe, expect, it } from 'vitest';
+
+import { getDatabaseUrl, getSqliteFilePath } from '../../src/db/config';
+
+describe('db config starter', () => {
+  it('exposes sqlite url and file path', () => {
+    expect(getDatabaseUrl()).toContain('file:');
+    expect(getSqliteFilePath().length).toBeGreaterThan(0);
+  });
+});
+`;
+  }
+
+  return `import { describe, expect, it } from 'vitest';
+
+import { getDatabaseUrl } from '../../src/db/config';
+
+describe('db config starter', () => {
+  it('exposes database url', () => {
+    expect(getDatabaseUrl().length).toBeGreaterThan(0);
   });
 });
 `;
@@ -522,17 +457,19 @@ async function upsertEnvExample(cwd, url) {
   await fs.writeFile(envPath, `${lines.join('\n')}\n`);
 }
 
-async function patchBackendEnvForDatabase(cwd) {
+async function patchBackendEnvForDatabase(cwd, defaultUrl) {
   const envPath = path.join(cwd, 'src/env.ts');
   if (!(await fs.pathExists(envPath))) return;
 
   const content = await fs.readFile(envPath, 'utf-8');
   if (content.includes('DATABASE_URL')) return;
 
+  const serializedDefaultUrl = JSON.stringify(defaultUrl);
+
   if (content.includes('const envSchema = z.object({')) {
     const next = content.replace(
       'const envSchema = z.object({',
-      'const envSchema = z.object({\n  DATABASE_URL: z.string().min(1),',
+      `const envSchema = z.object({\n  DATABASE_URL: z.string().min(1).default(${serializedDefaultUrl}),`,
     );
     await fs.writeFile(envPath, next);
     return;
@@ -541,7 +478,7 @@ async function patchBackendEnvForDatabase(cwd) {
   if (content.includes('export const env = {')) {
     const next = content.replace(
       'export const env = {',
-      "export const env = {\n  DATABASE_URL: process.env.DATABASE_URL ?? '',",
+      `export const env = {\n  DATABASE_URL: process.env.DATABASE_URL ?? ${serializedDefaultUrl},`,
     );
     await fs.writeFile(envPath, next);
   }
@@ -562,118 +499,25 @@ async function upsertRedisEnvExample(cwd) {
   await fs.writeFile(envPath, `${lines.join('\n')}\n`);
 }
 
-async function appendReadmeSection(cwd, engine, orm) {
-  const readmePath = path.join(cwd, 'README.md');
-  if (!(await fs.pathExists(readmePath))) return;
-
-  const content = await fs.readFile(readmePath, 'utf-8');
-  if (content.includes('## Database')) return;
-
-  const ormLabel = orm === 'none' ? 'Raw driver + SQL migrations' : orm;
-  const migrationCommand =
-    orm === 'none'
-      ? 'node --import tsx src/db/migrate.ts'
-      : orm === 'drizzle'
-        ? 'npx drizzle-kit generate && npx drizzle-kit migrate'
-        : orm === 'prisma'
-          ? 'npx prisma migrate dev'
-          : 'npx prisma db push';
-
-  const smokeExample =
-    engine === 'mongodb'
-      ? 'await connectDb();\nconst count = await Example.countDocuments();\nconsole.log({ count });'
-      : orm === 'prisma'
-        ? 'const rows = await db.example.findMany({ take: 1 });\nconsole.log({ rows });'
-        : "const rows = await db.query?.('SELECT 1 as ok') ?? [{ ok: 1 }];\nconsole.log({ rows });";
-
-  const section = `
-
-## Database
-
-- Engine: ${engineMeta[engine].label}
-- Data access: ${ormLabel}
-
-### Quick start
-
-1. Copy env values and set your connection string:
-
-\`\`\`bash
-cp .env.example .env
-# set DATABASE_URL in .env
-\`\`\`
-
-2. Apply schema/migrations:
-
-\`\`\`bash
-${migrationCommand}
-\`\`\`
-
-### Daily workflow
-
-- Update models/schema in \`src/db/\` (or \`prisma/schema.prisma\`)
-- Re-run migrations after schema changes
-- Keep \`DATABASE_URL\` aligned with your local/staging environment
-
-### Basic query smoke test
-
-\`\`\`ts
-${smokeExample}
-\`\`\`
-`;
-  await fs.writeFile(readmePath, `${content}${section}`);
-}
-
-async function appendRedisReadmeSection(cwd) {
-  const readmePath = path.join(cwd, 'README.md');
-  if (!(await fs.pathExists(readmePath))) return;
-
-  const content = await fs.readFile(readmePath, 'utf-8');
-  if (content.includes('## Redis')) return;
-
-  const section = `
-
-## Redis
-
-- Client: ioredis
-- Connection: \`REDIS_URL\`
-
-### Quick start
-
-\`\`\`bash
-cp .env.example .env
-# set REDIS_URL in .env
-\`\`\`
-
-### Starter usage
-
-\`\`\`ts
-import { redis } from './src/redis';
-
-await redis.ping();
-\`\`\`
-`;
-
-  await fs.writeFile(readmePath, `${content}${section}`);
-}
-
 async function patchDockerCompose(cwd, engine) {
   const composePath = path.join(cwd, 'docker-compose.yml');
-  if (!(await fs.pathExists(composePath))) return;
-  if (engine === 'sqlite') return;
+  if (!(await fs.pathExists(composePath))) return false;
+  if (engine === 'sqlite') return false;
 
   const content = await fs.readFile(composePath, 'utf-8');
-  if (content.includes('\n  db:\n')) return;
+  if (content.includes('\n  db:\n')) return false;
 
   const service = renderDockerDbService(engine);
   await fs.writeFile(composePath, `${content}${service}`);
+  return true;
 }
 
 async function patchDockerComposeRedis(cwd) {
   const composePath = path.join(cwd, 'docker-compose.yml');
-  if (!(await fs.pathExists(composePath))) return;
+  if (!(await fs.pathExists(composePath))) return false;
 
   const content = await fs.readFile(composePath, 'utf-8');
-  if (content.includes('\n  redis:\n')) return;
+  if (content.includes('\n  redis:\n')) return false;
 
   const redisService = `
   redis:
@@ -683,6 +527,7 @@ async function patchDockerComposeRedis(cwd) {
 `;
 
   await fs.writeFile(composePath, `${content}${redisService}`);
+  return true;
 }
 
 export async function generateDatabase(answers, cwd) {
@@ -694,75 +539,116 @@ export async function generateDatabase(answers, cwd) {
 
   if (!meta) return;
 
+  console.log(pc.green('→') + '  generating database starter files...');
+
   const dbDir = path.join(cwd, 'src/db');
   await fs.ensureDir(dbDir);
+  const dbConfigPath = path.join(dbDir, 'config.ts');
+  await fs.writeFile(dbConfigPath, renderDbConfig(engine));
+  logGeneratedFile(cwd, dbConfigPath);
+
   const testDir = path.join(cwd, 'tests/integration');
   await fs.ensureDir(testDir);
-  const backendFramework = answers.backendFramework ?? 'hono';
+
+  const unitTestDir = path.join(cwd, 'tests/unit');
+  await fs.ensureDir(unitTestDir);
 
   if (orm === 'none') {
-    await fs.writeFile(path.join(dbDir, 'index.ts'), renderRawIndex(engine));
-    await fs.writeFile(path.join(dbDir, 'migrate.ts'), renderRawMigrationRunner(engine));
+    const dbIndexPath = path.join(dbDir, 'index.ts');
+    await fs.writeFile(dbIndexPath, renderRawIndex(engine));
+    logGeneratedFile(cwd, dbIndexPath);
+
+    const migratePath = path.join(dbDir, 'migrate.ts');
+    await fs.writeFile(migratePath, renderRawMigrationRunner(engine));
+    logGeneratedFile(cwd, migratePath);
+
     await fs.ensureDir(path.join(dbDir, 'migrations'));
+    const initialMigrationPath = path.join(dbDir, 'migrations/001_initial.sql');
     await fs.writeFile(
-      path.join(dbDir, 'migrations/001_initial.sql'),
+      initialMigrationPath,
       'CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL);\n',
     );
+    logGeneratedFile(cwd, initialMigrationPath);
   }
 
   if (orm === 'drizzle') {
-    await fs.writeFile(path.join(dbDir, 'index.ts'), renderDrizzleIndex(engine));
-    await fs.writeFile(path.join(dbDir, 'schema.ts'), renderDrizzleSchema(engine));
-    await fs.writeFile(path.join(cwd, 'drizzle.config.ts'), renderDrizzleConfig(engine, meta.url));
+    const dbIndexPath = path.join(dbDir, 'index.ts');
+    await fs.writeFile(dbIndexPath, renderDrizzleIndex(engine));
+    logGeneratedFile(cwd, dbIndexPath);
+
+    const schemaPath = path.join(dbDir, 'schema.ts');
+    await fs.writeFile(schemaPath, renderDrizzleSchema(engine));
+    logGeneratedFile(cwd, schemaPath);
+
+    const drizzleConfigPath = path.join(cwd, 'drizzle.config.ts');
+    await fs.writeFile(drizzleConfigPath, renderDrizzleConfig(engine, meta.url));
+    logGeneratedFile(cwd, drizzleConfigPath);
   }
 
   if (orm === 'prisma') {
     await fs.ensureDir(path.join(cwd, 'prisma'));
+    const dbIndexPath = path.join(dbDir, 'index.ts');
     await fs.writeFile(
-      path.join(dbDir, 'index.ts'),
+      dbIndexPath,
       `import { PrismaClient } from '@prisma/client';
 
 export const db = new PrismaClient();
 `,
     );
-    await fs.writeFile(path.join(cwd, 'prisma/schema.prisma'), renderPrismaSchema(engine));
+    logGeneratedFile(cwd, dbIndexPath);
+
+    const prismaSchemaPath = path.join(cwd, 'prisma/schema.prisma');
+    await fs.writeFile(prismaSchemaPath, renderPrismaSchema(engine));
+    logGeneratedFile(cwd, prismaSchemaPath);
   }
 
   if (orm === 'mongoose') {
     await fs.ensureDir(path.join(dbDir, 'models'));
+    const dbIndexPath = path.join(dbDir, 'index.ts');
     await fs.writeFile(
-      path.join(dbDir, 'index.ts'),
+      dbIndexPath,
       `import mongoose from 'mongoose';
 
+import { getDatabaseUrl } from './config';
+
 export async function connectDb() {
-  await mongoose.connect(process.env.DATABASE_URL ?? '${meta.url}');
+  await mongoose.connect(getDatabaseUrl());
 }
 `,
     );
+    logGeneratedFile(cwd, dbIndexPath);
+
+    const exampleModelPath = path.join(dbDir, 'models/example.ts');
     await fs.writeFile(
-      path.join(dbDir, 'models/example.ts'),
+      exampleModelPath,
       `import { Schema, model } from 'mongoose';
 
 const exampleSchema = new Schema({ name: { type: String, required: true } });
 export const Example = model('Example', exampleSchema);
 `,
     );
+    logGeneratedFile(cwd, exampleModelPath);
   }
 
-  await fs.writeFile(path.join(testDir, 'db-connectivity.int.test.ts'), renderDbConnectivityTest(engine, orm));
-  await fs.writeFile(path.join(dbDir, 'proof-of-work.ts'), renderDbProofOfWork(engine, orm));
-  await injectDbProofRoute(cwd, backendFramework);
-  await fs.writeFile(path.join(testDir, 'db-proof.int.test.ts'), renderDbProofTest(backendFramework));
+  const dbConnectivityPath = path.join(testDir, 'db-connectivity.int.test.ts');
+  await fs.writeFile(dbConnectivityPath, renderDbConnectivityTest(engine, orm));
+  logGeneratedFile(cwd, dbConnectivityPath);
+
+  const dbConfigUnitTestPath = path.join(unitTestDir, 'db-config.unit.test.ts');
+  await fs.writeFile(dbConfigUnitTestPath, renderDbConfigUnitTest(engine));
+  logGeneratedFile(cwd, dbConfigUnitTestPath);
 
   await upsertEnvExample(cwd, meta.url);
-  await patchBackendEnvForDatabase(cwd);
-  await appendReadmeSection(cwd, engine, orm);
+  await patchBackendEnvForDatabase(cwd, meta.url);
+  logGeneratedFile(cwd, path.join(cwd, '.env.example'));
+  logGeneratedFile(cwd, path.join(cwd, 'src/env.ts'));
 
   if (answers.setupRedis) {
     const redisDir = path.join(cwd, 'src/redis');
     await fs.ensureDir(redisDir);
+    const redisIndexPath = path.join(redisDir, 'index.ts');
     await fs.writeFile(
-      path.join(redisDir, 'index.ts'),
+      redisIndexPath,
       `import Redis from 'ioredis';
 
 export const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
@@ -772,15 +658,23 @@ export async function checkRedisConnection() {
 }
 `,
     );
+    logGeneratedFile(cwd, redisIndexPath);
+
     await upsertRedisEnvExample(cwd);
-    await appendRedisReadmeSection(cwd);
+    logGeneratedFile(cwd, path.join(cwd, '.env.example'));
 
     if (answers.setupDocker) {
-      await patchDockerComposeRedis(cwd);
+      const patchedRedisService = await patchDockerComposeRedis(cwd);
+      if (patchedRedisService) {
+        logGeneratedFile(cwd, path.join(cwd, 'docker-compose.yml'));
+      }
     }
   }
 
   if (answers.setupDocker) {
-    await patchDockerCompose(cwd, engine);
+    const patchedDbService = await patchDockerCompose(cwd, engine);
+    if (patchedDbService) {
+      logGeneratedFile(cwd, path.join(cwd, 'docker-compose.yml'));
+    }
   }
 }

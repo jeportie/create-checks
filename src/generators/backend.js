@@ -45,33 +45,17 @@ async function upsertEnvExampleEntries(cwd, entries) {
   await fs.writeFile(envPath, `${next.join('\n')}\n`);
 }
 
-async function appendIntegrationReadme(cwd, name) {
-  const readmePath = path.join(cwd, 'README.md');
-  if (!(await fs.pathExists(readmePath))) return;
-
-  const content = await fs.readFile(readmePath, 'utf-8');
-  if (content.includes('## Integrations')) return;
-
-  const section = `
-
-## Integrations
-
-### ${name}
-
-- Starter wiring is generated in \`src/integrations/${name === 'Better Auth' ? 'better-auth' : 'integration'}.ts\`
-- Add provider credentials to \`.env.local\` and keep placeholders in \`.env.example\`
-`;
-  await fs.writeFile(readmePath, `${content}${section}`);
-}
-
 async function generateIntegrationPreset(answers, cwd) {
   const preset = answers.integrationPreset ?? 'none';
   if (preset !== 'better-auth') return;
 
+  console.log(pc.green('→') + '  scaffolding integration presets...');
+
   const integrationsDir = path.join(cwd, 'src/integrations');
   await fs.ensureDir(integrationsDir);
+  const betterAuthPath = path.join(integrationsDir, 'better-auth.ts');
   await fs.writeFile(
-    path.join(integrationsDir, 'better-auth.ts'),
+    betterAuthPath,
     `export type BetterAuthConfig = {
   baseUrl: string;
   secret: string;
@@ -85,12 +69,13 @@ export function getBetterAuthConfig(): BetterAuthConfig {
 }
 `,
   );
+  console.log(pc.green('✔') + `    ${path.relative(cwd, betterAuthPath).split(path.sep).join('/')}`);
 
   await upsertEnvExampleEntries(cwd, {
     BETTER_AUTH_URL: 'http://localhost:3000',
     BETTER_AUTH_SECRET: '',
   });
-  await appendIntegrationReadme(cwd, 'Better Auth');
+  console.log(pc.green('✔') + '    .env.example');
 }
 
 export async function generateBackend(answers, cwd) {

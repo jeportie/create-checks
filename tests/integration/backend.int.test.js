@@ -16,10 +16,11 @@ function createTmpProject() {
 }
 
 function runCli(cwd, extraEnv = {}) {
-  execSync(`node ${cliPath}`, {
+  return execSync(`node ${cliPath}`, {
     cwd,
     env: { ...process.env, NO_INSTALL: '1', PROJECT_TYPE: 'backend', ...extraEnv },
     stdio: 'pipe',
+    encoding: 'utf-8',
   });
 }
 
@@ -304,7 +305,7 @@ describe('backend project scaffold', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { BACKEND_FRAMEWORK: 'hono', DOCKER: '0' });
     const content = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
-    expect(content).toContain('backend api');
+    expect(content).toContain('Backend API');
     expect(content).toContain('Hono');
     expect(content).toContain('Zod');
   });
@@ -338,7 +339,31 @@ describe('backend project scaffold', () => {
     expect(envExample).toContain('BETTER_AUTH_SECRET=');
 
     const readme = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
-    expect(readme).toContain('## Integrations');
-    expect(readme).toContain('Better Auth');
+    expect(readme).toContain('## Authentication (Better Auth)');
+    expect(readme).toContain('BETTER_AUTH_SECRET');
+  });
+
+  it('prints script and generated file summaries for backend database stacks', () => {
+    tmpDir = createTmpProject();
+    const output = runCli(tmpDir, {
+      BACKEND_FRAMEWORK: 'fastify',
+      DOCKER: '1',
+      SETUP_DATABASE: '1',
+      DB_ENGINE: 'mysql',
+      DB_ORM: 'prisma',
+      SETUP_REDIS: '1',
+      INTEGRATION_PRESET: 'better-auth',
+      VITEST_PRESET: 'coverage',
+      LINT_OPTIONS: 'cspell,secretlint,commitlint',
+    });
+
+    expect(output).toContain('scripts added in package.json:');
+    expect(output).toContain('✔    db:generate');
+    expect(output).toContain('✔    db:migrate');
+    expect(output).toContain('✔    docker:db:shell');
+    expect(output).toContain('✔    src/db/config.ts');
+    expect(output).toContain('✔    tests/integration/db-connectivity.int.test.ts');
+    expect(output).toContain('✔    src/redis/index.ts');
+    expect(output).toContain('✔    src/integrations/better-auth.ts');
   });
 });

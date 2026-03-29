@@ -9,6 +9,922 @@ function codeBlock(language, content) {
   return `\`\`\`${language}\n${content}\n\`\`\``;
 }
 
+const backendFrameworkMeta = {
+  hono: {
+    label: 'Hono',
+    docs: 'https://hono.dev/',
+    runtime: 'Node.js',
+    devWatch: 'tsx watch',
+    routeExample: "app.get('/users', (c) => c.json([{ id: '1', name: 'Alice' }]));",
+    middlewareExample:
+      "app.use('*', async (c, next) => {\n  console.log(`${c.req.method} ${c.req.url}`);\n  await next();\n});",
+    testExample:
+      "import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /health', () => {\n  it('returns ok status', async () => {\n    const res = await app.request('/health');\n    expect(res.status).toBe(200);\n    expect(await res.json()).toEqual({ status: 'ok' });\n  });\n});",
+  },
+  fastify: {
+    label: 'Fastify',
+    docs: 'https://fastify.dev/',
+    runtime: 'Node.js',
+    devWatch: 'tsx watch',
+    routeExample: "app.get('/users', async () => [{ id: '1', name: 'Alice' }]);",
+    middlewareExample:
+      "app.addHook('onRequest', async (request) => {\n  console.log(`${request.method} ${request.url}`);\n});",
+    testExample:
+      "import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /health', () => {\n  it('returns ok status', async () => {\n    const res = await app.inject({ method: 'GET', url: '/health' });\n    expect(res.statusCode).toBe(200);\n    expect(res.json()).toEqual({ status: 'ok' });\n  });\n});",
+  },
+  express: {
+    label: 'Express',
+    docs: 'https://expressjs.com/',
+    runtime: 'Node.js',
+    devWatch: 'tsx watch',
+    routeExample: "app.get('/users', (_req, res) => res.json([{ id: '1', name: 'Alice' }]));",
+    middlewareExample: 'app.use((req, _res, next) => {\n  console.log(`${req.method} ${req.url}`);\n  next();\n});',
+    testExample:
+      "import request from 'supertest';\nimport { describe, expect, it } from 'vitest';\n\nimport app from '../../src/index.js';\n\ndescribe('GET /health', () => {\n  it('returns ok status', async () => {\n    const res = await request(app).get('/health');\n    expect(res.status).toBe(200);\n    expect(res.body).toEqual({ status: 'ok' });\n  });\n});",
+  },
+  elysia: {
+    label: 'Elysia',
+    docs: 'https://elysiajs.com/',
+    runtime: 'Bun',
+    devWatch: 'bun --watch',
+    routeExample: "app.get('/users', () => [{ id: '1', name: 'Alice' }]);",
+    middlewareExample:
+      'app.onBeforeHandle(({ request }) => {\n  console.log(`${request.method} ${new URL(request.url).pathname}`);\n});',
+    testExample:
+      "import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /health', () => {\n  it('returns ok status', async () => {\n    const res = await app.handle(new Request('http://localhost/health'));\n    expect(res.status).toBe(200);\n    expect(await res.json()).toEqual({ status: 'ok' });\n  });\n});",
+  },
+};
+
+const backendDatabaseEngineMeta = {
+  postgresql: {
+    label: 'PostgreSQL',
+    dockerImage: 'postgres:16-alpine',
+    dockerPort: '5432',
+    defaultUrl: 'postgresql://postgres:postgres@localhost:5432/app',
+    credentials: [
+      ['POSTGRES_USER', 'postgres'],
+      ['POSTGRES_PASSWORD', 'postgres'],
+      ['POSTGRES_DB', 'app'],
+    ],
+  },
+  mysql: {
+    label: 'MySQL',
+    dockerImage: 'mysql:8',
+    dockerPort: '3306',
+    defaultUrl: 'mysql://root:root@localhost:3306/app',
+    credentials: [
+      ['MYSQL_ROOT_PASSWORD', 'root'],
+      ['MYSQL_DATABASE', 'app'],
+    ],
+  },
+  mariadb: {
+    label: 'MariaDB',
+    dockerImage: 'mariadb:11',
+    dockerPort: '3306',
+    defaultUrl: 'mysql://root:root@localhost:3306/app',
+    credentials: [
+      ['MARIADB_ROOT_PASSWORD', 'root'],
+      ['MARIADB_DATABASE', 'app'],
+    ],
+  },
+  sqlite: {
+    label: 'SQLite',
+    dockerImage: null,
+    dockerPort: null,
+    defaultUrl: 'file:./dev.db',
+    credentials: [],
+  },
+  mongodb: {
+    label: 'MongoDB',
+    dockerImage: 'mongo:7',
+    dockerPort: '27017',
+    defaultUrl: 'mongodb://localhost:27017/app',
+    credentials: [],
+  },
+};
+
+const backendOrmMeta = {
+  none: {
+    label: 'Raw SQL',
+    snapshotLabel: 'Raw driver + SQL migrations',
+    dbCommands: [['`npm run db:migrate`', 'Apply SQL migrations from `src/db/migrations/`']],
+  },
+  drizzle: {
+    label: 'Drizzle',
+    snapshotLabel: '[Drizzle ORM](https://orm.drizzle.team/)',
+    dbCommands: [
+      ['`npm run db:generate`', 'Generate migration SQL from schema changes'],
+      ['`npm run db:migrate`', 'Apply pending migrations'],
+      ['`npm run db:studio`', 'Open Drizzle Studio'],
+    ],
+  },
+  prisma: {
+    label: 'Prisma',
+    snapshotLabel: '[Prisma](https://www.prisma.io/)',
+    dbCommands: [
+      ['`npm run db:generate`', 'Generate Prisma client'],
+      ['`npm run db:migrate`', 'Run Prisma migrations'],
+      ['`npm run db:studio`', 'Open Prisma Studio'],
+    ],
+  },
+  mongoose: {
+    label: 'Mongoose',
+    snapshotLabel: '[Mongoose](https://mongoosejs.com/)',
+    dbCommands: [],
+  },
+};
+
+function parseEnvExample(content) {
+  if (!content) return {};
+
+  return content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith('#'))
+    .reduce((acc, line) => {
+      const [key, ...rest] = line.split('=');
+      if (!key) return acc;
+      acc[key] = rest.join('=');
+      return acc;
+    }, {});
+}
+
+function quoteDefaultValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return '(empty)';
+  }
+  return `\`${value}\``;
+}
+
+function getBackendFrameworkInfo(framework) {
+  return backendFrameworkMeta[framework] ?? backendFrameworkMeta.hono;
+}
+
+function getBackendEngineInfo(engine) {
+  return backendDatabaseEngineMeta[engine] ?? backendDatabaseEngineMeta.postgresql;
+}
+
+function getBackendOrmInfo(orm) {
+  return backendOrmMeta[orm] ?? backendOrmMeta.none;
+}
+
+function getDatabaseShellDescription(engine) {
+  if (engine === 'postgresql') return 'Open a `psql` shell';
+  if (engine === 'mysql' || engine === 'mariadb') return 'Open a `mysql` shell';
+  if (engine === 'sqlite') return 'Open a `sqlite3` shell';
+  return 'Open a `mongosh` shell';
+}
+
+function getDatabaseWorkflowCommand(engine, orm) {
+  if (orm === 'drizzle') return 'npm run db:generate && npm run db:migrate';
+  if (orm === 'prisma') return 'npm run db:generate && npm run db:migrate';
+  if (orm === 'none') return 'npm run db:migrate';
+  if (orm === 'mongoose') return 'npm run dev';
+  if (engine === 'mongodb') return 'npm run dev';
+  return 'npm run db:migrate';
+}
+
+function getTestingStackLabel(answers) {
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') {
+    return 'Vitest';
+  }
+  return 'No test framework configured';
+}
+
+function getQualityStackLabel(answers) {
+  const tools = ['TypeScript (strict)'];
+  if (answers.linter === 'biome') {
+    tools.push('Biome');
+  } else {
+    tools.push('ESLint', 'Prettier');
+  }
+
+  if (answers.lintOption?.includes('cspell')) tools.push('CSpell');
+  if (answers.lintOption?.includes('secretlint')) tools.push('Secretlint');
+  if (answers.lintOption?.includes('commitlint')) tools.push('Commitlint');
+
+  return tools.join(', ');
+}
+
+function joinHumanList(items) {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, and ${items.at(-1)}`;
+}
+
+function getBackendIntro(answers, framework, engineInfo) {
+  const stackBits = [`powered by ${framework.label}`];
+
+  if (answers.setupDatabase) {
+    let dbLabel = engineInfo.label;
+    if (answers.databaseOrm === 'drizzle') dbLabel += ' (via Drizzle ORM)';
+    if (answers.databaseOrm === 'prisma') dbLabel += ' (via Prisma)';
+    if (answers.databaseOrm === 'mongoose') dbLabel += ' (via Mongoose)';
+    if (answers.databaseOrm === 'none') dbLabel += ' (via raw SQL driver)';
+    stackBits.push(`backed by ${dbLabel}`);
+  }
+
+  if (answers.setupRedis) {
+    stackBits.push('Redis (via ioredis)');
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    stackBits.push('Better Auth wiring for authentication');
+  }
+
+  const intro = `A TypeScript API server ${joinHumanList(stackBits)}.`;
+
+  const infraBits = [`The project runs on ${framework.runtime}`];
+  if (answers.setupDocker) infraBits.push('is containerized with Docker Compose');
+  infraBits.push('comes pre-configured with quality gates');
+  if (answers.setupPrecommit) infraBits.push('pre-commit hooks');
+  if (answers.setupCicd) infraBits.push('CI/CD workflows');
+
+  return `${intro} ${joinHumanList(infraBits)}.`;
+}
+
+function renderBackendProjectSnapshot(answers, framework, engineInfo, ormInfo) {
+  const rows = ['| Item | Value |', '| --- | --- |', '| Project type | Backend API |'];
+
+  rows.push(`| Framework | [${framework.label}](${framework.docs}) |`);
+
+  if (answers.setupDatabase) {
+    const ormLabel = answers.databaseOrm === 'none' ? 'Raw SQL' : ormInfo.snapshotLabel;
+    rows.push(`| Database | ${engineInfo.label} + ${ormLabel} |`);
+  }
+
+  if (answers.setupRedis) {
+    rows.push('| Cache | Redis + [ioredis](https://github.com/redis/ioredis) |');
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    rows.push('| Authentication | [Better Auth](https://www.better-auth.com/) |');
+  }
+
+  rows.push(`| Testing | ${getTestingStackLabel(answers)} |`);
+  rows.push(`| Quality | ${getQualityStackLabel(answers)} |`);
+
+  if (answers.setupDocker) {
+    rows.push('| Containerization | Docker + Docker Compose |');
+  }
+
+  if (answers.setupCicd) {
+    rows.push(`| CI/CD | GitHub Actions (${answers.cicdTarget ?? 'none'}) |`);
+  }
+
+  return rows.join('\n');
+}
+
+function renderBackendPrerequisites(answers, framework) {
+  const lines = [];
+
+  if (framework.runtime === 'Bun') {
+    lines.push('- [Bun](https://bun.sh/) v1+ (see `.mise.toml` for pinned version)');
+  } else {
+    lines.push('- [Node.js](https://nodejs.org/) v22+ (see `.mise.toml` for pinned version)');
+  }
+
+  lines.push('- [mise](https://mise.jdx.dev/) (recommended for tool version management)');
+
+  if (answers.setupDocker) {
+    lines.push('- [Docker](https://www.docker.com/) and Docker Compose');
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendGettingStarted(answers, engineInfo) {
+  const lines = [];
+  const workflowCommand = getDatabaseWorkflowCommand(answers.databaseEngine, answers.databaseOrm);
+
+  lines.push('### 1. Clone and install\n');
+  lines.push(codeBlock('bash', 'mise install\nnpm install'));
+
+  lines.push('\n### 2. Set up environment variables\n');
+  lines.push(codeBlock('bash', 'cp .env.example .env'));
+  lines.push('The defaults are ready for local development.');
+
+  if (answers.setupDocker) {
+    lines.push('\n### 3. Start the full stack with Docker\n');
+    lines.push(codeBlock('bash', 'make docker-up\n# or: npm run docker:up'));
+    lines.push('This builds the app image and starts all configured services.');
+
+    if (answers.setupDatabase && engineInfo.dockerImage) {
+      const localDevCommands = ['make docker-db-up'];
+      if (answers.databaseOrm !== 'mongoose') {
+        localDevCommands.push(workflowCommand);
+      }
+      localDevCommands.push('npm run dev');
+
+      lines.push('\n### 4. Or: local app runtime + Docker services\n');
+      lines.push(codeBlock('bash', localDevCommands.join('\n')));
+    }
+  } else {
+    const localOnly = [];
+    if (answers.setupDatabase && answers.databaseOrm !== 'mongoose') {
+      localOnly.push(workflowCommand);
+    }
+    localOnly.push('npm run dev');
+
+    lines.push('\n### 3. Start in development mode\n');
+    lines.push(codeBlock('bash', localOnly.join('\n')));
+  }
+
+  lines.push('\n### 5. Verify\n');
+  lines.push(codeBlock('bash', 'curl http://localhost:3000/health\ncurl http://localhost:3000/'));
+
+  return lines.join('\n\n');
+}
+
+function renderBackendDockerSection(answers, engineInfo) {
+  if (!answers.setupDocker) return '';
+
+  const serviceRows = [
+    '| Service | Image | Port | Purpose |',
+    '| --- | --- | --- | --- |',
+    '| `app` | Built from `./Dockerfile` | 3000 | API server |',
+  ];
+
+  if (answers.setupDatabase && engineInfo.dockerImage) {
+    serviceRows.push(
+      `| \`db\` | \`${engineInfo.dockerImage}\` | ${engineInfo.dockerPort} | ${engineInfo.label} database |`,
+    );
+  }
+
+  if (answers.setupRedis) {
+    serviceRows.push('| `redis` | `redis:7-alpine` | 6379 | Redis cache |');
+  }
+
+  const commandRows = [
+    '| Make target | npm script | Description |',
+    '| --- | --- | --- |',
+    '| `make docker-up` | `npm run docker:up` | Build and start all services |',
+    '| `make docker-down` | `npm run docker:down` | Stop all services |',
+    '| `make docker-logs` | `npm run docker:logs` | Tail service logs |',
+    '| `make docker-build` | `npm run docker:build` | Build images without starting |',
+  ];
+
+  if (answers.setupDatabase && engineInfo.dockerImage) {
+    commandRows.push('| `make docker-db-up` | `npm run docker:db:up` | Start database service only |');
+    commandRows.push('| `make docker-db-down` | `npm run docker:db:down` | Stop database service |');
+    commandRows.push('| `make docker-db-logs` | `npm run docker:db:logs` | Tail database logs |');
+    commandRows.push('| `make docker-db-shell` | `npm run docker:db:shell` | Open database shell |');
+    commandRows.push('| `make docker-db-migrate` | `npm run docker:db:migrate` | Run migration command |');
+  }
+
+  const lines = [];
+  lines.push('The project uses Docker Compose to orchestrate services:\n');
+  lines.push(serviceRows.join('\n'));
+  lines.push('\n### Docker commands\n');
+  lines.push(commandRows.join('\n'));
+  lines.push('\n### Dockerfile\n');
+  lines.push(
+    [
+      'The Dockerfile uses a multi-stage build:',
+      '',
+      '1. **base** — `node:22-slim` and `/app` workdir',
+      '2. **deps** — install production dependencies only (`npm ci --omit=dev`)',
+      '3. **build** — install full dependencies and compile TypeScript',
+      '4. **runtime** — copy production dependencies + `dist/`, expose port `3000`',
+    ].join('\n'),
+  );
+
+  if (answers.setupDatabase && engineInfo.credentials.length > 0) {
+    const credentialRows = ['\n### Default database credentials', '', '| Variable | Default |', '| --- | --- |'];
+    for (const [key, value] of engineInfo.credentials) {
+      credentialRows.push(`| \`${key}\` | \`${value}\` |`);
+    }
+    credentialRows.push(`| Connection string | \`${engineInfo.defaultUrl}\` |`);
+    lines.push(credentialRows.join('\n'));
+  }
+
+  return lines.join('\n\n');
+}
+
+function renderBackendDatabaseSection(answers, engineInfo, ormInfo) {
+  if (!answers.setupDatabase) return '';
+
+  const headingOrmLabel = answers.databaseOrm === 'none' ? 'Raw SQL' : ormInfo.label;
+  const lines = [];
+
+  lines.push(`## Database (${engineInfo.label} + ${headingOrmLabel})`);
+  lines.push('\n### Configuration\n');
+  lines.push(
+    `Database configuration is centralized in \`src/db/config.ts\` via \`getDatabaseUrl()\`${
+      answers.databaseEngine === 'sqlite' ? ' and `getSqliteFilePath()`.' : '.'
+    }`,
+  );
+
+  if (answers.databaseOrm === 'drizzle' && answers.databaseEngine === 'postgresql') {
+    lines.push('\n### Schema\n');
+    lines.push(
+      codeBlock(
+        'ts',
+        "import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';\n\nexport const users = pgTable('users', {\n  id: serial('id').primaryKey(),\n  email: text('email').notNull().unique(),\n  createdAt: timestamp('created_at').defaultNow().notNull(),\n});",
+      ),
+    );
+    lines.push('The schema lives in `src/db/schema.ts` and the client is exported from `src/db/index.ts`.');
+  } else if (answers.databaseOrm === 'drizzle') {
+    lines.push('\n### Schema\n');
+    lines.push('Drizzle schema definitions are in `src/db/schema.ts` and database access is in `src/db/index.ts`.');
+  } else if (answers.databaseOrm === 'prisma') {
+    lines.push('\n### Schema\n');
+    lines.push(
+      'Prisma schema is generated in `prisma/schema.prisma` and the client is exported from `src/db/index.ts`.',
+    );
+  } else if (answers.databaseOrm === 'mongoose') {
+    lines.push('\n### Models\n');
+    lines.push('Mongoose models are created in `src/db/models/` and connection wiring is in `src/db/index.ts`.');
+  } else {
+    lines.push('\n### Migrations\n');
+    lines.push('Raw SQL migrations live in `src/db/migrations/` and are applied by `src/db/migrate.ts`.');
+  }
+
+  lines.push('\n### Commands\n');
+  const commandRows = ['| Command | Description |', '| --- | --- |'];
+  for (const [command, description] of ormInfo.dbCommands) {
+    commandRows.push(`| ${command} | ${description} |`);
+  }
+  commandRows.push(`| \`npm run db:shell\` | ${getDatabaseShellDescription(answers.databaseEngine)} |`);
+  lines.push(commandRows.join('\n'));
+
+  if (answers.databaseOrm !== 'mongoose') {
+    lines.push('\n### Typical workflow\n');
+    if (answers.databaseOrm === 'drizzle') {
+      lines.push(
+        codeBlock(
+          'bash',
+          '# 1. Edit schema in src/db/schema.ts\nnpm run db:generate\nnpm run db:migrate\nnpm run db:studio',
+        ),
+      );
+    } else if (answers.databaseOrm === 'prisma') {
+      lines.push(codeBlock('bash', 'npm run db:generate\nnpm run db:migrate\nnpm run db:studio'));
+    } else {
+      lines.push(codeBlock('bash', 'npm run db:migrate'));
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendRedisSection(answers) {
+  if (!answers.setupRedis) return '';
+
+  return [
+    '## Redis',
+    '',
+    'The Redis client is created in `src/redis/index.ts` using `REDIS_URL` (defaults to `redis://localhost:6379`).',
+    '',
+    codeBlock(
+      'ts',
+      "import { redis, checkRedisConnection } from './src/redis/index.js';\n\nawait checkRedisConnection();\nawait redis.set('key', 'value');\nconst value = await redis.get('key');",
+    ),
+  ].join('\n');
+}
+
+function renderBackendAuthSection(answers) {
+  if (answers.integrationPreset !== 'better-auth') return '';
+
+  return [
+    '## Authentication (Better Auth)',
+    '',
+    'Starter wiring is generated in `src/integrations/better-auth.ts`:',
+    '',
+    codeBlock(
+      'ts',
+      "import { getBetterAuthConfig } from './integrations/better-auth.js';\n\nconst config = getBetterAuthConfig();\n// => { baseUrl: 'http://localhost:3000', secret: '' }",
+    ),
+    '',
+    '| Variable | Purpose | Default |',
+    '| --- | --- | --- |',
+    '| `BETTER_AUTH_URL` | Base URL for auth callbacks | `http://localhost:3000` |',
+    '| `BETTER_AUTH_SECRET` | Signing secret for tokens/sessions | (empty) |',
+    '',
+    'Generate a strong local secret with:',
+    '',
+    codeBlock('bash', 'openssl rand -base64 32'),
+    '',
+    'See the [Better Auth documentation](https://www.better-auth.com/docs) for complete integration guides.',
+  ].join('\n');
+}
+
+function collectBackendEnvRows(answers, envMap, engineInfo) {
+  const rows = [];
+
+  if (answers.setupDatabase) {
+    rows.push({
+      variable: 'DATABASE_URL',
+      purpose: `${engineInfo.label} connection string`,
+      defaultValue: envMap.DATABASE_URL ?? engineInfo.defaultUrl,
+    });
+  }
+
+  if (answers.setupRedis) {
+    rows.push({
+      variable: 'REDIS_URL',
+      purpose: 'Redis connection string',
+      defaultValue: envMap.REDIS_URL ?? 'redis://localhost:6379',
+    });
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    rows.push({
+      variable: 'BETTER_AUTH_URL',
+      purpose: 'Better Auth base URL',
+      defaultValue: envMap.BETTER_AUTH_URL ?? 'http://localhost:3000',
+    });
+    rows.push({
+      variable: 'BETTER_AUTH_SECRET',
+      purpose: 'Better Auth signing secret',
+      defaultValue: envMap.BETTER_AUTH_SECRET ?? '',
+    });
+  }
+
+  rows.push({
+    variable: 'NODE_ENV',
+    purpose: 'Runtime environment',
+    defaultValue: envMap.NODE_ENV ?? 'development',
+  });
+  rows.push({
+    variable: 'PORT',
+    purpose: 'Server listen port',
+    defaultValue: envMap.PORT ?? '3000',
+  });
+
+  return rows;
+}
+
+function renderBackendEnvSection(answers, engineInfo) {
+  const envMap = parseEnvExample(answers._envExample ?? '');
+  const rows = collectBackendEnvRows(answers, envMap, engineInfo);
+  const table = ['| Variable | Purpose | Default |', '| --- | --- | --- |'];
+
+  for (const row of rows) {
+    table.push(`| \`${row.variable}\` | ${row.purpose} | ${quoteDefaultValue(row.defaultValue)} |`);
+  }
+
+  const validationSummary =
+    answers.setupZod !== false
+      ? 'Environment variables are validated at startup via Zod in `src/env.ts`.'
+      : 'Environment variables are read from `process.env` in `src/env.ts`.';
+
+  return [
+    '## Environment Variables',
+    '',
+    'Copy `.env.example` to `.env` and adjust values as needed.',
+    '',
+    ...table,
+    '',
+    validationSummary,
+  ].join('\n');
+}
+
+function renderBackendDevelopmentSection(answers, framework) {
+  return [
+    '## Development',
+    '',
+    codeBlock('bash', 'npm run dev'),
+    '',
+    `Starts the server with ${framework.devWatch}.`,
+    '',
+    '### Adding a route',
+    '',
+    codeBlock('ts', framework.routeExample),
+    '',
+    '### Adding middleware',
+    '',
+    codeBlock('ts', framework.middlewareExample),
+    '',
+    '### Adding an environment variable',
+    '',
+    answers.setupZod !== false
+      ? '1. Add it to the Zod schema in `src/env.ts`\n2. Add it to `.env.example`\n3. Import `env` where needed'
+      : '1. Add it in `src/env.ts`\n2. Add it to `.env.example`\n3. Read from `process.env` where needed',
+    '',
+    '### Testing endpoints with curl',
+    '',
+    codeBlock(
+      'bash',
+      'curl -s http://localhost:3000/health | jq\ncurl -s -X POST http://localhost:3000/users -H \'Content-Type: application/json\' -d \'{"name": "Bob"}\'',
+    ),
+  ].join('\n');
+}
+
+function renderBackendTestingSection(answers, framework) {
+  if (answers.vitestPreset !== 'native' && answers.vitestPreset !== 'coverage') {
+    return ['## Testing', '', 'No test framework configured.'].join('\n');
+  }
+
+  const commands = ['npm test', 'npm run test:unit', 'npm run test:integration'];
+  if (answers.vitestPreset === 'coverage') {
+    commands.push('npm run test:coverage');
+  }
+
+  return [
+    '## Testing',
+    '',
+    codeBlock('bash', commands.join('\n')),
+    '',
+    'Example test pattern:',
+    '',
+    codeBlock('ts', framework.testExample),
+  ].join('\n');
+}
+
+function renderBackendQualitySection(answers) {
+  const checks = [
+    answers.linter === 'biome' ? 'biome format --write .' : 'prettier . --write',
+    answers.linter === 'biome' ? 'biome check .' : 'eslint .',
+    'tsc --noEmit',
+  ];
+
+  if (answers.lintOption?.includes('cspell')) checks.push('cspell lint .');
+  if (answers.lintOption?.includes('secretlint')) checks.push('secretlint **/*');
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') checks.push('vitest --run');
+
+  const lines = ['## Quality Checks', '', codeBlock('bash', 'npm run check'), '', '`npm run check` runs:'];
+  checks.forEach((check, index) => {
+    lines.push(`${index + 1}. \`${check}\``);
+  });
+
+  if (answers.setupPrecommit) {
+    lines.push('', '### Pre-commit hooks', '');
+    lines.push('- `pre-commit`: lint-staged + typecheck + tests');
+    if (answers.lintOption?.includes('commitlint')) {
+      lines.push('- `commit-msg`: commitlint validation for Conventional Commits');
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendBuildDeploySection(answers) {
+  const lines = ['## Build and Deploy', '', '### Build', '', codeBlock('bash', 'npm run build\nnpm start')];
+
+  if (answers.setupCicd) {
+    lines.push('', '### CI/CD', '');
+    lines.push('| Workflow | Trigger | Steps |');
+    lines.push('| --- | --- | --- |');
+    lines.push('| `ci.yml` | Pull request | Install, lint, typecheck, test |');
+    lines.push(`| \`deploy-staging.yml\` | Push to \`dev\` | Install, build, deploy to ${answers.cicdTarget} |`);
+    lines.push(`| \`deploy-production.yml\` | Push to \`main\` | Install, build, deploy to ${answers.cicdTarget} |`);
+    lines.push('', 'Required GitHub secrets are documented in `.github/SECRETS.md`.');
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendProjectStructure(answers) {
+  const lines = [
+    '## Project Structure',
+    '',
+    '```',
+    'src/',
+    '  index.ts                # Server entry and routes',
+    '  env.ts                  # Runtime configuration',
+  ];
+
+  if (answers.setupDatabase) {
+    lines.push('  db/');
+    lines.push('    index.ts              # Database client/connection');
+    lines.push('    config.ts             # getDatabaseUrl() helpers');
+    if (answers.databaseOrm === 'drizzle') {
+      lines.push('    schema.ts             # Drizzle schema definitions');
+    }
+    if (answers.databaseOrm === 'none') {
+      lines.push('    migrate.ts            # Raw SQL migration runner');
+      lines.push('    migrations/           # SQL migration files');
+    }
+  }
+
+  if (answers.setupRedis) {
+    lines.push('  redis/');
+    lines.push('    index.ts              # ioredis client and ping helper');
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    lines.push('  integrations/');
+    lines.push('    better-auth.ts        # Better Auth config reader');
+  }
+
+  lines.push('tests/');
+  lines.push('  unit/');
+  lines.push('    server.unit.test.ts   # Framework route unit tests');
+
+  if (answers.setupDatabase) {
+    lines.push('    db-config.unit.test.ts # Database config starter test');
+    lines.push('  integration/');
+    lines.push('    db-connectivity.int.test.ts # Database connectivity starter test');
+  }
+
+  if (answers.setupCicd) {
+    lines.push('.github/');
+    lines.push('  workflows/');
+    lines.push('    ci.yml                # Pull request quality gate');
+    lines.push('    deploy-staging.yml    # Deploy on push to dev');
+    lines.push('    deploy-production.yml # Deploy on push to main');
+    lines.push('  SECRETS.md              # Required GitHub secrets');
+  }
+
+  if (answers.setupPrecommit) {
+    lines.push('.husky/');
+    lines.push('  pre-commit              # lint-staged + typecheck + tests');
+    if (answers.lintOption?.includes('commitlint')) {
+      lines.push('  commit-msg              # commitlint validation');
+    }
+  }
+
+  if (answers.setupDocker) {
+    lines.push('Dockerfile                # Multi-stage production image');
+    lines.push('docker-compose.yml        # Local service orchestration');
+    lines.push('Makefile                  # Docker convenience targets');
+  }
+
+  if (answers.setupDatabase && answers.databaseOrm === 'drizzle') {
+    lines.push('drizzle.config.ts         # Drizzle CLI config');
+  }
+
+  if (answers.vitestPreset) {
+    lines.push('vitest.config.ts          # Vitest config');
+  }
+
+  if (answers.linter === 'biome') {
+    lines.push('biome.json                # Biome config');
+  } else {
+    lines.push('eslint.config.js          # ESLint config');
+    lines.push('prettier.config.js        # Prettier config');
+  }
+
+  lines.push('tsconfig.json             # TypeScript config');
+  lines.push('```');
+
+  if (answers.setupDatabase && answers.databaseOrm === 'prisma') {
+    lines.push('', '`prisma/schema.prisma` contains Prisma schema definitions.');
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendScriptsReference(answers, engineInfo) {
+  const rows = ['## Scripts Reference', '', '| Script | Description |', '| --- | --- |'];
+
+  rows.push('| `npm run dev` | Start backend dev server with hot reload |');
+  rows.push('| `npm run build` | Compile TypeScript output |');
+  rows.push('| `npm start` | Run compiled build |');
+  rows.push('| `npm run check` | Run full quality gate |');
+  rows.push(`| \`npm run format\` | Format code with ${answers.linter === 'biome' ? 'Biome' : 'Prettier'} |`);
+  rows.push(`| \`npm run lint\` | Lint with ${answers.linter === 'biome' ? 'Biome' : 'ESLint'} |`);
+  rows.push('| `npm run typecheck` | Run TypeScript type checks |');
+
+  if (answers.lintOption?.includes('cspell')) rows.push('| `npm run spellcheck` | Spell-check project files |');
+  if (answers.lintOption?.includes('secretlint')) rows.push('| `npm run secretlint` | Scan for accidental secrets |');
+
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') {
+    rows.push('| `npm test` | Run all tests |');
+    rows.push('| `npm run test:unit` | Run unit tests only |');
+    rows.push('| `npm run test:integration` | Run integration tests only |');
+    if (answers.vitestPreset === 'coverage') {
+      rows.push('| `npm run test:coverage` | Run tests with coverage |');
+    }
+  }
+
+  if (answers.setupDatabase) {
+    if (answers.databaseOrm === 'drizzle') {
+      rows.push('| `npm run db:generate` | Generate Drizzle migrations |');
+      rows.push('| `npm run db:migrate` | Apply Drizzle migrations |');
+      rows.push('| `npm run db:studio` | Open Drizzle Studio |');
+    } else if (answers.databaseOrm === 'prisma') {
+      rows.push('| `npm run db:generate` | Generate Prisma client |');
+      rows.push('| `npm run db:migrate` | Apply Prisma migrations |');
+      rows.push('| `npm run db:studio` | Open Prisma Studio |');
+    } else if (answers.databaseOrm === 'none') {
+      rows.push('| `npm run db:migrate` | Apply SQL migrations |');
+    }
+
+    rows.push(`| \`npm run db:shell\` | ${getDatabaseShellDescription(answers.databaseEngine)} |`);
+  }
+
+  if (answers.setupDocker) {
+    rows.push('| `npm run docker:up` | Build and start Docker services |');
+    rows.push('| `npm run docker:down` | Stop Docker services |');
+    rows.push('| `npm run docker:logs` | Tail Docker logs |');
+    rows.push('| `npm run docker:build` | Build Docker images |');
+
+    if (answers.setupDatabase && engineInfo.dockerImage) {
+      rows.push('| `npm run docker:db:up` | Start database service only |');
+      rows.push('| `npm run docker:db:down` | Stop database service |');
+      rows.push('| `npm run docker:db:logs` | Tail database logs |');
+      rows.push('| `npm run docker:db:shell` | Open database shell in container |');
+      rows.push('| `npm run docker:db:migrate` | Run migration command in local context |');
+    }
+  }
+
+  return rows.join('\n');
+}
+
+function renderBackendTools(answers, framework) {
+  const tools = ['## Tools', ''];
+
+  tools.push(`- **[${framework.label}](${framework.docs})** — backend web framework`);
+
+  if (answers.setupDatabase) {
+    const engine = getBackendEngineInfo(answers.databaseEngine).label;
+    if (answers.databaseOrm === 'drizzle') {
+      tools.push(`- **[Drizzle ORM](https://orm.drizzle.team/)** — type-safe ${engine} access`);
+    } else if (answers.databaseOrm === 'prisma') {
+      tools.push(`- **[Prisma](https://www.prisma.io/)** — ${engine} ORM and migrations`);
+    } else if (answers.databaseOrm === 'mongoose') {
+      tools.push('- **[Mongoose](https://mongoosejs.com/)** — MongoDB ODM');
+    } else {
+      tools.push(`- **${engine} driver** — direct SQL access`);
+    }
+  }
+
+  if (answers.setupRedis) {
+    tools.push('- **[ioredis](https://github.com/redis/ioredis)** — Redis client');
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    tools.push('- **[Better Auth](https://www.better-auth.com/)** — authentication framework');
+  }
+
+  if (answers.setupZod !== false) {
+    tools.push('- **[Zod](https://zod.dev/)** — environment variable validation');
+  }
+
+  tools.push('- **[TypeScript](https://www.typescriptlang.org/)** — strict type checking');
+
+  if (answers.linter === 'biome') {
+    tools.push('- **[Biome](https://biomejs.dev/)** — linting and formatting');
+  } else {
+    tools.push('- **[ESLint](https://eslint.org/)** + **[Prettier](https://prettier.io/)** — linting and formatting');
+  }
+
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') {
+    tools.push('- **[Vitest](https://vitest.dev/)** — test runner');
+  }
+
+  if (answers.lintOption?.includes('cspell')) tools.push('- **[CSpell](https://cspell.org/)** — spell checking');
+  if (answers.lintOption?.includes('secretlint')) {
+    tools.push('- **[Secretlint](https://github.com/secretlint/secretlint)** — secret detection');
+  }
+  if (answers.lintOption?.includes('commitlint')) {
+    tools.push('- **[Commitlint](https://commitlint.js.org/)** — conventional commit enforcement');
+  }
+
+  if (answers.setupPrecommit) {
+    tools.push('- **[Husky](https://typicode.github.io/husky/)** — Git hooks');
+  }
+
+  if (answers.setupDocker) {
+    tools.push('- **[Docker](https://www.docker.com/)** — containerized development');
+  }
+
+  tools.push('- **[mise](https://mise.jdx.dev/)** — tool version management');
+
+  return tools.join('\n');
+}
+
+function generateBackendReadme(answers) {
+  const pkg = answers._pkgName || 'my-project';
+  const framework = getBackendFrameworkInfo(answers.backendFramework ?? 'hono');
+  const engineInfo = getBackendEngineInfo(answers.databaseEngine ?? 'postgresql');
+  const ormInfo = getBackendOrmInfo(answers.databaseOrm ?? 'none');
+
+  const sections = [];
+  sections.push(
+    `# ${pkg}\n\n> A backend API scaffolded with [tskickstart](https://github.com/jeportie/tskickstart).\n\n${getBackendIntro(answers, framework, engineInfo)}`,
+  );
+  sections.push(`## Project Snapshot\n\n${renderBackendProjectSnapshot(answers, framework, engineInfo, ormInfo)}`);
+  sections.push(`## Prerequisites\n\n${renderBackendPrerequisites(answers, framework)}`);
+  sections.push(`## Getting Started\n\n${renderBackendGettingStarted(answers, engineInfo)}`);
+
+  const dockerSection = renderBackendDockerSection(answers, engineInfo);
+  if (dockerSection) sections.push(`## Docker\n\n${dockerSection}`);
+
+  const databaseSection = renderBackendDatabaseSection(answers, engineInfo, ormInfo);
+  if (databaseSection) sections.push(databaseSection);
+
+  const redisSection = renderBackendRedisSection(answers);
+  if (redisSection) sections.push(redisSection);
+
+  const authSection = renderBackendAuthSection(answers);
+  if (authSection) sections.push(authSection);
+
+  sections.push(renderBackendEnvSection(answers, engineInfo));
+  sections.push(renderBackendDevelopmentSection(answers, framework));
+  sections.push(renderBackendTestingSection(answers, framework));
+  sections.push(renderBackendQualitySection(answers));
+  sections.push(renderBackendBuildDeploySection(answers));
+  sections.push(renderBackendProjectStructure(answers));
+  sections.push(renderBackendScriptsReference(answers, engineInfo));
+  sections.push(renderBackendTools(answers, framework));
+
+  return sections.join('\n\n---\n\n') + '\n';
+}
+
 function getProjectTitle(answers) {
   const { projectType } = answers;
   const titles = {
@@ -1298,6 +2214,10 @@ function getScriptsTable(answers) {
 // ---------------------------------------------------------------------------
 
 export function generateReadme(answers) {
+  if (answers.projectType === 'backend') {
+    return generateBackendReadme(answers);
+  }
+
   const pkg = answers._pkgName || 'my-project';
 
   const sections = [];
@@ -1352,13 +2272,21 @@ export async function writeReadme(answers, cwd) {
     return false;
   }
 
+  const readmeAnswers = { ...answers };
+
   const pkgPath = path.join(cwd, 'package.json');
   if (await fs.pathExists(pkgPath)) {
     const pkg = await fs.readJson(pkgPath);
-    answers._pkgName = pkg.name || 'my-project';
+    readmeAnswers._pkgName = pkg.name || 'my-project';
+    readmeAnswers._scripts = pkg.scripts ?? {};
   }
 
-  const content = generateReadme(answers);
+  const envPath = path.join(cwd, '.env.example');
+  if (await fs.pathExists(envPath)) {
+    readmeAnswers._envExample = await fs.readFile(envPath, 'utf-8');
+  }
+
+  const content = generateReadme(readmeAnswers);
   await fs.writeFile(readmePath, content);
   return true;
 }

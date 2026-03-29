@@ -13,6 +13,12 @@ function shouldSkipInstall() {
   return value !== '0' && value.toLowerCase() !== 'false';
 }
 
+function summarizePackages(packages, max = 10) {
+  if (packages.length <= max) return packages.join(', ');
+  const visible = packages.slice(0, max).join(', ');
+  return `${visible}, +${packages.length - max} more`;
+}
+
 export function getSemanticReleaseDevDeps() {
   return [
     'semantic-release',
@@ -254,6 +260,10 @@ export async function installDeps(answers, options = {}) {
       'dependencies installed',
       'failed to install dependencies',
     );
+    console.log(
+      pc.green('✔') +
+        `    installed ${finalProdDeps.length} runtime package${finalProdDeps.length === 1 ? '' : 's'}: ${summarizePackages(finalProdDeps)}`,
+    );
   }
 
   if (finalDevDeps.length > 0) {
@@ -262,6 +272,10 @@ export async function installDeps(answers, options = {}) {
       'Installing dev dependencies...',
       'dev dependencies installed',
       'failed to install dev dependencies',
+    );
+    console.log(
+      pc.green('✔') +
+        `    installed ${finalDevDeps.length} dev package${finalDevDeps.length === 1 ? '' : 's'}: ${summarizePackages(finalDevDeps)}`,
     );
   }
 
