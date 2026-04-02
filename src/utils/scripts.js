@@ -147,14 +147,10 @@ export function buildScripts(pkg, answers) {
     }
 
     if (answers.setupDocker) {
-      pkg.scripts['docker:up'] =
-        'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose up --build; elif command -v docker-compose >/dev/null 2>&1; then docker-compose up --build; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-      pkg.scripts['docker:down'] =
-        'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose down; elif command -v docker-compose >/dev/null 2>&1; then docker-compose down; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-      pkg.scripts['docker:logs'] =
-        'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose logs -f; elif command -v docker-compose >/dev/null 2>&1; then docker-compose logs -f; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-      pkg.scripts['docker:build'] =
-        'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose build; elif command -v docker-compose >/dev/null 2>&1; then docker-compose build; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
+      pkg.scripts['docker:up'] = 'docker compose up --build';
+      pkg.scripts['docker:down'] = 'docker compose down';
+      pkg.scripts['docker:logs'] = 'docker compose logs -f';
+      pkg.scripts['docker:build'] = 'docker compose build';
 
       if (answers.setupDatabase) {
         const engine = answers.databaseEngine ?? 'postgresql';
@@ -167,14 +163,10 @@ export function buildScripts(pkg, answers) {
                 ? 'sqlite3 dev.db'
                 : 'mongosh "$DATABASE_URL"';
 
-        pkg.scripts['docker:db:up'] =
-          'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose up -d db; elif command -v docker-compose >/dev/null 2>&1; then docker-compose up -d db; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-        pkg.scripts['docker:db:down'] =
-          'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose stop db; elif command -v docker-compose >/dev/null 2>&1; then docker-compose stop db; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-        pkg.scripts['docker:db:logs'] =
-          'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose logs -f db; elif command -v docker-compose >/dev/null 2>&1; then docker-compose logs -f db; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-        pkg.scripts['docker:db:shell'] =
-          `sh -c "if docker compose version >/dev/null 2>&1; then docker compose exec db sh -lc '${dbShellCmd}'; elif command -v docker-compose >/dev/null 2>&1; then docker-compose exec db sh -lc '${dbShellCmd}'; else echo 'Docker Compose is not installed' >&2; exit 1; fi"`;
+        pkg.scripts['docker:db:up'] = 'docker compose up -d db';
+        pkg.scripts['docker:db:down'] = 'docker compose stop db';
+        pkg.scripts['docker:db:logs'] = 'docker compose logs -f db';
+        pkg.scripts['docker:db:shell'] = `docker compose exec db sh -lc '${dbShellCmd}'`;
         pkg.scripts['docker:db:migrate'] = 'npm run db:migrate --if-present';
       }
     }

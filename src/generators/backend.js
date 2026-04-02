@@ -116,7 +116,6 @@ export async function generateBackend(answers, cwd) {
       'docker-compose.yml',
     );
     await copyIfMissing(backendTemplatePath('.dockerignore'), path.join(cwd, '.dockerignore'), '.dockerignore');
-    await copyIfMissing(backendTemplatePath('Makefile'), path.join(cwd, 'Makefile'), 'Makefile');
     await appendGitignoreEntries(cwd);
   }
 
