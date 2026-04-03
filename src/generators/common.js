@@ -136,7 +136,11 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   if (lintOption.includes('cspell')) {
     await copyIfMissing(templatePath('common', 'cspell.json'), path.join(cwd, 'cspell.json'), 'cspell.json');
-    await appendIgnorePathsToCspell(cwd, ['dist/**']);
+    const cspellIgnorePaths = ['dist/**'];
+    if (projectType === 'npm-lib' && answers.packageManager === 'pnpm') {
+      cspellIgnorePaths.push('pnpm-lock.yaml');
+    }
+    await appendIgnorePathsToCspell(cwd, cspellIgnorePaths);
     await appendWordsToCspell(cwd, ['tskickstart', 'composable', 'preconfigured', 'precommit', 'subroutes']);
     if (authorName) {
       await appendWordsToCspell(cwd, authorName.split(/\s+/).filter(Boolean));

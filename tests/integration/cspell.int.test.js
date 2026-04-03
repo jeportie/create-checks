@@ -162,6 +162,27 @@ describe('cspell generation', () => {
     expect(cspell.words).toContain('Tailwind');
   });
 
+  it('ignores pnpm-lock.yaml for npm-lib projects using pnpm', async () => {
+    tmpDir = createTmpProject('pnpm-lib-test-project');
+    process.env.NO_INSTALL = '1';
+
+    await generateCommon(
+      {
+        projectType: 'npm-lib',
+        packageManager: 'pnpm',
+        setupSemanticRelease: false,
+        lintOption: ['cspell'],
+        setupPrecommit: false,
+        authorName: 'Test Author',
+      },
+      tmpDir,
+    );
+
+    const cspell = JSON.parse(readFileSync(join(tmpDir, 'cspell.json'), 'utf-8'));
+    expect(cspell.ignorePaths).toContain('pnpm-lock.yaml');
+    expect(cspell.ignorePaths).toContain('package-lock.json');
+  });
+
   it('adds dist ignore path to existing cspell config', async () => {
     tmpDir = createTmpProject('existing-cspell-project');
     process.env.NO_INSTALL = '1';
