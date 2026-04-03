@@ -47,7 +47,16 @@ describe('tskickstart CLI', () => {
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(true);
   });
 
-  it('keeps non-interactive CLI output within 80 columns', () => {
+  it('prints the full branded tskickstart banner', () => {
+    tmpDir = createTmpProject();
+    const output = runCliWithOutput(tmpDir);
+    // eslint-disable-next-line no-control-regex
+    const clean = output.replace(/\x1B\[[0-9;]*m/g, '');
+
+    expect(clean).toContain('████████ ███████ ██   ██ ██  ██████ ██   ██ ███████ ████████  █████  ██████  ████████');
+  });
+
+  it('keeps non-banner CLI output within 80 columns', () => {
     tmpDir = createTmpProject();
     const output = runCliWithOutput(tmpDir);
     // eslint-disable-next-line no-control-regex
@@ -55,7 +64,8 @@ describe('tskickstart CLI', () => {
     const lines = clean
       .split('\n')
       .map((line) => line.trimEnd())
-      .filter((line) => line.trim().length > 0);
+      .filter((line) => line.trim().length > 0)
+      .filter((line) => !/^[█ ]+$/.test(line));
 
     expect(Math.max(...lines.map((line) => line.length))).toBeLessThanOrEqual(80);
   });
