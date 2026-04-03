@@ -4328,5 +4328,5 @@ export async function offerReadmePreview(cwd) {
   // Fallback: raw output with install hint
   const content = await fs.readFile(readmePath, 'utf-8');
   console.log(content);
-  console.log(pc.dim('\nTip: install glow for a better preview → https://github.com/charmbracelet/glow\n'));
+  console.log(pc.dim('\nTip: install glow for a richer README preview.\n'));
 }

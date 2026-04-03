@@ -13,12 +13,6 @@ function shouldSkipInstall() {
   return value !== '0' && value.toLowerCase() !== 'false';
 }
 
-function summarizePackages(packages, max = 10) {
-  if (packages.length <= max) return packages.join(', ');
-  const visible = packages.slice(0, max).join(', ');
-  return `${visible}, +${packages.length - max} more`;
-}
-
 export function getSemanticReleaseDevDeps() {
   return [
     'semantic-release',
@@ -32,6 +26,7 @@ export function getSemanticReleaseDevDeps() {
 
 async function installWithRetry(args, startText, successText, failureText) {
   const stopSpinner = startSpinner(startText);
+  const installCommand = args[1] === '-D' ? 'npm install -D' : 'npm install';
 
   try {
     await execa('npm', args, { stdio: 'pipe' });
@@ -39,7 +34,7 @@ async function installWithRetry(args, startText, successText, failureText) {
     return;
   } catch (error) {
     stopSpinner(failureText, 'error');
-    console.error(pc.red(`npm ${args.join(' ')} failed.`));
+    console.error(pc.red(`${installCommand} failed.`));
     if (error.stderr) console.error(error.stderr);
     if (error.stdout) console.error(error.stdout);
     console.log(pc.yellow('Retrying once with live npm output...'));
@@ -261,8 +256,7 @@ export async function installDeps(answers, options = {}) {
       'failed to install dependencies',
     );
     console.log(
-      pc.green('✔') +
-        `  installed ${finalProdDeps.length} runtime package${finalProdDeps.length === 1 ? '' : 's'}: ${summarizePackages(finalProdDeps)}`,
+      pc.green('✔') + `  installed ${finalProdDeps.length} runtime package${finalProdDeps.length === 1 ? '' : 's'}`,
     );
   }
 
@@ -274,8 +268,7 @@ export async function installDeps(answers, options = {}) {
       'failed to install dev dependencies',
     );
     console.log(
-      pc.green('✔') +
-        `  installed ${finalDevDeps.length} dev package${finalDevDeps.length === 1 ? '' : 's'}: ${summarizePackages(finalDevDeps)}`,
+      pc.green('✔') + `  installed ${finalDevDeps.length} dev package${finalDevDeps.length === 1 ? '' : 's'}`,
     );
   }
 

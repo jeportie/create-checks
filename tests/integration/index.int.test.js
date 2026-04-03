@@ -23,6 +23,15 @@ function runCli(cwd, extraEnv = {}) {
   });
 }
 
+function runCliWithOutput(cwd, extraEnv = {}) {
+  return execSync(`node ${cliPath}`, {
+    cwd,
+    env: { ...process.env, NO_INSTALL: '1', ...extraEnv },
+    stdio: 'pipe',
+    encoding: 'utf-8',
+  });
+}
+
 describe('tskickstart CLI', () => {
   let tmpDir;
 
@@ -36,6 +45,19 @@ describe('tskickstart CLI', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(true);
+  });
+
+  it('keeps non-interactive CLI output within 80 columns', () => {
+    tmpDir = createTmpProject();
+    const output = runCliWithOutput(tmpDir);
+    // eslint-disable-next-line no-control-regex
+    const clean = output.replace(/\x1B\[[0-9;]*m/g, '');
+    const lines = clean
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .filter((line) => line.trim().length > 0);
+
+    expect(Math.max(...lines.map((line) => line.length))).toBeLessThanOrEqual(80);
   });
 
   it('eslint config enforces node: protocol for built-in imports', () => {
