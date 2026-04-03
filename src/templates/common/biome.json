@@ -1,5 +1,8 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "ignore": ["dist", "node_modules", "package-lock.json", "coverage"]
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

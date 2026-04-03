@@ -58,6 +58,17 @@ describe('biome option', () => {
     expect(content).toContain('useNodejsImportProtocol');
   });
 
+  it('adds explicit ignore patterns to biome config', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { LINTER: 'biome' });
+
+    const biomeConfig = JSON.parse(readFileSync(join(tmpDir, 'biome.json'), 'utf-8'));
+    expect(biomeConfig.files).toBeDefined();
+    expect(biomeConfig.files.ignore).toEqual(
+      expect.arrayContaining(['dist', 'node_modules', 'package-lock.json', 'coverage']),
+    );
+  });
+
   it('keeps cspell standalone when biome is selected', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { LINTER: 'biome', LINT_OPTIONS: 'cspell' });
