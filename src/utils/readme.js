@@ -4139,6 +4139,34 @@ function getQualityChecksDescription(answers) {
   return `${checks.slice(0, -1).join(', ')}, and ${checks.at(-1)}`;
 }
 
+function getAutomatedPublishingSetup(answers) {
+  if (!answers.setupSemanticRelease || !['cli', 'npm-lib'].includes(answers.projectType)) {
+    return '';
+  }
+
+  return [
+    'semantic-release needs repository secrets before the first release can publish to npm.',
+    '',
+    '1. **Create an npm access token**',
+    '   - Sign in to [npmjs.com](https://www.npmjs.com/) and open **Access Tokens**.',
+    '   - Click **Generate New Token** and choose **Granular Access Token**.',
+    '   - Grant read and write access for the package or scope you want to publish.',
+    '',
+    '2. **Add the token to your GitHub repository secrets**',
+    '   - Open your repository on GitHub.',
+    '   - Go to **Settings -> Secrets and variables -> Actions**.',
+    '   - Add a new repository secret named `NPM_TOKEN` and paste the token value.',
+    '',
+    '3. **Use the built-in GitHub token**',
+    '   - The workflow already receives `GITHUB_TOKEN` automatically from GitHub Actions.',
+    '   - You do not need to create or store that token yourself for the generated release workflow.',
+    '',
+    '4. **Publish through CI**',
+    '   - Push Conventional Commits to `main`.',
+    '   - semantic-release will determine the next version, publish to npm, and create the GitHub release.',
+  ].join('\n');
+}
+
 function getScriptsTable(answers) {
   const {
     projectType,
@@ -4239,6 +4267,11 @@ export function generateReadme(answers) {
   sections.push(
     `## Quality Checks\n\n${codeBlock('bash', 'npm run check')}\n\nRuns ${getQualityChecksDescription(answers)} in sequence.`,
   );
+
+  const publishingSetup = getAutomatedPublishingSetup(answers);
+  if (publishingSetup) {
+    sections.push(`## Automated Publishing Setup\n\n${publishingSetup}`);
+  }
 
   // Deep project structure
   sections.push(`## Project Structure\n\n${getProjectStructure(answers)}`);

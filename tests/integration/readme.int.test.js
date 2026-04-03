@@ -408,6 +408,15 @@ describe('README generation detail (preserved)', () => {
     expect(content).toContain(".command('hello')");
   });
 
+  it('documents automated publishing setup for semantic-release projects', () => {
+    const content = generateReadme(npmLibAnswers());
+
+    expect(content).toContain('## Automated Publishing Setup');
+    expect(content).toContain('Granular Access Token');
+    expect(content).toContain('NPM_TOKEN');
+    expect(content).toContain('GITHUB_TOKEN');
+  });
+
   it('includes backend-specific framework and infra guidance', () => {
     const content = generateReadme(backendAnswers({ lintOption: ['secretlint'], vitestPreset: 'native' }));
 
