@@ -56,6 +56,7 @@ function npmLibAnswers(overrides = {}) {
   return {
     _pkgName: 'demo-lib',
     projectType: 'npm-lib',
+    packageManager: 'npm',
     lintOption: ['cspell', 'commitlint'],
     vitestPreset: 'coverage',
     setupSemanticRelease: true,
@@ -415,6 +416,16 @@ describe('README generation detail (preserved)', () => {
     expect(content).toContain('Granular Access Token');
     expect(content).toContain('NPM_TOKEN');
     expect(content).toContain('GITHUB_TOKEN');
+  });
+
+  it('uses pnpm commands in npm-lib README when pnpm is selected', () => {
+    const content = generateReadme(npmLibAnswers({ packageManager: 'pnpm' }));
+
+    expect(content).toContain('pnpm install');
+    expect(content).toContain('pnpm build');
+    expect(content).toContain('pnpm check');
+    expect(content).not.toContain('npm run build');
+    expect(content).not.toContain('npm run check');
   });
 
   it('includes backend-specific framework and infra guidance', () => {

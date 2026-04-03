@@ -141,4 +141,16 @@ describe('npm-lib project scaffold', () => {
     expect(content).toContain('tsup');
     expect(content).toContain('semantic-release');
   });
+
+  it('uses pnpm commands in README when PKG_MANAGER=pnpm', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SEMANTIC_RELEASE: '1', PKG_MANAGER: 'pnpm' });
+
+    const content = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
+    expect(content).toContain('pnpm install');
+    expect(content).toContain('pnpm build');
+    expect(content).toContain('pnpm check');
+    expect(content).not.toContain('npm run build');
+    expect(content).not.toContain('npm run check');
+  });
 });

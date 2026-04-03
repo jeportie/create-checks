@@ -207,6 +207,22 @@ function getQualityStackLabel(answers) {
   return tools.join(', ');
 }
 
+function getPackageManager(answers) {
+  if (answers.projectType !== 'npm-lib') return 'npm';
+  return answers.packageManager === 'pnpm' ? 'pnpm' : 'npm';
+}
+
+function adaptPackageManagerCommands(content, answers) {
+  if (getPackageManager(answers) !== 'pnpm') return content;
+
+  return content
+    .replaceAll('npm install', 'pnpm install')
+    .replaceAll('npm test', 'pnpm test')
+    .replaceAll('npm start', 'pnpm start')
+    .replaceAll('npm publish', 'pnpm publish')
+    .replaceAll('npm run ', 'pnpm ');
+}
+
 function joinHumanList(items) {
   if (items.length === 0) return '';
   if (items.length === 1) return items[0];
@@ -4286,7 +4302,7 @@ export function generateReadme(answers) {
 
   sections.push(`## Scripts Reference\n\n${getScriptsTable(answers)}`);
 
-  return sections.join('\n\n---\n\n') + '\n';
+  return adaptPackageManagerCommands(sections.join('\n\n---\n\n'), answers) + '\n';
 }
 
 export async function writeReadme(answers, cwd) {
