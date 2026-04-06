@@ -367,6 +367,9 @@ Each tutorial includes complete, copy-paste-ready code for every file (component
 - [ ] **Bun as runtime** — Offer Bun as an alternative runtime, not just for Elysia
 - [ ] **GitHub vs GitLab** — Affects CI/CD template choice
 - [ ] **`pkg` or `ncc`** — Standalone binary distribution for CLI tools
+- [ ] **Ink for `cli` mode** — Add a React-based Node.js TUI framework option alongside `commander`, `inquirer`, and `@clack/prompts`
+- [ ] **Ink add-on toolkit** — Scaffold `@inkjs/ui` by default for Ink-based CLIs (inputs, select, spinner, progress, alerts), with `ink-markdown` and `ink-table` as optional specialized extras
+- [ ] **Ink single-purpose addons** — Only evaluate `ink-text-input`, `ink-spinner`, and `ink-select-input` if a lighter alternative to `@inkjs/ui` is needed
 
 ---
 
