@@ -90,4 +90,5 @@ jobs:
             echo "_Automated, non-blocking. Swap the model via repo Variables — see the workflow header._"
           } > review.md
 
-          gh pr comment "$PR" --body-file review.md
+          # Submit as a review (shows in the PR's reviews), not just a comment.
+          gh pr review "$PR" --comment --body-file review.md
