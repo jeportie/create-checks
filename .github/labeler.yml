@@ -1,0 +1,32 @@
+# Auto-label PRs by area. Consumed by actions/labeler@v5 (.github/workflows/labeler.yml).
+# Labels are created by scripts/ci/labels.mjs.
+prompts:
+  - changed-files:
+      - any-glob-to-any-file: 'src/prompts/**'
+generators:
+  - changed-files:
+      - any-glob-to-any-file: 'src/generators/**'
+templates:
+  - changed-files:
+      - any-glob-to-any-file: 'src/templates/**'
+utils:
+  - changed-files:
+      - any-glob-to-any-file: 'src/utils/**'
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+          - '**/*.test.*'
+          - '**/*.spec.*'
+e2e:
+  - changed-files:
+      - any-glob-to-any-file: 'scripts/e2e/**'
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'scripts/ci/**'
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'

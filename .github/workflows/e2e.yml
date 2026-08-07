@@ -1,0 +1,49 @@
+name: E2E install matrix (verify)
+
+# Real-install verification tier. Slow + network-heavy, so it runs nightly and
+# on demand — not on every PR (the fast generation tier runs in pull-request-checks).
+# On the ubuntu runner, elysia (needs Bun), Detox (needs an iOS sim) and Playwright
+# browsers are absent; those steps self-skip.
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'Extra run.mjs args, e.g. "--type=backend --linter=biome"'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 4 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: E2E verify tier
+        env:
+          FILTER: ${{ github.event.inputs.filter }}
+        run: node scripts/e2e/run.mjs --tier=verify $FILTER
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: e2e-report.json
+          if-no-files-found: warn

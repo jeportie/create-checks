@@ -66,7 +66,17 @@
     "currfix",
     "unstub",
     "psql",
-    "mongosh"
+    "mongosh",
+    "labeler",
+    "anthropics",
+    "promptless",
+    "scaffolded",
+    "repro",
+    "dependabot",
+    "rulesets",
+    "ruleset",
+    "idempotent",
+    "paginate"
   ],
   "ignorePaths": [
     ".vscode/",

@@ -1,0 +1,17 @@
+name: Labeler
+
+on:
+  - pull_request_target
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply area labels
+        uses: actions/labeler@v5
+        with:
+          sync-labels: true
