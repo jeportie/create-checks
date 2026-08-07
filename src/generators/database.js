@@ -78,7 +78,7 @@ export const db = mysql.createPool(getDatabaseUrl());
 
 import { getSqliteFilePath } from './config';
 
-export const db = new Database(getSqliteFilePath());
+export const db: Database.Database = new Database(getSqliteFilePath());
 `;
 }
 
@@ -285,12 +285,12 @@ function ensureMigrationsTable() {
 }
 
 function getAppliedMigrations() {
-  const rows = db.prepare('SELECT name FROM _migrations').all();
+  const rows = db.prepare('SELECT name FROM _migrations').all() as { name: string }[];
   return new Set(rows.map((row) => String(row.name)));
 }
 
-function applyMigration(name, sql) {
-  const run = db.transaction((migrationName, migrationSql) => {
+function applyMigration(name: string, sql: string) {
+  const run = db.transaction((migrationName: string, migrationSql: string) => {
     db.exec(migrationSql);
     db.prepare('INSERT INTO _migrations (name, applied_at) VALUES (?, ?)').run(migrationName, new Date().toISOString());
   });
@@ -329,13 +329,15 @@ export default defineConfig({
 }
 
 function renderDbConnectivityTest(engine, orm) {
-  const importLine =
+  const relativeImport =
     orm === 'mongoose' ? "import { connectDb } from '../../src/db';" : "import { db } from '../../src/db';";
-  const imports = ["import { describe, expect, it } from 'vitest';", importLine];
+  const externalImports = ["import { describe, expect, it } from 'vitest';"];
 
   if (orm === 'drizzle') {
-    imports.unshift("import { sql } from 'drizzle-orm';");
+    externalImports.unshift("import { sql } from 'drizzle-orm';");
   }
+
+  const isSyncSqlite = engine === 'sqlite' && !['drizzle', 'prisma', 'mongoose'].includes(orm);
 
   let connectivityBody = '';
   if (orm === 'mongoose') {
@@ -362,7 +364,7 @@ function renderDbConnectivityTest(engine, orm) {
 `;
   } else if (engine === 'sqlite') {
     connectivityBody = `
-    const result = db.prepare('SELECT 1 as ok').get();
+    const result = db.prepare('SELECT 1 as ok').get() as { ok: number };
     expect(result.ok).toBe(1);
 `;
   } else {
@@ -373,10 +375,12 @@ function renderDbConnectivityTest(engine, orm) {
 `;
   }
 
-  return `${imports.join('\n')}
+  return `${externalImports.join('\n')}
+
+${relativeImport}
 
 describe('database connectivity', () => {
-  it('executes a basic query path when DATABASE_URL is configured', async () => {
+  it('executes a basic query path when DATABASE_URL is configured', ${isSyncSqlite ? '() => {' : 'async () => {'}
     if (!process.env.DATABASE_URL && process.env.CI !== 'true') {
       // Starter guard: provide env then remove this guard for strict CI usage.
       return;

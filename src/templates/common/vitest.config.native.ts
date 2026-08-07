@@ -9,6 +9,9 @@ export default defineConfig({
     },
   },
   test: {
+    // 'forks' (child processes) instead of worker threads so native addons
+    // (e.g. better-sqlite3) load without crashing the test runner.
+    pool: 'forks',
     include: [
       '**/tests/**/*.{test,spec}.{ts,tsx,js}',
       '**/test/**/*.{test,spec}.{ts,tsx,js}',
