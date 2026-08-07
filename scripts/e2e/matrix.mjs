@@ -187,12 +187,17 @@ export function expectedFiles(combo) {
 }
 
 function verifyCombo(type, name, env) {
+  // Verify combos model realistic installs. The cli/backend/frontend templates
+  // always emit a vitest test file, so default VITEST_PRESET=native unless the
+  // combo overrides it. (app uses jest, not vitest.)
+  const withDefaults =
+    type !== 'app' && env.VITEST_PRESET === undefined ? { VITEST_PRESET: 'native', ...env } : env;
   return {
     id: `verify/${type}/${name}`,
     group: `verify/${type}`,
     type,
     labels: [type, name],
-    env: { PROJECT_TYPE: type, ...env },
+    env: { PROJECT_TYPE: type, ...withDefaults },
   };
 }
 
