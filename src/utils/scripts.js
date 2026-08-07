@@ -79,6 +79,7 @@ export function buildScripts(pkg, answers) {
     setupPlaywright = false,
     setupAppJest = true,
     setupAppDetox = true,
+    linter = 'eslint',
   } = answers;
 
   const checkParts = ['npm run format', 'npm run lint', 'npm run typecheck'];
@@ -90,8 +91,8 @@ export function buildScripts(pkg, answers) {
   pkg.scripts = {
     ...pkg.scripts,
     check: checkParts.join(' && '),
-    format: 'prettier . --write',
-    lint: 'eslint .',
+    format: linter === 'biome' ? 'biome format --write .' : 'prettier . --write',
+    lint: linter === 'biome' ? 'biome check .' : 'eslint .',
     typecheck: projectType === 'frontend' ? 'tsc -b' : 'tsc --noEmit',
   };
 
@@ -146,14 +147,55 @@ export function buildScripts(pkg, answers) {
     }
 
     if (answers.setupDocker) {
-      pkg.scripts['docker:up'] =
-        'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose up --build; elif command -v docker-compose >/dev/null 2>&1; then docker-compose up --build; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-      pkg.scripts['docker:down'] =
-        'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose down; elif command -v docker-compose >/dev/null 2>&1; then docker-compose down; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-      pkg.scripts['docker:logs'] =
-        'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose logs -f; elif command -v docker-compose >/dev/null 2>&1; then docker-compose logs -f; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
-      pkg.scripts['docker:build'] =
-        'sh -c \'if docker compose version >/dev/null 2>&1; then docker compose build; elif command -v docker-compose >/dev/null 2>&1; then docker-compose build; else echo "Docker Compose is not installed" >&2; exit 1; fi\'';
+      pkg.scripts['docker:up'] = 'docker compose up --build';
+      pkg.scripts['docker:down'] = 'docker compose down';
+      pkg.scripts['docker:logs'] = 'docker compose logs -f';
+      pkg.scripts['docker:build'] = 'docker compose build';
+
+      if (answers.setupDatabase) {
+        const engine = answers.databaseEngine ?? 'postgresql';
+        const dbShellCmd =
+          engine === 'postgresql'
+            ? 'psql "$DATABASE_URL"'
+            : engine === 'mysql' || engine === 'mariadb'
+              ? 'mysql "$DATABASE_URL"'
+              : engine === 'sqlite'
+                ? 'sqlite3 dev.db'
+                : 'mongosh "$DATABASE_URL"';
+
+        pkg.scripts['docker:db:up'] = 'docker compose up -d db';
+        pkg.scripts['docker:db:down'] = 'docker compose stop db';
+        pkg.scripts['docker:db:logs'] = 'docker compose logs -f db';
+        pkg.scripts['docker:db:shell'] = `docker compose exec db sh -lc '${dbShellCmd}'`;
+        pkg.scripts['docker:db:migrate'] = 'npm run db:migrate --if-present';
+      }
+    }
+
+    if (answers.setupDatabase) {
+      const engine = answers.databaseEngine ?? 'postgresql';
+      const orm = answers.databaseOrm ?? (engine === 'mongodb' ? 'mongoose' : 'none');
+
+      if (orm === 'drizzle') {
+        pkg.scripts['db:generate'] = 'drizzle-kit generate';
+        pkg.scripts['db:migrate'] = 'drizzle-kit migrate';
+        pkg.scripts['db:studio'] = 'drizzle-kit studio';
+      } else if (orm === 'prisma') {
+        pkg.scripts['db:generate'] = 'prisma generate';
+        pkg.scripts['db:migrate'] = 'prisma migrate dev';
+        pkg.scripts['db:studio'] = 'prisma studio';
+      } else if (orm === 'none') {
+        pkg.scripts['db:migrate'] = 'node --import tsx src/db/migrate.ts';
+      }
+
+      if (engine === 'postgresql') {
+        pkg.scripts['db:shell'] = 'psql "$DATABASE_URL"';
+      } else if (engine === 'mysql' || engine === 'mariadb') {
+        pkg.scripts['db:shell'] = 'mysql "$DATABASE_URL"';
+      } else if (engine === 'sqlite') {
+        pkg.scripts['db:shell'] = 'sqlite3 dev.db';
+      } else if (engine === 'mongodb') {
+        pkg.scripts['db:shell'] = 'mongosh "$DATABASE_URL"';
+      }
     }
   }
 
@@ -178,7 +220,7 @@ export function buildScripts(pkg, answers) {
   }
 
   if (setupPrecommit) {
-    const lintStagedCmds = ['npm run format', 'npm run lint'];
+    const lintStagedCmds = linter === 'biome' ? ['biome check --write .'] : ['npm run format', 'npm run lint'];
     if (lintOption.includes('cspell')) lintStagedCmds.push('npm run spellcheck');
     if (lintOption.includes('secretlint')) lintStagedCmds.push('npm run secretlint');
     pkg['lint-staged'] = { '**/*': lintStagedCmds };

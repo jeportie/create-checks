@@ -4,6 +4,7 @@ import pc from 'picocolors';
 import path from 'node:path';
 
 import { copyIfMissing, templatePath } from '../utils/file-system.js';
+import { generateCicd } from './cicd.js';
 import { installDeps } from '../utils/install.js';
 import { writeReadme } from '../utils/readme.js';
 import { buildScripts, orderPackageKeys } from '../utils/scripts.js';
@@ -55,9 +56,46 @@ async function appendIgnorePathsToCspell(cwd, ignorePaths) {
   await fs.writeJson(cspellPath, cspellJson, { spaces: 2 });
 }
 
+function normalizeEnvLines(content) {
+  return content
+    .split('\n')
+    .filter(Boolean)
+    .reduce((acc, line) => {
+      const [key] = line.split('=');
+      if (!key) return acc;
+      acc[key] = line.slice(key.length + 1);
+      return acc;
+    }, {});
+}
+
+async function bootstrapEnvFiles(cwd, answers) {
+  if (!answers.captureSecrets) return;
+
+  const secretValues = answers.secretValues ?? {};
+  const envExamplePath = path.join(cwd, '.env.example');
+  const envLocalPath = path.join(cwd, '.env.local');
+
+  const envExampleContent = (await fs.pathExists(envExamplePath)) ? await fs.readFile(envExamplePath, 'utf-8') : '';
+  const envLocalContent = (await fs.pathExists(envLocalPath)) ? await fs.readFile(envLocalPath, 'utf-8') : '';
+
+  const exampleMap = normalizeEnvLines(envExampleContent);
+  const localMap = normalizeEnvLines(envLocalContent);
+
+  for (const key of Object.keys(secretValues)) {
+    if (!(key in exampleMap)) exampleMap[key] = '';
+    if (!(key in localMap)) localMap[key] = secretValues[key] ?? '';
+  }
+
+  const exampleLines = Object.entries(exampleMap).map(([key, value]) => `${key}=${value}`);
+  const localLines = Object.entries(localMap).map(([key, value]) => `${key}=${value}`);
+
+  await fs.writeFile(envExamplePath, `${exampleLines.join('\n')}\n`);
+  await fs.writeFile(envLocalPath, `${localLines.join('\n')}\n`);
+}
+
 export async function generateCommon(answers, cwd = process.cwd()) {
   const pkgPath = path.join(cwd, 'package.json');
-  const { lintOption = [], vitestPreset, setupPrecommit = true, authorName, projectType } = answers;
+  const { lintOption = [], vitestPreset, setupPrecommit = true, authorName, projectType, linter = 'eslint' } = answers;
   const isFrontend = projectType === 'frontend';
   const isApp = projectType === 'app';
 
@@ -82,10 +120,15 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     }
   }
 
-  await fs.copyFile(templatePath('common', 'prettier.config.js'), path.join(cwd, 'prettier.config.js'));
-  console.log(pc.green('✔') + '    prettier.config.js');
+  if (linter === 'biome') {
+    await fs.copyFile(templatePath('common', 'biome.json'), path.join(cwd, 'biome.json'));
+    console.log(pc.green('✔') + '    biome.json');
+  } else {
+    await fs.copyFile(templatePath('common', 'prettier.config.js'), path.join(cwd, 'prettier.config.js'));
+    console.log(pc.green('✔') + '    prettier.config.js');
+  }
 
-  if (!isFrontend && !isApp) {
+  if (!isFrontend && !isApp && linter !== 'biome') {
     const eslintTemplate = lintOption.includes('cspell') ? 'eslintCspell.config.js' : 'eslint.config.js';
     await fs.copyFile(templatePath('common', eslintTemplate), path.join(cwd, 'eslint.config.js'));
     console.log(pc.green('✔') + '    eslint.config.js');
@@ -93,7 +136,11 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   if (lintOption.includes('cspell')) {
     await copyIfMissing(templatePath('common', 'cspell.json'), path.join(cwd, 'cspell.json'), 'cspell.json');
-    await appendIgnorePathsToCspell(cwd, ['dist/**']);
+    const cspellIgnorePaths = ['dist/**'];
+    if (projectType === 'npm-lib' && answers.packageManager === 'pnpm') {
+      cspellIgnorePaths.push('pnpm-lock.yaml');
+    }
+    await appendIgnorePathsToCspell(cwd, cspellIgnorePaths);
     await appendWordsToCspell(cwd, ['tskickstart', 'composable', 'preconfigured', 'precommit', 'subroutes']);
     if (authorName) {
       await appendWordsToCspell(cwd, authorName.split(/\s+/).filter(Boolean));
@@ -146,7 +193,13 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   await copyIfMissing(templatePath('common', '.editorconfig'), path.join(cwd, '.editorconfig'), '.editorconfig');
   await copyIfMissing(templatePath('common', '_gitignore'), path.join(cwd, '.gitignore'), '.gitignore');
-  await copyIfMissing(templatePath('common', '.prettierignore'), path.join(cwd, '.prettierignore'), '.prettierignore');
+  if (linter !== 'biome') {
+    await copyIfMissing(
+      templatePath('common', '.prettierignore'),
+      path.join(cwd, '.prettierignore'),
+      '.prettierignore',
+    );
+  }
 
   if (lintOption.includes('secretlint')) {
     await copyIfMissing(
@@ -231,22 +284,17 @@ describe('helloWorld', () => {
   }
 
   const pkg = await fs.readJson(pkgPath);
+  const previousScripts = { ...(pkg.scripts ?? {}) };
   buildScripts(pkg, answers);
   const organizedPkg = orderPackageKeys(pkg);
   await fs.writeJson(pkgPath, organizedPkg, { spaces: 2 });
 
-  const addedScripts = ['check', 'lint', 'format', 'typecheck'];
-  if (lintOption.includes('cspell')) addedScripts.push('spellcheck');
-  if (lintOption.includes('secretlint')) addedScripts.push('secretlint');
-  if (vitestPreset === 'native' || vitestPreset === 'coverage') {
-    addedScripts.push('test', 'test:unit', 'test:integration');
-  }
-  if (vitestPreset === 'coverage') addedScripts.push('test:coverage');
-  if (isFrontend) addedScripts.push('build', 'dev', 'preview');
-  if (answers.setupPlaywright) addedScripts.push('test:e2e', 'test:e2e:ui');
+  const changedScripts = Object.entries(organizedPkg.scripts ?? {})
+    .filter(([name, command]) => previousScripts[name] !== command)
+    .map(([name]) => name);
 
   console.log(pc.green('→') + '  scripts added in package.json:');
-  for (const script of addedScripts) {
+  for (const script of changedScripts) {
     console.log(pc.green('✔') + `    ${script}`);
   }
 
@@ -262,4 +310,8 @@ describe('helloWorld', () => {
   } else {
     console.log(pc.dim('–') + '    README.md (already exists, skipped)');
   }
+
+  await bootstrapEnvFiles(cwd, answers);
+
+  await generateCicd(answers, cwd);
 }

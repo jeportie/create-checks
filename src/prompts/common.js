@@ -1,11 +1,33 @@
 import { execa } from 'execa';
 
 import { prompt } from '../utils/prompt.js';
+import { askCicdQuestions } from './cicd.js';
 import { askPlaywrightQuestion } from './playwright.js';
 
 export async function askCommonQuestions(projectType) {
+  let linter = process.env.LINTER === 'biome' ? 'biome' : 'eslint';
+  if (!process.env.LINTER && process.stdin.isTTY) {
+    const result = await prompt([
+      {
+        type: 'list',
+        name: 'linter',
+        message: 'Linter & formatter?',
+        choices: [
+          { name: 'ESLint + Prettier', value: 'eslint' },
+          { name: 'Biome', value: 'biome' },
+        ],
+        default: 'eslint',
+      },
+    ]);
+    linter = result.linter;
+  }
+
   let lintOption = [];
-  if (process.stdin.isTTY) {
+  if (process.env.LINT_OPTIONS) {
+    lintOption = process.env.LINT_OPTIONS.split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  } else if (process.stdin.isTTY) {
     const result = await prompt([
       {
         type: 'checkbox',
@@ -49,7 +71,11 @@ export async function askCommonQuestions(projectType) {
   const { setupPlaywright } = await askPlaywrightQuestion(projectType);
 
   let setupPrecommit = true;
-  if (process.stdin.isTTY) {
+  if (process.env.SETUP_PRECOMMIT === '1') {
+    setupPrecommit = true;
+  } else if (process.env.SETUP_PRECOMMIT === '0') {
+    setupPrecommit = false;
+  } else if (process.stdin.isTTY) {
     const result = await prompt([
       {
         type: 'confirm',
@@ -60,6 +86,8 @@ export async function askCommonQuestions(projectType) {
     ]);
     setupPrecommit = result.setupPrecommit;
   }
+
+  const cicdAnswers = await askCicdQuestions(projectType);
 
   let authorName = '';
   if (process.env.AUTHOR_NAME !== undefined) {
@@ -93,11 +121,49 @@ export async function askCommonQuestions(projectType) {
     }
   }
 
+  const secretValues = {};
+  let captureSecrets = false;
+  const projectTypesWithEnvFiles = ['backend', 'cli', 'app'];
+
+  if (projectTypesWithEnvFiles.includes(projectType)) {
+    if (process.env.SECRET_CAPTURE === '1') {
+      captureSecrets = true;
+    } else if (process.env.SECRET_CAPTURE === '0') {
+      captureSecrets = false;
+    } else if (process.stdin.isTTY) {
+      const result = await prompt([
+        {
+          type: 'confirm',
+          name: 'captureSecrets',
+          message: 'Capture starter secrets and bootstrap .env files?',
+          default: true,
+        },
+      ]);
+      captureSecrets = result.captureSecrets;
+    }
+
+    if (captureSecrets) {
+      if (process.env.SECRET_DATABASE_URL !== undefined) {
+        secretValues.DATABASE_URL = process.env.SECRET_DATABASE_URL;
+      }
+      if (process.env.SECRET_REDIS_URL !== undefined) {
+        secretValues.REDIS_URL = process.env.SECRET_REDIS_URL;
+      }
+      if (process.env.SECRET_APP_SECRET !== undefined) {
+        secretValues.APP_SECRET = process.env.SECRET_APP_SECRET;
+      }
+    }
+  }
+
   return {
+    linter,
     lintOption,
     vitestPreset,
     setupPlaywright,
+    ...cicdAnswers,
     setupPrecommit,
     authorName,
+    captureSecrets,
+    secretValues,
   };
 }

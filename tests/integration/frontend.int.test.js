@@ -59,6 +59,19 @@ describe('frontend starter scaffold', () => {
     expect(existsSync(join(tmpDir, 'src', 'assets', 'vite.svg'))).toBe(true);
   });
 
+  it('uses a root null guard and explicit button type in starter templates', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir);
+
+    const mainContent = readFileSync(join(tmpDir, 'src', 'main.tsx'), 'utf-8');
+    expect(mainContent).toContain("const root = document.getElementById('root');");
+    expect(mainContent).toContain("if (!root) throw new Error('Root element not found');");
+    expect(mainContent).not.toContain("getElementById('root')!");
+
+    const welcomeContent = readFileSync(join(tmpDir, 'src', 'Welcome.tsx'), 'utf-8');
+    expect(welcomeContent).toContain('type="button"');
+  });
+
   it('creates frontend test files', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);

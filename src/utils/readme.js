@@ -9,6 +9,1179 @@ function codeBlock(language, content) {
   return `\`\`\`${language}\n${content}\n\`\`\``;
 }
 
+const backendFrameworkMeta = {
+  hono: {
+    label: 'Hono',
+    docs: 'https://hono.dev/',
+    runtime: 'Node.js',
+    devWatch: 'tsx watch',
+    routeExample: "app.get('/users', (c) => c.json([{ id: '1', name: 'Alice' }]));",
+    middlewareExample:
+      "app.use('*', async (c, next) => {\n  console.log(`${c.req.method} ${c.req.url}`);\n  await next();\n});",
+    testExample:
+      "import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /health', () => {\n  it('returns ok status', async () => {\n    const res = await app.request('/health');\n    expect(res.status).toBe(200);\n    expect(await res.json()).toEqual({ status: 'ok' });\n  });\n});",
+  },
+  fastify: {
+    label: 'Fastify',
+    docs: 'https://fastify.dev/',
+    runtime: 'Node.js',
+    devWatch: 'tsx watch',
+    routeExample: "app.get('/users', async () => [{ id: '1', name: 'Alice' }]);",
+    middlewareExample:
+      "app.addHook('onRequest', async (request) => {\n  console.log(`${request.method} ${request.url}`);\n});",
+    testExample:
+      "import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /health', () => {\n  it('returns ok status', async () => {\n    const res = await app.inject({ method: 'GET', url: '/health' });\n    expect(res.statusCode).toBe(200);\n    expect(res.json()).toEqual({ status: 'ok' });\n  });\n});",
+  },
+  express: {
+    label: 'Express',
+    docs: 'https://expressjs.com/',
+    runtime: 'Node.js',
+    devWatch: 'tsx watch',
+    routeExample: "app.get('/users', (_req, res) => res.json([{ id: '1', name: 'Alice' }]));",
+    middlewareExample: 'app.use((req, _res, next) => {\n  console.log(`${req.method} ${req.url}`);\n  next();\n});',
+    testExample:
+      "import request from 'supertest';\nimport { describe, expect, it } from 'vitest';\n\nimport app from '../../src/index.js';\n\ndescribe('GET /health', () => {\n  it('returns ok status', async () => {\n    const res = await request(app).get('/health');\n    expect(res.status).toBe(200);\n    expect(res.body).toEqual({ status: 'ok' });\n  });\n});",
+  },
+  elysia: {
+    label: 'Elysia',
+    docs: 'https://elysiajs.com/',
+    runtime: 'Bun',
+    devWatch: 'bun --watch',
+    routeExample: "app.get('/users', () => [{ id: '1', name: 'Alice' }]);",
+    middlewareExample:
+      'app.onBeforeHandle(({ request }) => {\n  console.log(`${request.method} ${new URL(request.url).pathname}`);\n});',
+    testExample:
+      "import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /health', () => {\n  it('returns ok status', async () => {\n    const res = await app.handle(new Request('http://localhost/health'));\n    expect(res.status).toBe(200);\n    expect(await res.json()).toEqual({ status: 'ok' });\n  });\n});",
+  },
+};
+
+const backendDatabaseEngineMeta = {
+  postgresql: {
+    label: 'PostgreSQL',
+    dockerImage: 'postgres:16-alpine',
+    dockerPort: '5432',
+    defaultUrl: 'postgresql://postgres:postgres@localhost:5432/app',
+    credentials: [
+      ['POSTGRES_USER', 'postgres'],
+      ['POSTGRES_PASSWORD', 'postgres'],
+      ['POSTGRES_DB', 'app'],
+    ],
+  },
+  mysql: {
+    label: 'MySQL',
+    dockerImage: 'mysql:8',
+    dockerPort: '3306',
+    defaultUrl: 'mysql://root:root@localhost:3306/app',
+    credentials: [
+      ['MYSQL_ROOT_PASSWORD', 'root'],
+      ['MYSQL_DATABASE', 'app'],
+    ],
+  },
+  mariadb: {
+    label: 'MariaDB',
+    dockerImage: 'mariadb:11',
+    dockerPort: '3306',
+    defaultUrl: 'mysql://root:root@localhost:3306/app',
+    credentials: [
+      ['MARIADB_ROOT_PASSWORD', 'root'],
+      ['MARIADB_DATABASE', 'app'],
+    ],
+  },
+  sqlite: {
+    label: 'SQLite',
+    dockerImage: null,
+    dockerPort: null,
+    defaultUrl: 'file:./dev.db',
+    credentials: [],
+  },
+  mongodb: {
+    label: 'MongoDB',
+    dockerImage: 'mongo:7',
+    dockerPort: '27017',
+    defaultUrl: 'mongodb://localhost:27017/app',
+    credentials: [],
+  },
+};
+
+const backendOrmMeta = {
+  none: {
+    label: 'Raw SQL',
+    snapshotLabel: 'Raw driver + SQL migrations',
+    dbCommands: [['`npm run db:migrate`', 'Apply SQL migrations from `src/db/migrations/`']],
+  },
+  drizzle: {
+    label: 'Drizzle',
+    snapshotLabel: '[Drizzle ORM](https://orm.drizzle.team/)',
+    dbCommands: [
+      ['`npm run db:generate`', 'Generate migration SQL from schema changes'],
+      ['`npm run db:migrate`', 'Apply pending migrations'],
+      ['`npm run db:studio`', 'Open Drizzle Studio'],
+    ],
+  },
+  prisma: {
+    label: 'Prisma',
+    snapshotLabel: '[Prisma](https://www.prisma.io/)',
+    dbCommands: [
+      ['`npm run db:generate`', 'Generate Prisma client'],
+      ['`npm run db:migrate`', 'Run Prisma migrations'],
+      ['`npm run db:studio`', 'Open Prisma Studio'],
+    ],
+  },
+  mongoose: {
+    label: 'Mongoose',
+    snapshotLabel: '[Mongoose](https://mongoosejs.com/)',
+    dbCommands: [],
+  },
+};
+
+function parseEnvExample(content) {
+  if (!content) return {};
+
+  return content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith('#'))
+    .reduce((acc, line) => {
+      const [key, ...rest] = line.split('=');
+      if (!key) return acc;
+      acc[key] = rest.join('=');
+      return acc;
+    }, {});
+}
+
+function quoteDefaultValue(value) {
+  if (value === undefined || value === null || value === '') {
+    return '(empty)';
+  }
+  return `\`${value}\``;
+}
+
+function getBackendFrameworkInfo(framework) {
+  return backendFrameworkMeta[framework] ?? backendFrameworkMeta.hono;
+}
+
+function getBackendEngineInfo(engine) {
+  return backendDatabaseEngineMeta[engine] ?? backendDatabaseEngineMeta.postgresql;
+}
+
+function getBackendOrmInfo(orm) {
+  return backendOrmMeta[orm] ?? backendOrmMeta.none;
+}
+
+function getDatabaseShellDescription(engine) {
+  if (engine === 'postgresql') return 'Open a `psql` shell';
+  if (engine === 'mysql' || engine === 'mariadb') return 'Open a `mysql` shell';
+  if (engine === 'sqlite') return 'Open a `sqlite3` shell';
+  return 'Open a `mongosh` shell';
+}
+
+function getDatabaseWorkflowCommand(engine, orm) {
+  if (orm === 'drizzle') return 'npm run db:generate && npm run db:migrate';
+  if (orm === 'prisma') return 'npm run db:generate && npm run db:migrate';
+  if (orm === 'none') return 'npm run db:migrate';
+  if (orm === 'mongoose') return 'npm run dev';
+  if (engine === 'mongodb') return 'npm run dev';
+  return 'npm run db:migrate';
+}
+
+function getTestingStackLabel(answers) {
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') {
+    return 'Vitest';
+  }
+  return 'No test framework configured';
+}
+
+function getQualityStackLabel(answers) {
+  const tools = ['TypeScript (strict)'];
+  if (answers.linter === 'biome') {
+    tools.push('Biome');
+  } else {
+    tools.push('ESLint', 'Prettier');
+  }
+
+  if (answers.lintOption?.includes('cspell')) tools.push('CSpell');
+  if (answers.lintOption?.includes('secretlint')) tools.push('Secretlint');
+  if (answers.lintOption?.includes('commitlint')) tools.push('Commitlint');
+
+  return tools.join(', ');
+}
+
+function getPackageManager(answers) {
+  if (answers.projectType !== 'npm-lib') return 'npm';
+  return answers.packageManager === 'pnpm' ? 'pnpm' : 'npm';
+}
+
+function adaptPackageManagerCommands(content, answers) {
+  if (getPackageManager(answers) !== 'pnpm') return content;
+
+  return content
+    .replaceAll('npm install', 'pnpm install')
+    .replaceAll('npm test', 'pnpm test')
+    .replaceAll('npm start', 'pnpm start')
+    .replaceAll('npm publish', 'pnpm publish')
+    .replaceAll('npm run ', 'pnpm ');
+}
+
+function joinHumanList(items) {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, and ${items.at(-1)}`;
+}
+
+function getBackendIntro(answers, framework, engineInfo) {
+  const stackBits = [`powered by ${framework.label}`];
+
+  if (answers.setupDatabase) {
+    let dbLabel = engineInfo.label;
+    if (answers.databaseOrm === 'drizzle') dbLabel += ' (via Drizzle ORM)';
+    if (answers.databaseOrm === 'prisma') dbLabel += ' (via Prisma)';
+    if (answers.databaseOrm === 'mongoose') dbLabel += ' (via Mongoose)';
+    if (answers.databaseOrm === 'none') dbLabel += ' (via raw SQL driver)';
+    stackBits.push(`backed by ${dbLabel}`);
+  }
+
+  if (answers.setupRedis) {
+    stackBits.push('Redis (via ioredis)');
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    stackBits.push('Better Auth wiring for authentication');
+  }
+
+  const intro = `A TypeScript API server ${joinHumanList(stackBits)}.`;
+
+  const infraBits = [`The project runs on ${framework.runtime}`];
+  if (answers.setupDocker) infraBits.push('is containerized with Docker Compose');
+  infraBits.push('comes pre-configured with quality gates');
+  if (answers.setupPrecommit) infraBits.push('pre-commit hooks');
+  if (answers.setupCicd) infraBits.push('CI/CD workflows');
+
+  return `${intro} ${joinHumanList(infraBits)}.`;
+}
+
+function renderBackendProjectSnapshot(answers, framework, engineInfo, ormInfo) {
+  const rows = ['| Item | Value |', '| --- | --- |', '| Project type | Backend API |'];
+
+  rows.push(`| Framework | [${framework.label}](${framework.docs}) |`);
+
+  if (answers.setupDatabase) {
+    const ormLabel = answers.databaseOrm === 'none' ? 'Raw SQL' : ormInfo.snapshotLabel;
+    rows.push(`| Database | ${engineInfo.label} + ${ormLabel} |`);
+  }
+
+  if (answers.setupRedis) {
+    rows.push('| Cache | Redis + [ioredis](https://github.com/redis/ioredis) |');
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    rows.push('| Authentication | [Better Auth](https://www.better-auth.com/) |');
+  }
+
+  rows.push(`| Testing | ${getTestingStackLabel(answers)} |`);
+  rows.push(`| Quality | ${getQualityStackLabel(answers)} |`);
+
+  if (answers.setupDocker) {
+    rows.push('| Containerization | Docker + Docker Compose |');
+  }
+
+  if (answers.setupCicd) {
+    rows.push('| CI/CD | GitHub Actions |');
+  }
+
+  return rows.join('\n');
+}
+
+function renderBackendPrerequisites(answers, framework) {
+  const lines = [];
+
+  if (framework.runtime === 'Bun') {
+    lines.push('- [Bun](https://bun.sh/) v1+ (see `.mise.toml` for pinned version)');
+  } else {
+    lines.push('- [Node.js](https://nodejs.org/) v22+ (see `.mise.toml` for pinned version)');
+  }
+
+  lines.push('- [mise](https://mise.jdx.dev/) (recommended for tool version management)');
+
+  if (answers.setupDocker) {
+    lines.push('- [Docker](https://www.docker.com/) and Docker Compose');
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendGettingStarted(answers, engineInfo) {
+  const lines = [];
+  const workflowCommand = getDatabaseWorkflowCommand(answers.databaseEngine, answers.databaseOrm);
+
+  lines.push('### 1. Clone and install\n');
+  lines.push(codeBlock('bash', 'mise install\nnpm install'));
+
+  lines.push('\n### 2. Set up environment variables\n');
+  lines.push(codeBlock('bash', 'cp .env.example .env'));
+  lines.push('The defaults are ready for local development.');
+
+  if (answers.setupDocker) {
+    lines.push('\n### 3. Start the full stack with Docker\n');
+    lines.push(codeBlock('bash', 'npm run docker:up'));
+    lines.push('This builds the app image and starts all configured services.');
+
+    if (answers.setupDatabase && engineInfo.dockerImage) {
+      const localDevCommands = ['npm run docker:db:up'];
+      if (answers.databaseOrm !== 'mongoose') {
+        localDevCommands.push(workflowCommand);
+      }
+      localDevCommands.push('npm run dev');
+
+      lines.push('\n### 4. Or: local app runtime + Docker services\n');
+      lines.push(codeBlock('bash', localDevCommands.join('\n')));
+    }
+  } else {
+    const localOnly = [];
+    if (answers.setupDatabase && answers.databaseOrm !== 'mongoose') {
+      localOnly.push(workflowCommand);
+    }
+    localOnly.push('npm run dev');
+
+    lines.push('\n### 3. Start in development mode\n');
+    lines.push(codeBlock('bash', localOnly.join('\n')));
+  }
+
+  lines.push('\n### 5. Verify\n');
+  lines.push(codeBlock('bash', 'curl http://localhost:3000/health\ncurl http://localhost:3000/'));
+
+  return lines.join('\n\n');
+}
+
+function renderBackendDockerSection(answers, engineInfo) {
+  if (!answers.setupDocker) return '';
+
+  const serviceRows = [
+    '| Service | Image | Port | Purpose |',
+    '| --- | --- | --- | --- |',
+    '| `app` | Built from `./Dockerfile` | 3000 | API server |',
+  ];
+
+  if (answers.setupDatabase && engineInfo.dockerImage) {
+    serviceRows.push(
+      `| \`db\` | \`${engineInfo.dockerImage}\` | ${engineInfo.dockerPort} | ${engineInfo.label} database |`,
+    );
+  }
+
+  if (answers.setupRedis) {
+    serviceRows.push('| `redis` | `redis:7-alpine` | 6379 | Redis cache |');
+  }
+
+  const commandRows = [
+    '| Command | Description |',
+    '| --- | --- |',
+    '| `npm run docker:up` | Build and start all services |',
+    '| `npm run docker:down` | Stop all services |',
+    '| `npm run docker:logs` | Tail service logs |',
+    '| `npm run docker:build` | Build images without starting |',
+  ];
+
+  if (answers.setupDatabase && engineInfo.dockerImage) {
+    commandRows.push('| `npm run docker:db:up` | Start database service only |');
+    commandRows.push('| `npm run docker:db:down` | Stop database service |');
+    commandRows.push('| `npm run docker:db:logs` | Tail database logs |');
+    commandRows.push('| `npm run docker:db:shell` | Open database shell |');
+    commandRows.push('| `npm run docker:db:migrate` | Run migration command |');
+  }
+
+  const lines = [];
+  lines.push('The project uses Docker Compose to orchestrate services:\n');
+  lines.push(serviceRows.join('\n'));
+  lines.push('\n### Docker commands\n');
+  lines.push(commandRows.join('\n'));
+  lines.push('\n### Dockerfile\n');
+  lines.push(
+    [
+      'The Dockerfile uses a multi-stage build:',
+      '',
+      '1. **base** — `node:22-slim` and `/app` workdir',
+      '2. **deps** — install production dependencies only (`npm ci --omit=dev`)',
+      '3. **build** — install full dependencies and compile TypeScript',
+      '4. **runtime** — copy production dependencies + `dist/`, expose port `3000`',
+    ].join('\n'),
+  );
+
+  if (answers.setupDatabase && engineInfo.credentials.length > 0) {
+    const credentialRows = ['\n### Default database credentials', '', '| Variable | Default |', '| --- | --- |'];
+    for (const [key, value] of engineInfo.credentials) {
+      credentialRows.push(`| \`${key}\` | \`${value}\` |`);
+    }
+    credentialRows.push(`| Connection string | \`${engineInfo.defaultUrl}\` |`);
+    lines.push(credentialRows.join('\n'));
+  }
+
+  return lines.join('\n\n');
+}
+
+function renderBackendDatabaseSection(answers, engineInfo, ormInfo) {
+  if (!answers.setupDatabase) return '';
+
+  const headingOrmLabel = answers.databaseOrm === 'none' ? 'Raw SQL' : ormInfo.label;
+  const lines = [];
+
+  lines.push(`## Database (${engineInfo.label} + ${headingOrmLabel})`);
+  lines.push('\n### Configuration\n');
+  lines.push(
+    `Database configuration is centralized in \`src/db/config.ts\` via \`getDatabaseUrl()\`${
+      answers.databaseEngine === 'sqlite' ? ' and `getSqliteFilePath()`.' : '.'
+    }`,
+  );
+
+  if (answers.databaseOrm === 'drizzle' && answers.databaseEngine === 'postgresql') {
+    lines.push('\n### Schema\n');
+    lines.push(
+      codeBlock(
+        'ts',
+        "import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';\n\nexport const users = pgTable('users', {\n  id: serial('id').primaryKey(),\n  email: text('email').notNull().unique(),\n  createdAt: timestamp('created_at').defaultNow().notNull(),\n});",
+      ),
+    );
+    lines.push('The schema lives in `src/db/schema.ts` and the client is exported from `src/db/index.ts`.');
+  } else if (answers.databaseOrm === 'drizzle') {
+    lines.push('\n### Schema\n');
+    lines.push('Drizzle schema definitions are in `src/db/schema.ts` and database access is in `src/db/index.ts`.');
+  } else if (answers.databaseOrm === 'prisma') {
+    lines.push('\n### Schema\n');
+    lines.push(
+      'Prisma schema is generated in `prisma/schema.prisma` and the client is exported from `src/db/index.ts`.',
+    );
+  } else if (answers.databaseOrm === 'mongoose') {
+    lines.push('\n### Models\n');
+    lines.push('Mongoose models are created in `src/db/models/` and connection wiring is in `src/db/index.ts`.');
+  } else {
+    lines.push('\n### Migrations\n');
+    lines.push('Raw SQL migrations live in `src/db/migrations/` and are applied by `src/db/migrate.ts`.');
+  }
+
+  lines.push('\n### Commands\n');
+  const commandRows = ['| Command | Description |', '| --- | --- |'];
+  for (const [command, description] of ormInfo.dbCommands) {
+    commandRows.push(`| ${command} | ${description} |`);
+  }
+  commandRows.push(`| \`npm run db:shell\` | ${getDatabaseShellDescription(answers.databaseEngine)} |`);
+  lines.push(commandRows.join('\n'));
+
+  if (answers.databaseOrm !== 'mongoose') {
+    lines.push('\n### Typical workflow\n');
+    if (answers.databaseOrm === 'drizzle') {
+      lines.push(
+        codeBlock(
+          'bash',
+          '# 1. Edit schema in src/db/schema.ts\nnpm run db:generate\nnpm run db:migrate\nnpm run db:studio',
+        ),
+      );
+    } else if (answers.databaseOrm === 'prisma') {
+      lines.push(codeBlock('bash', 'npm run db:generate\nnpm run db:migrate\nnpm run db:studio'));
+    } else {
+      lines.push(codeBlock('bash', 'npm run db:migrate'));
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendRedisSection(answers) {
+  if (!answers.setupRedis) return '';
+
+  return [
+    '## Redis',
+    '',
+    'The Redis client is created in `src/redis/index.ts` using `REDIS_URL` (defaults to `redis://localhost:6379`).',
+    '',
+    codeBlock(
+      'ts',
+      "import { redis, checkRedisConnection } from './src/redis/index.js';\n\nawait checkRedisConnection();\nawait redis.set('key', 'value');\nconst value = await redis.get('key');",
+    ),
+  ].join('\n');
+}
+
+function renderBackendAuthSection(answers) {
+  if (answers.integrationPreset !== 'better-auth') return '';
+
+  return [
+    '## Authentication (Better Auth)',
+    '',
+    'Starter wiring is generated in `src/integrations/better-auth.ts`:',
+    '',
+    codeBlock(
+      'ts',
+      "import { getBetterAuthConfig } from './integrations/better-auth.js';\n\nconst config = getBetterAuthConfig();\n// => { baseUrl: 'http://localhost:3000', secret: '' }",
+    ),
+    '',
+    '| Variable | Purpose | Default |',
+    '| --- | --- | --- |',
+    '| `BETTER_AUTH_URL` | Base URL for auth callbacks | `http://localhost:3000` |',
+    '| `BETTER_AUTH_SECRET` | Signing secret for tokens/sessions | (empty) |',
+    '',
+    'Generate a strong local secret with:',
+    '',
+    codeBlock('bash', 'openssl rand -base64 32'),
+    '',
+    'See the [Better Auth documentation](https://www.better-auth.com/docs) for complete integration guides.',
+  ].join('\n');
+}
+
+function collectBackendEnvRows(answers, envMap, engineInfo) {
+  const rows = [];
+
+  if (answers.setupDatabase) {
+    rows.push({
+      variable: 'DATABASE_URL',
+      purpose: `${engineInfo.label} connection string`,
+      defaultValue: envMap.DATABASE_URL ?? engineInfo.defaultUrl,
+    });
+  }
+
+  if (answers.setupRedis) {
+    rows.push({
+      variable: 'REDIS_URL',
+      purpose: 'Redis connection string',
+      defaultValue: envMap.REDIS_URL ?? 'redis://localhost:6379',
+    });
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    rows.push({
+      variable: 'BETTER_AUTH_URL',
+      purpose: 'Better Auth base URL',
+      defaultValue: envMap.BETTER_AUTH_URL ?? 'http://localhost:3000',
+    });
+    rows.push({
+      variable: 'BETTER_AUTH_SECRET',
+      purpose: 'Better Auth signing secret',
+      defaultValue: envMap.BETTER_AUTH_SECRET ?? '',
+    });
+  }
+
+  rows.push({
+    variable: 'NODE_ENV',
+    purpose: 'Runtime environment',
+    defaultValue: envMap.NODE_ENV ?? 'development',
+  });
+  rows.push({
+    variable: 'PORT',
+    purpose: 'Server listen port',
+    defaultValue: envMap.PORT ?? '3000',
+  });
+
+  return rows;
+}
+
+function renderBackendEnvSection(answers, engineInfo) {
+  const envMap = parseEnvExample(answers._envExample ?? '');
+  const rows = collectBackendEnvRows(answers, envMap, engineInfo);
+  const table = ['| Variable | Purpose | Default |', '| --- | --- | --- |'];
+
+  for (const row of rows) {
+    table.push(`| \`${row.variable}\` | ${row.purpose} | ${quoteDefaultValue(row.defaultValue)} |`);
+  }
+
+  const validationSummary =
+    answers.setupZod !== false
+      ? 'Environment variables are validated at startup via Zod in `src/env.ts`.'
+      : 'Environment variables are read from `process.env` in `src/env.ts`.';
+
+  return [
+    '## Environment Variables',
+    '',
+    'Copy `.env.example` to `.env` and adjust values as needed.',
+    '',
+    ...table,
+    '',
+    validationSummary,
+  ].join('\n');
+}
+
+function renderBackendDevelopmentSection(answers, framework) {
+  return [
+    '## Development',
+    '',
+    codeBlock('bash', 'npm run dev'),
+    '',
+    `Starts the server with ${framework.devWatch}.`,
+    '',
+    '### Adding a route',
+    '',
+    codeBlock('ts', framework.routeExample),
+    '',
+    '### Adding middleware',
+    '',
+    codeBlock('ts', framework.middlewareExample),
+    '',
+    '### Adding an environment variable',
+    '',
+    answers.setupZod !== false
+      ? '1. Add it to the Zod schema in `src/env.ts`\n2. Add it to `.env.example`\n3. Import `env` where needed'
+      : '1. Add it in `src/env.ts`\n2. Add it to `.env.example`\n3. Read from `process.env` where needed',
+    '',
+    '### Testing endpoints with curl',
+    '',
+    codeBlock(
+      'bash',
+      'curl -s http://localhost:3000/health | jq\ncurl -s -X POST http://localhost:3000/users -H \'Content-Type: application/json\' -d \'{"name": "Bob"}\'',
+    ),
+  ].join('\n');
+}
+
+function renderBackendTestingSection(answers, framework) {
+  if (answers.vitestPreset !== 'native' && answers.vitestPreset !== 'coverage') {
+    return ['## Testing', '', 'No test framework configured.'].join('\n');
+  }
+
+  const commands = ['npm test', 'npm run test:unit', 'npm run test:integration'];
+  if (answers.vitestPreset === 'coverage') {
+    commands.push('npm run test:coverage');
+  }
+
+  return [
+    '## Testing',
+    '',
+    codeBlock('bash', commands.join('\n')),
+    '',
+    'Example test pattern:',
+    '',
+    codeBlock('ts', framework.testExample),
+  ].join('\n');
+}
+
+function renderBackendQualitySection(answers) {
+  const checks = [
+    answers.linter === 'biome' ? 'biome format --write .' : 'prettier . --write',
+    answers.linter === 'biome' ? 'biome check .' : 'eslint .',
+    'tsc --noEmit',
+  ];
+
+  if (answers.lintOption?.includes('cspell')) checks.push('cspell lint .');
+  if (answers.lintOption?.includes('secretlint')) checks.push('secretlint **/*');
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') checks.push('vitest --run');
+
+  const lines = ['## Quality Checks', '', codeBlock('bash', 'npm run check'), '', '`npm run check` runs:'];
+  checks.forEach((check, index) => {
+    lines.push(`${index + 1}. \`${check}\``);
+  });
+
+  if (answers.setupPrecommit) {
+    lines.push('', '### Pre-commit hooks', '');
+    lines.push('- `pre-commit`: lint-staged + typecheck + tests');
+    if (answers.lintOption?.includes('commitlint')) {
+      lines.push('- `commit-msg`: commitlint validation for Conventional Commits');
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendBuildDeploySection(answers) {
+  const lines = ['## Build and Deploy', '', '### Build', '', codeBlock('bash', 'npm run build\nnpm start')];
+
+  if (answers.setupCicd) {
+    lines.push('', '### CI/CD', '');
+    lines.push('| Workflow | Trigger | Steps |');
+    lines.push('| --- | --- | --- |');
+    lines.push('| `ci.yml` | Pull request | Install, run `npm run check` |');
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendProjectStructure(answers) {
+  const lines = [
+    '## Project Structure',
+    '',
+    '```',
+    'src/',
+    '  index.ts                # Server entry and routes',
+    '  env.ts                  # Runtime configuration',
+  ];
+
+  if (answers.setupDatabase) {
+    lines.push('  db/');
+    lines.push('    index.ts              # Database client/connection');
+    lines.push('    config.ts             # getDatabaseUrl() helpers');
+    if (answers.databaseOrm === 'drizzle') {
+      lines.push('    schema.ts             # Drizzle schema definitions');
+    }
+    if (answers.databaseOrm === 'none') {
+      lines.push('    migrate.ts            # Raw SQL migration runner');
+      lines.push('    migrations/           # SQL migration files');
+    }
+  }
+
+  if (answers.setupRedis) {
+    lines.push('  redis/');
+    lines.push('    index.ts              # ioredis client and ping helper');
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    lines.push('  integrations/');
+    lines.push('    better-auth.ts        # Better Auth config reader');
+  }
+
+  lines.push('tests/');
+  lines.push('  unit/');
+  lines.push('    server.unit.test.ts   # Framework route unit tests');
+
+  if (answers.setupDatabase) {
+    lines.push('    db-config.unit.test.ts # Database config starter test');
+    lines.push('  integration/');
+    lines.push('    db-connectivity.int.test.ts # Database connectivity starter test');
+  }
+
+  if (answers.setupCicd) {
+    lines.push('.github/');
+    lines.push('  workflows/');
+    lines.push('    ci.yml                # Pull request quality gate');
+  }
+
+  if (answers.setupPrecommit) {
+    lines.push('.husky/');
+    lines.push('  pre-commit              # lint-staged + typecheck + tests');
+    if (answers.lintOption?.includes('commitlint')) {
+      lines.push('  commit-msg              # commitlint validation');
+    }
+  }
+
+  if (answers.setupDocker) {
+    lines.push('Dockerfile                # Multi-stage production image');
+    lines.push('docker-compose.yml        # Local service orchestration');
+  }
+
+  if (answers.setupDatabase && answers.databaseOrm === 'drizzle') {
+    lines.push('drizzle.config.ts         # Drizzle CLI config');
+  }
+
+  if (answers.vitestPreset) {
+    lines.push('vitest.config.ts          # Vitest config');
+  }
+
+  if (answers.linter === 'biome') {
+    lines.push('biome.json                # Biome config');
+  } else {
+    lines.push('eslint.config.js          # ESLint config');
+    lines.push('prettier.config.js        # Prettier config');
+  }
+
+  lines.push('tsconfig.json             # TypeScript config');
+  lines.push('```');
+
+  if (answers.setupDatabase && answers.databaseOrm === 'prisma') {
+    lines.push('', '`prisma/schema.prisma` contains Prisma schema definitions.');
+  }
+
+  return lines.join('\n');
+}
+
+function renderBackendScriptsReference(answers, engineInfo) {
+  const rows = ['## Scripts Reference', '', '| Script | Description |', '| --- | --- |'];
+
+  rows.push('| `npm run dev` | Start backend dev server with hot reload |');
+  rows.push('| `npm run build` | Compile TypeScript output |');
+  rows.push('| `npm start` | Run compiled build |');
+  rows.push('| `npm run check` | Run full quality gate |');
+  rows.push(`| \`npm run format\` | Format code with ${answers.linter === 'biome' ? 'Biome' : 'Prettier'} |`);
+  rows.push(`| \`npm run lint\` | Lint with ${answers.linter === 'biome' ? 'Biome' : 'ESLint'} |`);
+  rows.push('| `npm run typecheck` | Run TypeScript type checks |');
+
+  if (answers.lintOption?.includes('cspell')) rows.push('| `npm run spellcheck` | Spell-check project files |');
+  if (answers.lintOption?.includes('secretlint')) rows.push('| `npm run secretlint` | Scan for accidental secrets |');
+
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') {
+    rows.push('| `npm test` | Run all tests |');
+    rows.push('| `npm run test:unit` | Run unit tests only |');
+    rows.push('| `npm run test:integration` | Run integration tests only |');
+    if (answers.vitestPreset === 'coverage') {
+      rows.push('| `npm run test:coverage` | Run tests with coverage |');
+    }
+  }
+
+  if (answers.setupDatabase) {
+    if (answers.databaseOrm === 'drizzle') {
+      rows.push('| `npm run db:generate` | Generate Drizzle migrations |');
+      rows.push('| `npm run db:migrate` | Apply Drizzle migrations |');
+      rows.push('| `npm run db:studio` | Open Drizzle Studio |');
+    } else if (answers.databaseOrm === 'prisma') {
+      rows.push('| `npm run db:generate` | Generate Prisma client |');
+      rows.push('| `npm run db:migrate` | Apply Prisma migrations |');
+      rows.push('| `npm run db:studio` | Open Prisma Studio |');
+    } else if (answers.databaseOrm === 'none') {
+      rows.push('| `npm run db:migrate` | Apply SQL migrations |');
+    }
+
+    rows.push(`| \`npm run db:shell\` | ${getDatabaseShellDescription(answers.databaseEngine)} |`);
+  }
+
+  if (answers.setupDocker) {
+    rows.push('| `npm run docker:up` | Build and start Docker services |');
+    rows.push('| `npm run docker:down` | Stop Docker services |');
+    rows.push('| `npm run docker:logs` | Tail Docker logs |');
+    rows.push('| `npm run docker:build` | Build Docker images |');
+
+    if (answers.setupDatabase && engineInfo.dockerImage) {
+      rows.push('| `npm run docker:db:up` | Start database service only |');
+      rows.push('| `npm run docker:db:down` | Stop database service |');
+      rows.push('| `npm run docker:db:logs` | Tail database logs |');
+      rows.push('| `npm run docker:db:shell` | Open database shell in container |');
+      rows.push('| `npm run docker:db:migrate` | Run migration command in local context |');
+    }
+  }
+
+  return rows.join('\n');
+}
+
+function renderBackendTools(answers, framework) {
+  const tools = ['## Tools', ''];
+
+  tools.push(`- **[${framework.label}](${framework.docs})** — backend web framework`);
+
+  if (answers.setupDatabase) {
+    const engine = getBackendEngineInfo(answers.databaseEngine).label;
+    if (answers.databaseOrm === 'drizzle') {
+      tools.push(`- **[Drizzle ORM](https://orm.drizzle.team/)** — type-safe ${engine} access`);
+    } else if (answers.databaseOrm === 'prisma') {
+      tools.push(`- **[Prisma](https://www.prisma.io/)** — ${engine} ORM and migrations`);
+    } else if (answers.databaseOrm === 'mongoose') {
+      tools.push('- **[Mongoose](https://mongoosejs.com/)** — MongoDB ODM');
+    } else {
+      tools.push(`- **${engine} driver** — direct SQL access`);
+    }
+  }
+
+  if (answers.setupRedis) {
+    tools.push('- **[ioredis](https://github.com/redis/ioredis)** — Redis client');
+  }
+
+  if (answers.integrationPreset === 'better-auth') {
+    tools.push('- **[Better Auth](https://www.better-auth.com/)** — authentication framework');
+  }
+
+  if (answers.setupZod !== false) {
+    tools.push('- **[Zod](https://zod.dev/)** — environment variable validation');
+  }
+
+  tools.push('- **[TypeScript](https://www.typescriptlang.org/)** — strict type checking');
+
+  if (answers.linter === 'biome') {
+    tools.push('- **[Biome](https://biomejs.dev/)** — linting and formatting');
+  } else {
+    tools.push('- **[ESLint](https://eslint.org/)** + **[Prettier](https://prettier.io/)** — linting and formatting');
+  }
+
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') {
+    tools.push('- **[Vitest](https://vitest.dev/)** — test runner');
+  }
+
+  if (answers.lintOption?.includes('cspell')) tools.push('- **[CSpell](https://cspell.org/)** — spell checking');
+  if (answers.lintOption?.includes('secretlint')) {
+    tools.push('- **[Secretlint](https://github.com/secretlint/secretlint)** — secret detection');
+  }
+  if (answers.lintOption?.includes('commitlint')) {
+    tools.push('- **[Commitlint](https://commitlint.js.org/)** — conventional commit enforcement');
+  }
+
+  if (answers.setupPrecommit) {
+    tools.push('- **[Husky](https://typicode.github.io/husky/)** — Git hooks');
+  }
+
+  if (answers.setupDocker) {
+    tools.push('- **[Docker](https://www.docker.com/)** — containerized development');
+  }
+
+  tools.push('- **[mise](https://mise.jdx.dev/)** — tool version management');
+
+  return tools.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Backend — Implementation Workflow + Tutorial
+// ---------------------------------------------------------------------------
+
+function renderBackendImplementationWorkflow(answers, framework) {
+  const fwLabel = framework.label;
+
+  return [
+    '## Implementation Workflow',
+    '',
+    `1. **Start the dev server** — run \`npm run dev\`. The server starts with ${framework.devWatch} and reloads on every save. Test it with:`,
+    '',
+    codeBlock('bash', 'curl -s http://localhost:3000/health | jq'),
+    '',
+    `2. **Add a route** — create the handler directly in \`src/index.ts\` or split into a separate route file. Follow the ${fwLabel} pattern:`,
+    '',
+    codeBlock('ts', framework.routeExample),
+    '',
+    `3. **Write a failing test first** — create a test file in \`tests/unit/\` (e.g. \`users.unit.test.ts\`). Use the ${fwLabel} test pattern and assert the expected response, then run \`npm run test:unit\` to confirm the test fails.`,
+    '',
+    `4. **Implement until tests pass** — fill in the route handler until \`npm run test:unit\` goes green. Verify with curl in a second terminal — the dev server picks up saved changes immediately.`,
+    '',
+    '5. **Run the full quality gate before commit**:',
+    '',
+    codeBlock('bash', 'npm run check    # format, lint, typecheck, spellcheck, secretlint, tests'),
+    '',
+    'Commit using the conventional format enforced by commitlint:',
+    '',
+    codeBlock('bash', 'git commit -m "feat(api): add users endpoint"'),
+  ].join('\n');
+}
+
+function renderBackendTutorial(answers, framework) {
+  const sections = [];
+
+  sections.push(`## Backend Tutorial
+
+Three progressive tutorials that build on this project. Each one introduces a real pattern you will use when building APIs on top of this starter.`);
+
+  // Tutorial 1: CRUD endpoint with TDD
+  sections.push(getBackendTutorial1(answers, framework));
+
+  // Tutorial 2: Middleware
+  sections.push(getBackendTutorial2(answers, framework));
+
+  // Tutorial 3: Environment validation
+  sections.push(getBackendTutorial3(answers));
+
+  return sections.join('\n\n---\n\n');
+}
+
+function getBackendTutorial1(answers, framework) {
+  const routeExamples = {
+    hono: {
+      empty: `app.get('/users', (c) => {\n  return c.json([]); // start empty — tests will drive the implementation\n});`,
+      full: `const users = [\n  { id: '1', name: 'Alice' },\n  { id: '2', name: 'Bob' },\n];\n\napp.get('/users', (c) => c.json(users));\n\napp.get('/users/:id', (c) => {\n  const user = users.find((u) => u.id === c.req.param('id'));\n  if (!user) return c.json({ error: 'Not found' }, 404);\n  return c.json(user);\n});`,
+      test: `import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /users', () => {\n  it('returns a list of users', async () => {\n    const res = await app.request('/users');\n    expect(res.status).toBe(200);\n    const body = await res.json();\n    expect(body).toEqual(expect.arrayContaining([\n      expect.objectContaining({ id: '1', name: 'Alice' }),\n    ]));\n  });\n});\n\ndescribe('GET /users/:id', () => {\n  it('returns a single user', async () => {\n    const res = await app.request('/users/1');\n    expect(res.status).toBe(200);\n    expect(await res.json()).toEqual({ id: '1', name: 'Alice' });\n  });\n\n  it('returns 404 for unknown user', async () => {\n    const res = await app.request('/users/999');\n    expect(res.status).toBe(404);\n  });\n});`,
+    },
+    fastify: {
+      empty: `app.get('/users', async () => {\n  return []; // start empty — tests will drive the implementation\n});`,
+      full: `const users = [\n  { id: '1', name: 'Alice' },\n  { id: '2', name: 'Bob' },\n];\n\napp.get('/users', async () => users);\n\napp.get('/users/:id', async (request, reply) => {\n  const user = users.find((u) => u.id === request.params.id);\n  if (!user) return reply.status(404).send({ error: 'Not found' });\n  return user;\n});`,
+      test: `import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /users', () => {\n  it('returns a list of users', async () => {\n    const res = await app.inject({ method: 'GET', url: '/users' });\n    expect(res.statusCode).toBe(200);\n    const body = res.json();\n    expect(body).toEqual(expect.arrayContaining([\n      expect.objectContaining({ id: '1', name: 'Alice' }),\n    ]));\n  });\n});\n\ndescribe('GET /users/:id', () => {\n  it('returns a single user', async () => {\n    const res = await app.inject({ method: 'GET', url: '/users/1' });\n    expect(res.statusCode).toBe(200);\n    expect(res.json()).toEqual({ id: '1', name: 'Alice' });\n  });\n\n  it('returns 404 for unknown user', async () => {\n    const res = await app.inject({ method: 'GET', url: '/users/999' });\n    expect(res.statusCode).toBe(404);\n  });\n});`,
+    },
+    express: {
+      empty: `app.get('/users', (_req, res) => {\n  res.json([]); // start empty — tests will drive the implementation\n});`,
+      full: `const users = [\n  { id: '1', name: 'Alice' },\n  { id: '2', name: 'Bob' },\n];\n\napp.get('/users', (_req, res) => res.json(users));\n\napp.get('/users/:id', (req, res) => {\n  const user = users.find((u) => u.id === req.params.id);\n  if (!user) return res.status(404).json({ error: 'Not found' });\n  return res.json(user);\n});`,
+      test: `import request from 'supertest';\nimport { describe, expect, it } from 'vitest';\n\nimport app from '../../src/index.js';\n\ndescribe('GET /users', () => {\n  it('returns a list of users', async () => {\n    const res = await request(app).get('/users');\n    expect(res.status).toBe(200);\n    expect(res.body).toEqual(expect.arrayContaining([\n      expect.objectContaining({ id: '1', name: 'Alice' }),\n    ]));\n  });\n});\n\ndescribe('GET /users/:id', () => {\n  it('returns a single user', async () => {\n    const res = await request(app).get('/users/1');\n    expect(res.status).toBe(200);\n    expect(res.body).toEqual({ id: '1', name: 'Alice' });\n  });\n\n  it('returns 404 for unknown user', async () => {\n    const res = await request(app).get('/users/999');\n    expect(res.status).toBe(404);\n  });\n});`,
+    },
+    elysia: {
+      empty: `app.get('/users', () => {\n  return []; // start empty — tests will drive the implementation\n});`,
+      full: `const users = [\n  { id: '1', name: 'Alice' },\n  { id: '2', name: 'Bob' },\n];\n\napp.get('/users', () => users);\n\napp.get('/users/:id', ({ params, set }) => {\n  const user = users.find((u) => u.id === params.id);\n  if (!user) {\n    set.status = 404;\n    return { error: 'Not found' };\n  }\n  return user;\n});`,
+      test: `import { describe, expect, it } from 'vitest';\nimport app from '../../src/index.js';\n\ndescribe('GET /users', () => {\n  it('returns a list of users', async () => {\n    const res = await app.handle(new Request('http://localhost/users'));\n    expect(res.status).toBe(200);\n    const body = await res.json();\n    expect(body).toEqual(expect.arrayContaining([\n      expect.objectContaining({ id: '1', name: 'Alice' }),\n    ]));\n  });\n});\n\ndescribe('GET /users/:id', () => {\n  it('returns a single user', async () => {\n    const res = await app.handle(new Request('http://localhost/users/1'));\n    expect(res.status).toBe(200);\n    expect(await res.json()).toEqual({ id: '1', name: 'Alice' });\n  });\n\n  it('returns 404 for unknown user', async () => {\n    const res = await app.handle(new Request('http://localhost/users/999'));\n    expect(res.status).toBe(404);\n  });\n});`,
+    },
+  };
+
+  const fw = answers.backendFramework || 'hono';
+  const ex = routeExamples[fw] || routeExamples.hono;
+
+  return `### Tutorial 1: Build a users endpoint with TDD
+
+A read-only \`/users\` endpoint that returns a list and supports lookup by ID. This tutorial walks through the full red-green-refactor cycle with ${framework.label}.
+
+#### Step 1 — Start with an empty route
+
+Add to \`src/index.ts\`:
+
+${codeBlock('ts', ex.empty)}
+
+#### Step 2 — Write failing tests
+
+Create \`tests/unit/users.unit.test.ts\`:
+
+${codeBlock('ts', ex.test)}
+
+Run the tests — the list test passes (empty array) but the detail tests fail:
+
+${codeBlock('bash', 'npm run test:unit')}
+
+#### Step 3 — Implement until green
+
+Update the routes in \`src/index.ts\`:
+
+${codeBlock('ts', ex.full)}
+
+Run again — all tests pass:
+
+${codeBlock('bash', 'npm run test:unit')}
+
+#### Step 4 — Verify with curl
+
+${codeBlock('bash', 'curl -s http://localhost:3000/users | jq\ncurl -s http://localhost:3000/users/1 | jq\ncurl -s http://localhost:3000/users/999 | jq')}
+
+**What you learned**: ${framework.label} route handlers with path parameters, HTTP status codes for not-found, the framework-specific test pattern for request/response assertions.`;
+}
+
+function getBackendTutorial2(answers, framework) {
+  const middlewareExamples = {
+    hono: {
+      code: `import { createMiddleware } from 'hono/factory';\n\nexport const requestLogger = createMiddleware(async (c, next) => {\n  const start = Date.now();\n  await next();\n  const ms = Date.now() - start;\n  console.log(\`\${c.req.method} \${c.req.url} \${c.res.status} \${ms}ms\`);\n});`,
+      wire: `import { requestLogger } from './middleware/logger.js';\n\napp.use('*', requestLogger);`,
+      test: `import { Hono } from 'hono';\nimport { describe, expect, it, vi } from 'vitest';\n\nimport { requestLogger } from '../../src/middleware/logger.js';\n\ndescribe('requestLogger middleware', () => {\n  it('logs method, url, status, and duration', async () => {\n    const spy = vi.spyOn(console, 'log');\n    const app = new Hono();\n    app.use('*', requestLogger);\n    app.get('/test', (c) => c.text('ok'));\n\n    await app.request('/test');\n\n    expect(spy).toHaveBeenCalledWith(\n      expect.stringMatching(/GET.*\\/test.*200.*\\d+ms/),\n    );\n  });\n});`,
+    },
+    fastify: {
+      code: `import type { FastifyInstance } from 'fastify';\n\nexport function requestLogger(app: FastifyInstance): void {\n  app.addHook('onResponse', async (request, reply) => {\n    const ms = reply.elapsedTime.toFixed(0);\n    console.log(\`\${request.method} \${request.url} \${reply.statusCode} \${ms}ms\`);\n  });\n}`,
+      wire: `import { requestLogger } from './middleware/logger.js';\n\nrequestLogger(app);`,
+      test: `import Fastify from 'fastify';\nimport { describe, expect, it, vi } from 'vitest';\n\nimport { requestLogger } from '../../src/middleware/logger.js';\n\ndescribe('requestLogger middleware', () => {\n  it('logs method, url, status, and duration', async () => {\n    const spy = vi.spyOn(console, 'log');\n    const app = Fastify();\n    requestLogger(app);\n    app.get('/test', async () => 'ok');\n\n    await app.inject({ method: 'GET', url: '/test' });\n\n    expect(spy).toHaveBeenCalledWith(\n      expect.stringMatching(/GET.*\\/test.*200.*\\d+ms/),\n    );\n  });\n});`,
+    },
+    express: {
+      code: `import type { NextFunction, Request, Response } from 'express';\n\nexport function requestLogger(req: Request, res: Response, next: NextFunction): void {\n  const start = Date.now();\n  res.on('finish', () => {\n    const ms = Date.now() - start;\n    console.log(\`\${req.method} \${req.url} \${res.statusCode} \${ms}ms\`);\n  });\n  next();\n}`,
+      wire: `import { requestLogger } from './middleware/logger.js';\n\napp.use(requestLogger);`,
+      test: `import express from 'express';\nimport request from 'supertest';\nimport { describe, expect, it, vi } from 'vitest';\n\nimport { requestLogger } from '../../src/middleware/logger.js';\n\ndescribe('requestLogger middleware', () => {\n  it('logs method, url, status, and duration', async () => {\n    const spy = vi.spyOn(console, 'log');\n    const app = express();\n    app.use(requestLogger);\n    app.get('/test', (_req, res) => res.send('ok'));\n\n    await request(app).get('/test');\n\n    expect(spy).toHaveBeenCalledWith(\n      expect.stringMatching(/GET.*\\/test.*200.*\\d+ms/),\n    );\n  });\n});`,
+    },
+    elysia: {
+      code: `import { Elysia } from 'elysia';\n\nexport const requestLogger = new Elysia({ name: 'requestLogger' })\n  .onAfterResponse(({ request, set }) => {\n    console.log(\`\${request.method} \${new URL(request.url).pathname} \${set.status || 200}\`);\n  });`,
+      wire: `import { requestLogger } from './middleware/logger.js';\n\napp.use(requestLogger);`,
+      test: `import { Elysia } from 'elysia';\nimport { describe, expect, it, vi } from 'vitest';\n\nimport { requestLogger } from '../../src/middleware/logger.js';\n\ndescribe('requestLogger middleware', () => {\n  it('logs method and url', async () => {\n    const spy = vi.spyOn(console, 'log');\n    const app = new Elysia()\n      .use(requestLogger)\n      .get('/test', () => 'ok');\n\n    await app.handle(new Request('http://localhost/test'));\n\n    expect(spy).toHaveBeenCalledWith(\n      expect.stringMatching(/GET.*\\/test/),\n    );\n  });\n});`,
+    },
+  };
+
+  const fw = answers.backendFramework || 'hono';
+  const ex = middlewareExamples[fw] || middlewareExamples.hono;
+
+  return `### Tutorial 2: Add request logging middleware
+
+A middleware that logs every request with method, URL, status code, and duration. This introduces the ${framework.label} middleware pattern and how to test it in isolation.
+
+#### Step 1 — Create the middleware
+
+Create \`src/middleware/logger.ts\`:
+
+${codeBlock('ts', ex.code)}
+
+#### Step 2 — Write a test
+
+Create \`tests/unit/logger.unit.test.ts\`:
+
+${codeBlock('ts', ex.test)}
+
+#### Step 3 — Wire it into the app
+
+In \`src/index.ts\`:
+
+${codeBlock('ts', ex.wire)}
+
+Start the server and hit any endpoint — you will see log lines like \`GET /health 200 3ms\`.
+
+**What you learned**: ${framework.label} middleware pattern, testing middleware in isolation with a minimal app instance, \`expect.stringMatching\` for flexible log assertions.`;
+}
+
+function getBackendTutorial3(answers) {
+  const zodExample = answers.setupZod !== false;
+
+  if (zodExample) {
+    return `### Tutorial 3: Add a validated environment variable
+
+Add a new \`API_KEY\` variable with Zod validation. This ensures the server fails fast on startup if the variable is missing or invalid.
+
+#### Step 1 — Add the variable to the Zod schema
+
+Update \`src/env.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { z } from 'zod';\n\nconst schema = z.object({\n  PORT: z.coerce.number().default(3000),\n  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),\n  API_KEY: z.string().min(1, 'API_KEY is required'),\n});\n\nexport const env = schema.parse(process.env);`,
+)}
+
+#### Step 2 — Add it to .env.example
+
+${codeBlock('bash', 'echo "API_KEY=your-api-key-here" >> .env.example')}
+
+Copy to your local env:
+
+${codeBlock('bash', 'echo "API_KEY=dev-key-123" >> .env')}
+
+#### Step 3 — Write a test
+
+Create \`tests/unit/env.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { describe, expect, it } from 'vitest';\nimport { z } from 'zod';\n\nconst schema = z.object({\n  API_KEY: z.string().min(1, 'API_KEY is required'),\n});\n\ndescribe('env validation', () => {\n  it('accepts a valid API_KEY', () => {\n    const result = schema.safeParse({ API_KEY: 'abc123' });\n    expect(result.success).toBe(true);\n  });\n\n  it('rejects an empty API_KEY', () => {\n    const result = schema.safeParse({ API_KEY: '' });\n    expect(result.success).toBe(false);\n  });\n\n  it('rejects a missing API_KEY', () => {\n    const result = schema.safeParse({});\n    expect(result.success).toBe(false);\n  });\n});`,
+)}
+
+#### Step 4 — Use it in a route
+
+${codeBlock(
+  'ts',
+  `import { env } from './env.js';\n\n// inside a route handler:\nconsole.log('API key loaded:', env.API_KEY.slice(0, 4) + '...');`,
+)}
+
+**What you learned**: Zod schema validation for environment variables, fail-fast startup on missing config, testing validation logic with \`safeParse\`, keeping secrets out of logs with \`slice\`.`;
+  }
+
+  return `### Tutorial 3: Add a validated environment variable
+
+Add a new \`API_KEY\` variable with runtime validation. This ensures the server fails fast on startup if the variable is missing.
+
+#### Step 1 — Add the variable to env.ts
+
+Update \`src/env.ts\`:
+
+${codeBlock(
+  'ts',
+  `function requireEnv(key: string): string {\n  const value = process.env[key];\n  if (!value) throw new Error(\`Missing required env var: \${key}\`);\n  return value;\n}\n\nexport const env = {\n  PORT: Number(process.env.PORT) || 3000,\n  API_KEY: requireEnv('API_KEY'),\n};`,
+)}
+
+#### Step 2 — Add it to .env.example
+
+${codeBlock('bash', 'echo "API_KEY=your-api-key-here" >> .env.example')}
+
+Copy to your local env:
+
+${codeBlock('bash', 'echo "API_KEY=dev-key-123" >> .env')}
+
+#### Step 3 — Write a test
+
+Create \`tests/unit/env.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { describe, expect, it } from 'vitest';\n\ndescribe('requireEnv', () => {\n  it('throws for missing variable', () => {\n    const original = process.env.API_KEY;\n    delete process.env.API_KEY;\n    expect(() => require('../../src/env.js')).toThrow('Missing required env var');\n    process.env.API_KEY = original;\n  });\n});`,
+)}
+
+**What you learned**: Runtime environment validation, fail-fast startup on missing config, testing env validation by manipulating \`process.env\`.`;
+}
+
+function generateBackendReadme(answers) {
+  const pkg = answers._pkgName || 'my-project';
+  const framework = getBackendFrameworkInfo(answers.backendFramework ?? 'hono');
+  const engineInfo = getBackendEngineInfo(answers.databaseEngine ?? 'postgresql');
+  const ormInfo = getBackendOrmInfo(answers.databaseOrm ?? 'none');
+
+  const sections = [];
+  sections.push(
+    `# ${pkg}\n\n> A backend API scaffolded with [tskickstart](https://github.com/jeportie/tskickstart).\n\n${getBackendIntro(answers, framework, engineInfo)}`,
+  );
+  sections.push(`## Project Snapshot\n\n${renderBackendProjectSnapshot(answers, framework, engineInfo, ormInfo)}`);
+  sections.push(`## Prerequisites\n\n${renderBackendPrerequisites(answers, framework)}`);
+  sections.push(`## Getting Started\n\n${renderBackendGettingStarted(answers, engineInfo)}`);
+
+  const dockerSection = renderBackendDockerSection(answers, engineInfo);
+  if (dockerSection) sections.push(`## Docker\n\n${dockerSection}`);
+
+  const databaseSection = renderBackendDatabaseSection(answers, engineInfo, ormInfo);
+  if (databaseSection) sections.push(databaseSection);
+
+  const redisSection = renderBackendRedisSection(answers);
+  if (redisSection) sections.push(redisSection);
+
+  const authSection = renderBackendAuthSection(answers);
+  if (authSection) sections.push(authSection);
+
+  sections.push(renderBackendEnvSection(answers, engineInfo));
+  sections.push(renderBackendDevelopmentSection(answers, framework));
+  sections.push(renderBackendImplementationWorkflow(answers, framework));
+  sections.push(renderBackendTutorial(answers, framework));
+  sections.push(renderBackendTestingSection(answers, framework));
+  sections.push(renderBackendQualitySection(answers));
+  sections.push(renderBackendBuildDeploySection(answers));
+  sections.push(renderBackendProjectStructure(answers));
+  sections.push(renderBackendScriptsReference(answers, engineInfo));
+  sections.push(renderBackendTools(answers, framework));
+
+  return sections.join('\n\n---\n\n') + '\n';
+}
+
 function getProjectTitle(answers) {
   const { projectType } = answers;
   const titles = {
@@ -56,7 +1229,7 @@ function getTestStack(answers) {
 
 function getQualityStack(answers) {
   const { lintOption = [] } = answers;
-  const tools = ['TypeScript', 'ESLint', 'Prettier'];
+  const tools = answers.linter === 'biome' ? ['TypeScript', 'Biome'] : ['TypeScript', 'ESLint', 'Prettier'];
   if (lintOption.includes('cspell')) tools.push('CSpell');
   if (lintOption.includes('secretlint')) tools.push('Secretlint');
   if (lintOption.includes('commitlint')) tools.push('Commitlint');
@@ -338,8 +1511,7 @@ tests/
     lines.push('    server.unit.test.ts  # Unit tests for route handlers');
     if (setupDocker) {
       lines.push('Dockerfile         # Multi-stage production build');
-      lines.push('docker-compose.yml # Local development with hot-reload mount');
-      lines.push('Makefile           # Docker convenience targets: make docker-up, make docker-down');
+      lines.push('docker-compose.yml # Container orchestration for app + optional DB services');
     }
     lines.push('```');
     return lines.join('\n');
@@ -438,6 +1610,10 @@ function getTypescriptPlaybook(answers) {
 
 function getEslintPlaybook(answers) {
   const { projectType } = answers;
+
+  if (answers.linter === 'biome') {
+    return `### Biome\n\nBiome replaces ESLint + Prettier with a single fast toolchain for linting and formatting.\n\n${codeBlock('bash', 'npm run lint\nnpm run format')}`;
+  }
 
   const contextMap = {
     backend:
@@ -792,9 +1968,9 @@ Use cases:
 - Validate containerized startup before deployment
 - Run the full stack locally with docker-compose
 
-Use npm scripts or Make targets so both \`docker compose\` and \`docker-compose\` environments are supported.
+Use npm scripts to manage Docker services.
 
-${codeBlock('bash', 'npm run docker:up\nmake docker-up')}`,
+${codeBlock('bash', 'npm run docker:up')}`,
     );
   }
 
@@ -888,7 +2064,7 @@ ${codeBlock('ts', mwExamples[backendFramework] || mwExamples.hono)}`);
 
 ${codeBlock('bash', 'npm run docker:up     # Start with build\nnpm run docker:logs   # Tail logs\nnpm run docker:down   # Stop services')}
 
-Or use Make targets: \`make docker-up\`, \`make docker-down\`.`);
+`);
     }
   }
 
@@ -1079,7 +2255,11 @@ function getToolsSection(answers) {
   }
 
   tools.push('- **TypeScript** \u2014 strict type checking');
-  tools.push('- **ESLint** v9 + **Prettier** \u2014 code quality and formatting');
+  if (answers.linter === 'biome') {
+    tools.push('- **Biome** \u2014 linting and formatting');
+  } else {
+    tools.push('- **ESLint** v9 + **Prettier** \u2014 code quality and formatting');
+  }
 
   if (lintOption.includes('cspell')) tools.push('- **CSpell** \u2014 spell checking');
   if (lintOption.includes('secretlint')) tools.push('- **Secretlint** \u2014 secret detection');
@@ -1100,83 +2280,1833 @@ function getToolsSection(answers) {
 }
 
 function getImplementationWorkflow(answers) {
-  const { projectType, cliFramework, backendFramework } = answers;
-
-  const sourceHint = {
-    frontend: '`src/App.tsx`, `src/Welcome.tsx`, and related components',
-    backend: '`src/index.ts` for routes and `src/env.ts` for environment validation',
-    cli: '`src/index.ts` and `src/commands/` for command handlers',
-    'npm-lib': '`src/main.ts` and exported modules',
-    app: '`src/screens/`, `src/navigation/`, and reusable components',
-  };
-
-  const testHint = {
-    frontend: '`tests/unit/` and `tests/integration/`',
-    backend: '`tests/unit/server.unit.test.ts` and focused route tests',
-    cli: '`tests/unit/hello.unit.test.ts` plus command-specific tests',
-    'npm-lib': '`test/main.test.ts` (or `tests/`) for API behavior',
-    app: '`tests/unit/` for Jest and `tests/e2e/` for Detox',
-  };
-
-  const sections = [
-    '1. **Start with one feature slice**: pick one user-facing capability and implement it end-to-end before moving on.',
-    `2. **Write code where it belongs**: keep implementation in ${sourceHint[projectType] || '`src/`'}.`,
-    `3. **Pair code with tests immediately**: add or update tests in ${testHint[projectType] || '`tests/`'} for every behavior change.`,
-    '4. **Run fast feedback loops**: use framework-specific dev commands while coding and keep functions small and composable.',
-    `5. **Run the full quality gate before commit**:\n\n${codeBlock('bash', 'npm run check')}`,
-  ];
-
-  if (projectType === 'cli' && cliFramework === 'commander') {
-    sections.push(`### CLI Tutorial: add a command with Commander.js
-
-Use this pattern when adding a new command with flags and arguments:
-
-${codeBlock(
-  'ts',
-  "program\n  .command('release')\n  .description('Build and print release notes')\n  .option('-d, --dry-run', 'Preview without publishing')\n  .action((options) => {\n    if (options.dryRun) {\n      console.log('Dry run release');\n      return;\n    }\n    console.log('Release started');\n  });",
-)}`);
+  switch (answers.projectType) {
+    case 'frontend':
+      return getFrontendImplementationWorkflow();
+    case 'cli':
+      return getCliImplementationWorkflow(answers);
+    case 'npm-lib':
+      return getNpmLibImplementationWorkflow();
+    case 'app':
+      return getAppImplementationWorkflow(answers);
+    default:
+      return '';
   }
+}
 
-  if (projectType === 'backend') {
-    const backendTutorial = {
-      hono: "app.get('/health', (c) => c.json({ ok: true }));",
-      fastify: "app.get('/health', async () => ({ ok: true }));",
-      express: "app.get('/health', (_req, res) => res.json({ ok: true }));",
-      elysia: "app.get('/health', () => ({ ok: true }));",
-    };
-    sections.push(`### Backend Tutorial: add a health endpoint
+// ---------------------------------------------------------------------------
+// Frontend — Implementation Workflow + Tutorial
+// ---------------------------------------------------------------------------
 
-${codeBlock('ts', backendTutorial[backendFramework] || backendTutorial.hono)}
+function getFrontendImplementationWorkflow() {
+  const sections = [];
 
-After adding the endpoint, validate runtime config in src/env.ts and add a unit test for the route response.`);
-  }
+  // Workflow steps
+  sections.push(`1. **Start the dev server** — run \`npm run dev\` and open \`http://localhost:5173\`. Vite HMR is active so every saved change appears instantly in the browser.
 
-  if (projectType === 'frontend') {
-    sections.push(`### Frontend Tutorial: build with isolated components
+2. **Create the component** — add a new \`.tsx\` file in \`src/\`. Follow the patterns in \`src/Welcome.tsx\`: default export, TypeScript props type, Tailwind utility classes for styling.
 
-Create focused UI components, then integrate them in src/App.tsx:
+3. **Write a failing test first** — create a matching test file in \`tests/unit/\` (e.g. \`ComponentName.unit.test.tsx\`). Use \`render\` and \`screen\` from Testing Library to assert the expected behavior, then run \`npm run test:unit\` to confirm the test fails.
+
+4. **Implement until tests pass** — fill in the component code until \`npm run test:unit\` goes green. Check the browser to verify visually — Vite HMR picks up saved changes immediately.
+
+5. **Wire into the app and run the quality gate** — if it is a page, add a \`<Route>\` in \`src/App.tsx\`. If it is a shared component, import it in the page that needs it. Then run the full check:
+
+${codeBlock('bash', 'npm run check    # format, lint, typecheck, spellcheck, secretlint, tests')}
+
+Commit using the conventional format enforced by commitlint:
+
+${codeBlock('bash', 'git commit -m "feat(ui): add NotificationBanner component"')}`);
+
+  // Tutorial
+  sections.push(`## Frontend Tutorial
+
+Three progressive tutorials that build on this project. Each one introduces a real pattern you will use when building features on top of this starter.
+
+### Tutorial 1: Build a NotificationBanner with TDD
+
+A dismissible banner that accepts a message and a variant (\`"info"\` or \`"error"\`). This tutorial walks through the full red-green-refactor cycle.
+
+#### Step 1 — Start with the props type and an empty component
+
+Create \`src/NotificationBanner.tsx\`:
 
 ${codeBlock(
   'tsx',
-  "export function StatusBadge({ online }: { online: boolean }) {\n  return <span>{online ? 'Online' : 'Offline'}</span>;\n}",
-)}`);
+  `import { useState } from 'react';
+
+type NotificationBannerProps = {
+  message: string;
+  variant: 'info' | 'error';
+};
+
+export default function NotificationBanner({
+  message,
+  variant,
+}: NotificationBannerProps) {
+  return null; // start empty — tests will drive the implementation
+}`,
+)}
+
+#### Step 2 — Write failing tests
+
+Create \`tests/unit/NotificationBanner.unit.test.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import NotificationBanner from '../../src/NotificationBanner';
+
+describe('NotificationBanner', () => {
+  it('renders the message', () => {
+    render(<NotificationBanner message="Saved" variant="info" />);
+
+    expect(screen.getByText('Saved')).toBeInTheDocument();
+  });
+
+  it('applies info styling for info variant', () => {
+    render(<NotificationBanner message="Saved" variant="info" />);
+
+    expect(screen.getByRole('alert')).toHaveClass('bg-blue-100');
+  });
+
+  it('applies error styling for error variant', () => {
+    render(<NotificationBanner message="Failed" variant="error" />);
+
+    expect(screen.getByRole('alert')).toHaveClass('bg-red-100');
+  });
+
+  it('hides when the close button is clicked', async () => {
+    const user = userEvent.setup();
+    render(<NotificationBanner message="Saved" variant="info" />);
+
+    await user.click(screen.getByRole('button', { name: /close/i }));
+
+    expect(screen.queryByText('Saved')).not.toBeInTheDocument();
+  });
+});`,
+)}
+
+Run the tests — all 4 should fail:
+
+${codeBlock('bash', 'npm run test:unit')}
+
+#### Step 3 — Implement until green
+
+Update \`src/NotificationBanner.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { useState } from 'react';
+
+type NotificationBannerProps = {
+  message: string;
+  variant: 'info' | 'error';
+};
+
+export default function NotificationBanner({
+  message,
+  variant,
+}: NotificationBannerProps) {
+  const [visible, setVisible] = useState(true);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      role="alert"
+      className={\`flex items-center justify-between rounded-lg px-4 py-3 \${
+        variant === 'info'
+          ? 'bg-blue-100 text-blue-900'
+          : 'bg-red-100 text-red-900'
+      }\`}
+    >
+      <span>{message}</span>
+      <button
+        type="button"
+        onClick={() => setVisible(false)}
+        className="ml-4 font-bold hover:opacity-70"
+        aria-label="Close"
+      >
+        &times;
+      </button>
+    </div>
+  );
+}`,
+)}
+
+Run again — all 4 pass:
+
+${codeBlock('bash', 'npm run test:unit')}
+
+#### Step 4 — Use it
+
+Import the component in \`src/Welcome.tsx\` and place it above the counter card:
+
+${codeBlock(
+  'tsx',
+  `import NotificationBanner from './NotificationBanner';
+
+// inside the return, before the counter <div>:
+<NotificationBanner message="Welcome to the app!" variant="info" />`,
+)}
+
+Check the browser at \`http://localhost:5173\` — the blue banner appears and dismisses on click.
+
+**What you learned**: TypeScript props, conditional Tailwind classes, \`useState\` for UI state, \`aria-label\` for accessible button targeting in tests, \`queryByText\` for asserting element absence.
+
+---
+
+### Tutorial 2: Add an About page with routing
+
+This project uses React Router v7 (\`react-router\` package). The existing route is defined in \`src/App.tsx\`. This tutorial adds a second page and wires up navigation between them.
+
+#### Step 1 — Create the page component
+
+Create \`src/About.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `export default function About() {
+  return (
+    <div className="min-h-screen bg-gray-200 text-black flex flex-col items-center font-sans">
+      <h1 className="mt-16 text-4xl font-bold">About</h1>
+      <p className="mt-4 max-w-md text-center text-gray-700">
+        This project was scaffolded with tskickstart. It uses React, Vite, and
+        Tailwind CSS v4.
+      </p>
+    </div>
+  );
+}`,
+)}
+
+The outer \`<div>\` mirrors the layout from \`Welcome.tsx\` for visual consistency.
+
+#### Step 2 — Write a unit test
+
+Create \`tests/unit/About.unit.test.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { render, screen } from '@testing-library/react';
+
+import About from '../../src/About';
+
+describe('About', () => {
+  it('renders the heading', () => {
+    render(<About />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'About',
+    );
+  });
+
+  it('renders the description', () => {
+    render(<About />);
+
+    expect(
+      screen.getByText(/scaffolded with tskickstart/i),
+    ).toBeInTheDocument();
+  });
+});`,
+)}
+
+#### Step 3 — Register the route
+
+Update \`src/App.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { BrowserRouter, Route, Routes } from 'react-router';
+
+import About from './About';
+import Welcome from './Welcome';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Welcome />} />
+        <Route path="/about" element={<About />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;`,
+)}
+
+#### Step 4 — Write a routing integration test
+
+In unit tests you render a component directly. To test routing you need \`MemoryRouter\` — this is the key gotcha because \`BrowserRouter\` does not work in the Vitest/happy-dom test environment.
+
+Create \`tests/integration/About.int.test.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router';
+
+import About from '../../src/About';
+
+describe('About page routing', () => {
+  it('renders About when navigating to /about', () => {
+    render(
+      <MemoryRouter initialEntries={['/about']}>
+        <Routes>
+          <Route path="/about" element={<About />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'About',
+    );
+  });
+});`,
+)}
+
+#### Step 5 — Add navigation links
+
+In \`src/Welcome.tsx\`, add a link to the About page. Import \`Link\` from \`react-router\`:
+
+${codeBlock(
+  'tsx',
+  `import { Link } from 'react-router';
+
+// inside the return, after the logos paragraph:
+<Link
+  to="/about"
+  className="mt-2 text-blue-600 underline hover:text-blue-800"
+>
+  About this project
+</Link>`,
+)}
+
+Add a matching link back in \`src/About.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { Link } from 'react-router';
+
+// inside the return, after the <p>:
+<Link to="/" className="mt-4 text-blue-600 underline hover:text-blue-800">
+  Back to home
+</Link>`,
+)}
+
+#### Step 6 — Write an E2E test
+
+Create \`tests/e2e/about.spec.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { expect, test } from '@playwright/test';
+
+test.describe('About page', () => {
+  test('navigates to about page via link', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: 'About this project' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'About' }),
+    ).toBeVisible();
+  });
+
+  test('navigates back to home', async ({ page }) => {
+    await page.goto('/about');
+    await page.getByRole('link', { name: 'Back to home' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Vite + React + Tailwind' }),
+    ).toBeVisible();
+  });
+});`,
+)}
+
+Run all tests:
+
+${codeBlock('bash', 'npm run test:unit\nnpm run test:integration\nnpm run test:e2e')}
+
+**What you learned**: Page layout consistency with Tailwind, React Router v7 route registration, \`MemoryRouter\` with \`initialEntries\` for test-time routing, \`Link\` for client-side navigation, Playwright E2E tests for cross-page flows.
+
+---
+
+### Tutorial 3: Fetch data with React Query
+
+\`@tanstack/react-query\` is already installed in this project. This tutorial wires it up end-to-end: provider setup, custom hook, data-driven component, and tests with mocked fetch.
+
+#### Step 1 — Add the QueryClientProvider
+
+Update \`src/main.tsx\` to wrap the app with \`QueryClientProvider\`. Place it inside \`ErrorBoundary\` so query errors are caught, but around \`App\` so all routes have access:
+
+${codeBlock(
+  'tsx',
+  `import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { ErrorBoundary } from 'react-error-boundary';
+
+import App from './App.tsx';
+import './index.css';
+
+const queryClient = new QueryClient();
+
+export function AppSetup() {
+  return (
+    <StrictMode>
+      <ErrorBoundary
+        fallback={<p className="text-red-600">An Error has occurred.</p>}
+      >
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </StrictMode>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<AppSetup />);`,
+)}
+
+#### Step 2 — Create a custom data-fetching hook
+
+Create \`src/useUsers.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { useQuery } from '@tanstack/react-query';
+
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+async function fetchUsers(): Promise<User[]> {
+  const response = await fetch(
+    'https://jsonplaceholder.typicode.com/users',
+  );
+  if (!response.ok) throw new Error('Failed to fetch users');
+  return response.json();
+}
+
+export function useUsers() {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: fetchUsers,
+  });
+}`,
+)}
+
+The \`queryKey\` is a stable array React Query uses for caching and refetching. The \`queryFn\` is a plain async function that returns data or throws.
+
+#### Step 3 — Build the UserList component
+
+Create \`src/UserList.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { useUsers } from './useUsers';
+
+export default function UserList() {
+  const { data: users, isLoading, error } = useUsers();
+
+  if (isLoading) return <p>Loading users...</p>;
+  if (error) return <p className="text-red-600">Error: {error.message}</p>;
+
+  return (
+    <ul className="mt-4 space-y-2">
+      {users?.map((user) => (
+        <li key={user.id} className="rounded-lg bg-white px-4 py-3 shadow">
+          <span className="font-medium">{user.name}</span>
+          <span className="ml-2 text-gray-500">{user.email}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}`,
+)}
+
+#### Step 4 — Test it
+
+Create \`tests/unit/UserList.unit.test.tsx\`. The key pattern: wrap each test in a fresh \`QueryClientProvider\` with \`retry: false\` to avoid flaky retries, and mock \`fetch\` with \`vi.fn()\`:
+
+${codeBlock(
+  'tsx',
+  `import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
+
+import UserList from '../../src/UserList';
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    );
+  };
+}
+
+describe('UserList', () => {
+  it('shows loading state initially', () => {
+    globalThis.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+
+    render(<UserList />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('Loading users...')).toBeInTheDocument();
+  });
+
+  it('renders users after fetch', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve([
+          { id: 1, name: 'Alice', email: 'alice@example.com' },
+        ]),
+    });
+
+    render(<UserList />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+  });
+
+  it('shows error on fetch failure', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
+
+    render(<UserList />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Error:/)).toBeInTheDocument();
+    });
+  });
+});`,
+)}
+
+#### Step 5 — Add a route and navigate to it
+
+In \`src/App.tsx\`, add the route:
+
+${codeBlock(
+  'tsx',
+  `import UserList from './UserList';
+
+// inside <Routes>:
+<Route path="/users" element={<UserList />} />`,
+)}
+
+Add a link in \`src/Welcome.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `<Link to="/users" className="mt-2 text-blue-600 underline hover:text-blue-800">
+  View users
+</Link>`,
+)}
+
+Visit \`http://localhost:5173/users\` — you will see a list of 10 users fetched from the JSONPlaceholder API, each in a white card with their name and email.
+
+**What you learned**: Where to place \`QueryClientProvider\` relative to \`ErrorBoundary\`, separating fetch logic into a custom hook, the \`useQuery\` return shape (\`data\`, \`isLoading\`, \`error\`), testing async components with \`waitFor\`, mocking \`fetch\` with \`vi.fn()\`, creating a fresh \`QueryClient\` per test.`);
+
+  return sections.join('\n\n---\n\n');
+}
+
+// ---------------------------------------------------------------------------
+// CLI — Implementation Workflow + Tutorial
+// ---------------------------------------------------------------------------
+
+function getCliImplementationWorkflow(answers) {
+  const { cliFramework } = answers;
+  const sections = [];
+
+  // Workflow steps
+  sections.push(`1. **Run the CLI in dev mode** — use \`npm run dev\` to start with \`tsx watch\`. Every saved change reloads automatically so you can test commands instantly in a second terminal.
+
+2. **Create the command handler** — add a new \`.ts\` file in \`src/commands/\`. Follow the patterns in \`src/commands/hello.ts\`: export a pure function that takes parsed arguments and does the work. Keep the handler logic separate from the CLI framework wiring.
+
+3. **Write a failing test first** — create a matching test file in \`tests/unit/\` (e.g. \`greet.unit.test.ts\`). Test the handler function directly — spy on \`console.log\` with \`vi.spyOn\` to assert output, then run \`npm run test:unit\` to confirm the test fails.
+
+4. **Implement until tests pass** — fill in the handler code until \`npm run test:unit\` goes green. Verify manually in the terminal: \`npm run dev -- <command> <args>\`.
+
+5. **Wire into the entry point and run the quality gate** — register the command in \`src/index.ts\`, then run the full check:
+
+${codeBlock('bash', 'npm run check    # format, lint, typecheck, spellcheck, secretlint, tests')}
+
+Commit using the conventional format enforced by commitlint:
+
+${codeBlock('bash', 'git commit -m "feat(cli): add greet command"')}`);
+
+  // Framework-specific tutorial
+  if (cliFramework === 'commander') {
+    sections.push(getCommanderTutorial());
+  } else if (cliFramework === 'inquirer') {
+    sections.push(getInquirerTutorial());
+  } else if (cliFramework === 'clack') {
+    sections.push(getClackTutorial());
   }
 
-  if (projectType === 'npm-lib') {
-    sections.push(`### Library Tutorial: evolve public API safely
+  return sections.join('\n\n---\n\n');
+}
 
-Keep implementation private and export only stable APIs from your entrypoint:
+function getCommanderTutorial() {
+  return `## CLI Tutorial (Commander.js)
 
-${codeBlock('ts', "export function createSlug(input: string): string {\n  return input.trim().toLowerCase().replace(/\\s+/g, '-');\n}")}`);
+Three progressive tutorials that build on this project. Each one introduces a real pattern you will use when building CLI tools with Commander.js.
+
+### Tutorial 1: Add a \`greet\` command with flags
+
+A command that accepts a name argument and an optional \`--loud\` flag. This tutorial walks through the full handler-first TDD cycle.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/greet.ts\`:
+
+${codeBlock(
+  'ts',
+  `export function greet(name: string, options: { loud?: boolean }): void {
+  const message = \`Hello, \${name}!\`;
+  console.log(options.loud ? message.toUpperCase() : message);
+}`,
+)}
+
+#### Step 2 — Write failing tests
+
+Create \`tests/unit/greet.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { greet } from '../../src/commands/greet.js';
+
+describe('greet command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('logs greeting with the given name', () => {
+    const spy = vi.spyOn(console, 'log');
+    greet('Alice', {});
+    expect(spy).toHaveBeenCalledWith('Hello, Alice!');
+  });
+
+  it('shouts greeting when loud flag is set', () => {
+    const spy = vi.spyOn(console, 'log');
+    greet('Alice', { loud: true });
+    expect(spy).toHaveBeenCalledWith('HELLO, ALICE!');
+  });
+});`,
+)}
+
+Run the tests — both should pass since the handler is already implemented:
+
+${codeBlock('bash', 'npm run test:unit')}
+
+#### Step 3 — Register the command
+
+Update \`src/index.ts\` to add the command:
+
+${codeBlock(
+  'ts',
+  `import { greet } from './commands/greet.js';
+
+program
+  .command('greet')
+  .description('Greet someone by name')
+  .argument('<name>', 'name to greet')
+  .option('-l, --loud', 'shout the greeting')
+  .action((name, options) => {
+    greet(name, options);
+  });`,
+)}
+
+#### Step 4 — Verify manually
+
+${codeBlock('bash', 'npm run dev -- greet Alice\nnpm run dev -- greet Alice --loud')}
+
+**What you learned**: Handler-first architecture (pure function tested in isolation), Commander argument and option syntax, \`vi.spyOn(console, 'log')\` for output assertions.
+
+---
+
+### Tutorial 2: Add a \`config\` command with subcommands
+
+A command with \`config get <key>\` and \`config set <key> <value>\` subcommands. This introduces the nested command pattern.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/config.ts\`:
+
+${codeBlock(
+  'ts',
+  `const store = new Map<string, string>();
+
+export function configGet(key: string): void {
+  const value = store.get(key);
+  if (value === undefined) {
+    console.error(\`Key "\${key}" not found\`);
+    return;
+  }
+  console.log(value);
+}
+
+export function configSet(key: string, value: string): void {
+  store.set(key, value);
+  console.log(\`Set \${key} = \${value}\`);
+}`,
+)}
+
+#### Step 2 — Write tests
+
+Create \`tests/unit/config.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { configGet, configSet } from '../../src/commands/config.js';
+
+describe('config command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sets and gets a value', () => {
+    const logSpy = vi.spyOn(console, 'log');
+    configSet('theme', 'dark');
+    expect(logSpy).toHaveBeenCalledWith('Set theme = dark');
+
+    configGet('theme');
+    expect(logSpy).toHaveBeenCalledWith('dark');
+  });
+
+  it('prints error for missing key', () => {
+    const errSpy = vi.spyOn(console, 'error');
+    configGet('missing');
+    expect(errSpy).toHaveBeenCalledWith('Key "missing" not found');
+  });
+});`,
+)}
+
+#### Step 3 — Register with nested commands
+
+${codeBlock(
+  'ts',
+  `import { configGet, configSet } from './commands/config.js';
+
+const config = program
+  .command('config')
+  .description('Manage configuration');
+
+config
+  .command('get')
+  .argument('<key>', 'config key to read')
+  .action((key) => configGet(key));
+
+config
+  .command('set')
+  .argument('<key>', 'config key to write')
+  .argument('<value>', 'value to set')
+  .action((key, value) => configSet(key, value));`,
+)}
+
+**What you learned**: Nested Commander subcommands, in-memory store pattern for config, testing \`console.error\` for error paths.
+
+---
+
+### Tutorial 3: Add an \`init\` command with interactive prompts
+
+Combine Commander for the command entry point with interactive prompts for user input. This is the typical pattern for scaffold-style CLI tools.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/init.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { input, confirm } from '@inquirer/prompts';
+
+export async function init(): Promise<void> {
+  const name = await input({
+    message: 'Project name:',
+    default: 'my-project',
+  });
+
+  const typescript = await confirm({
+    message: 'Use TypeScript?',
+    default: true,
+  });
+
+  console.log(\`Creating \${name} (TypeScript: \${typescript})\`);
+}`,
+)}
+
+#### Step 2 — Write a test
+
+Create \`tests/unit/init.unit.test.ts\`. Mock the prompt library to avoid interactive input in tests:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@inquirer/prompts', () => ({
+  input: vi.fn().mockResolvedValue('demo'),
+  confirm: vi.fn().mockResolvedValue(true),
+}));
+
+import { init } from '../../src/commands/init.js';
+
+describe('init command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('logs project creation with answers', async () => {
+    const spy = vi.spyOn(console, 'log');
+    await init();
+    expect(spy).toHaveBeenCalledWith('Creating demo (TypeScript: true)');
+  });
+});`,
+)}
+
+#### Step 3 — Register the command
+
+${codeBlock(
+  'ts',
+  `import { init } from './commands/init.js';
+
+program
+  .command('init')
+  .description('Initialize a new project')
+  .action(() => init());`,
+)}
+
+**What you learned**: Mixing Commander with interactive prompts, mocking prompt libraries with \`vi.mock()\`, testing async command handlers.`;
+}
+
+function getInquirerTutorial() {
+  return `## CLI Tutorial (Inquirer.js)
+
+Three progressive tutorials that build on this project. Each one introduces a real pattern you will use when building interactive CLI tools with Inquirer.js.
+
+### Tutorial 1: Add a name input with validation
+
+A prompt that asks for a project name and validates it contains only lowercase letters, numbers, and hyphens.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/create.ts\`:
+
+${codeBlock(
+  'ts',
+  `export function validateName(input: string): string | true {
+  if (!/^[a-z0-9-]+$/.test(input)) {
+    return 'Only lowercase letters, numbers, and hyphens allowed';
+  }
+  return true;
+}
+
+export function createProject(name: string): void {
+  console.log(\`Creating project: \${name}\`);
+}`,
+)}
+
+#### Step 2 — Write tests
+
+Create \`tests/unit/create.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { createProject, validateName } from '../../src/commands/create.js';
+
+describe('create command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('accepts valid names', () => {
+    expect(validateName('my-project')).toBe(true);
+    expect(validateName('app123')).toBe(true);
+  });
+
+  it('rejects invalid names', () => {
+    expect(validateName('My Project')).toEqual(expect.any(String));
+    expect(validateName('foo_bar')).toEqual(expect.any(String));
+  });
+
+  it('logs project creation', () => {
+    const spy = vi.spyOn(console, 'log');
+    createProject('demo');
+    expect(spy).toHaveBeenCalledWith('Creating project: demo');
+  });
+});`,
+)}
+
+#### Step 3 — Wire into the Inquirer flow
+
+Update \`src/index.ts\` to add the prompt:
+
+${codeBlock(
+  'ts',
+  `import inquirer from 'inquirer';
+
+import { createProject, validateName } from './commands/create.js';
+
+const { name } = await inquirer.prompt<{ name: string }>([
+  {
+    type: 'input',
+    name: 'name',
+    message: 'Project name:',
+    default: 'my-project',
+    validate: validateName,
+  },
+]);
+
+createProject(name);`,
+)}
+
+**What you learned**: Extracting validation logic into testable pure functions, Inquirer \`validate\` callback, handler-first architecture.
+
+---
+
+### Tutorial 2: Add a multi-step wizard with list selection
+
+A multi-prompt wizard that picks a language and a feature set, then scaffolds based on the choices.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/setup.ts\`:
+
+${codeBlock(
+  'ts',
+  `export type SetupOptions = {
+  language: 'typescript' | 'javascript';
+  features: string[];
+};
+
+export function setup(options: SetupOptions): void {
+  console.log(\`Language: \${options.language}\`);
+  console.log(\`Features: \${options.features.join(', ') || 'none'}\`);
+}`,
+)}
+
+#### Step 2 — Write tests
+
+Create \`tests/unit/setup.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { setup } from '../../src/commands/setup.js';
+
+describe('setup command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('logs language and features', () => {
+    const spy = vi.spyOn(console, 'log');
+    setup({ language: 'typescript', features: ['linting', 'testing'] });
+    expect(spy).toHaveBeenCalledWith('Language: typescript');
+    expect(spy).toHaveBeenCalledWith('Features: linting, testing');
+  });
+
+  it('handles empty features', () => {
+    const spy = vi.spyOn(console, 'log');
+    setup({ language: 'javascript', features: [] });
+    expect(spy).toHaveBeenCalledWith('Features: none');
+  });
+});`,
+)}
+
+#### Step 3 — Wire the prompts
+
+${codeBlock(
+  'ts',
+  `import inquirer from 'inquirer';
+
+import { setup } from './commands/setup.js';
+
+const answers = await inquirer.prompt([
+  {
+    type: 'list',
+    name: 'language',
+    message: 'Language:',
+    choices: ['typescript', 'javascript'],
+  },
+  {
+    type: 'checkbox',
+    name: 'features',
+    message: 'Features:',
+    choices: ['linting', 'testing', 'ci'],
+  },
+]);
+
+setup(answers);`,
+)}
+
+**What you learned**: Inquirer \`list\` and \`checkbox\` prompt types, typed answer objects, testing handler logic without mocking prompts.
+
+---
+
+### Tutorial 3: Add output formatting with colors and tables
+
+Add polished terminal output using \`picocolors\` for colors (already available) and a simple table layout.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/status.ts\`:
+
+${codeBlock(
+  'ts',
+  `import pc from 'picocolors';
+
+export type ServiceStatus = {
+  name: string;
+  running: boolean;
+};
+
+export function printStatus(services: ServiceStatus[]): void {
+  console.log(pc.bold('Service Status'));
+  console.log('─'.repeat(30));
+  for (const svc of services) {
+    const icon = svc.running ? pc.green('●') : pc.red('●');
+    console.log(\`  \${icon} \${svc.name}\`);
+  }
+}`,
+)}
+
+#### Step 2 — Write tests
+
+Create \`tests/unit/status.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { printStatus } from '../../src/commands/status.js';
+
+describe('status command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('prints service names', () => {
+    const spy = vi.spyOn(console, 'log');
+    printStatus([
+      { name: 'api', running: true },
+      { name: 'worker', running: false },
+    ]);
+    const output = spy.mock.calls.map((c) => c[0]).join('\\n');
+    expect(output).toContain('api');
+    expect(output).toContain('worker');
+  });
+});`,
+)}
+
+**What you learned**: \`picocolors\` for terminal colors, structured output formatting, testing formatted console output by joining spy calls.`;
+}
+
+function getClackTutorial() {
+  return `## CLI Tutorial (@clack/prompts)
+
+Three progressive tutorials that build on this project. Each one introduces a real pattern you will use when building interactive CLI tools with @clack/prompts.
+
+### Tutorial 1: Add a \`create\` wizard with cancel handling
+
+A multi-step wizard that asks for a project name and confirms creation. This tutorial introduces the critical \`isCancel()\` pattern.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/create.ts\`:
+
+${codeBlock(
+  'ts',
+  `export function createProject(name: string): void {
+  console.log(\`Creating project: \${name}\`);
+}`,
+)}
+
+#### Step 2 — Write tests
+
+Create \`tests/unit/create.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { createProject } from '../../src/commands/create.js';
+
+describe('create command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('logs project creation', () => {
+    const spy = vi.spyOn(console, 'log');
+    createProject('demo');
+    expect(spy).toHaveBeenCalledWith('Creating project: demo');
+  });
+});`,
+)}
+
+#### Step 3 — Wire the Clack flow
+
+Update \`src/index.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { confirm, intro, isCancel, outro, text } from '@clack/prompts';
+
+import { createProject } from './commands/create.js';
+
+async function main(): Promise<void> {
+  intro('Project Setup');
+
+  const name = await text({
+    message: 'Project name:',
+    placeholder: 'my-project',
+    defaultValue: 'my-project',
+  });
+
+  if (isCancel(name)) {
+    outro('Cancelled.');
+    process.exit(0);
   }
 
-  if (projectType === 'app') {
-    sections.push(`### Mobile Tutorial: screen-first feature delivery
+  const ok = await confirm({ message: \`Create "\${name}"?\` });
 
-Start from one screen in src/screens/, wire it in src/navigation/index.tsx, then add a unit test for screen behavior before adding Detox coverage.`);
+  if (isCancel(ok) || !ok) {
+    outro('Cancelled.');
+    process.exit(0);
   }
 
-  return sections.join('\n\n');
+  createProject(name);
+  outro('Done!');
+}
+
+void main();`,
+)}
+
+**What you learned**: \`isCancel()\` guard after every prompt, \`intro\`/\`outro\` for session framing, \`text\` with \`defaultValue\`.
+
+---
+
+### Tutorial 2: Add a selection step with \`select\`
+
+Extend the wizard with a language choice using Clack's \`select\` prompt.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/setup.ts\`:
+
+${codeBlock(
+  'ts',
+  `export type SetupOptions = {
+  name: string;
+  language: string;
+};
+
+export function setup(options: SetupOptions): void {
+  console.log(\`Project: \${options.name} (\${options.language})\`);
+}`,
+)}
+
+#### Step 2 — Write tests
+
+Create \`tests/unit/setup.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { setup } from '../../src/commands/setup.js';
+
+describe('setup command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('logs project with language', () => {
+    const spy = vi.spyOn(console, 'log');
+    setup({ name: 'demo', language: 'TypeScript' });
+    expect(spy).toHaveBeenCalledWith('Project: demo (TypeScript)');
+  });
+});`,
+)}
+
+#### Step 3 — Wire the select prompt
+
+${codeBlock(
+  'ts',
+  `import { intro, isCancel, outro, select, text } from '@clack/prompts';
+
+import { setup } from './commands/setup.js';
+
+const name = await text({
+  message: 'Project name:',
+  placeholder: 'my-project',
+  defaultValue: 'my-project',
+});
+
+if (isCancel(name)) {
+  outro('Cancelled.');
+  process.exit(0);
+}
+
+const language = await select({
+  message: 'Language:',
+  options: [
+    { value: 'TypeScript', label: 'TypeScript' },
+    { value: 'JavaScript', label: 'JavaScript' },
+  ],
+});
+
+if (isCancel(language)) {
+  outro('Cancelled.');
+  process.exit(0);
+}
+
+setup({ name, language });`,
+)}
+
+**What you learned**: Clack \`select\` with \`options\` array (value/label pairs), chaining prompts with cancel guards.
+
+---
+
+### Tutorial 3: Add a spinner for long-running tasks
+
+Use Clack's \`spinner\` to show progress during async operations.
+
+#### Step 1 — Create the handler
+
+Create \`src/commands/deploy.ts\`:
+
+${codeBlock(
+  'ts',
+  `export async function deploy(target: string): Promise<void> {
+  // simulate async work
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  console.log(\`Deployed to \${target}\`);
+}`,
+)}
+
+#### Step 2 — Write a test
+
+Create \`tests/unit/deploy.unit.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { deploy } from '../../src/commands/deploy.js';
+
+describe('deploy command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('logs deployment target', async () => {
+    const spy = vi.spyOn(console, 'log');
+    await deploy('staging');
+    expect(spy).toHaveBeenCalledWith('Deployed to staging');
+  });
+});`,
+)}
+
+#### Step 3 — Wire with spinner
+
+${codeBlock(
+  'ts',
+  `import { spinner } from '@clack/prompts';
+
+import { deploy } from './commands/deploy.js';
+
+const s = spinner();
+s.start('Deploying...');
+await deploy('staging');
+s.stop('Deployed!');`,
+)}
+
+**What you learned**: Clack \`spinner\` for visual progress, async handler patterns, testing async functions with \`await\`.`;
+}
+
+// ---------------------------------------------------------------------------
+// NPM Library — Implementation Workflow + Tutorial
+// ---------------------------------------------------------------------------
+
+function getNpmLibImplementationWorkflow() {
+  const sections = [];
+
+  // Workflow steps
+  sections.push(`1. **Start with the public API** — open \`src/main.ts\` and define the function signature you want consumers to call. Export only what should be public — keep internals in separate files that are not re-exported.
+
+2. **Write a failing test first** — create a test file in \`tests/\` (e.g. \`tests/slugify.test.ts\`). Import the function from \`../src/main.ts\` and assert the expected behavior, then run \`npm run test:unit\` to confirm the test fails.
+
+3. **Implement until tests pass** — fill in the function body until \`npm run test:unit\` goes green. Focus on the contract (inputs → outputs) — internal refactoring is free as long as the public API stays stable.
+
+4. **Build and verify the output** — run \`npm run build\` and inspect the \`dist/\` directory. You should see CJS (\`.cjs\`), ESM (\`.js\`), and declaration (\`.d.ts\`) files. Make sure your new export appears in the built output.
+
+5. **Run the full quality gate before commit**:
+
+${codeBlock('bash', 'npm run check    # format, lint, typecheck, spellcheck, secretlint, tests')}
+
+Commit using the conventional format enforced by commitlint:
+
+${codeBlock('bash', 'git commit -m "feat: add slugify utility"')}`);
+
+  // Tutorial
+  sections.push(`## Library Tutorial
+
+Three progressive tutorials that build on this project. Each one introduces a real pattern you will use when developing and publishing a TypeScript library.
+
+### Tutorial 1: Add a \`slugify\` utility with TDD
+
+A function that converts a string to a URL-friendly slug. This tutorial walks through the full red-green-refactor cycle for a library function.
+
+#### Step 1 — Define the public API
+
+Add the export to \`src/main.ts\`:
+
+${codeBlock(
+  'ts',
+  `export function slugify(input: string): string {
+  return ''; // start empty — tests will drive the implementation
+}`,
+)}
+
+#### Step 2 — Write failing tests
+
+Create \`tests/slugify.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { describe, expect, it } from 'vitest';
+
+import { slugify } from '../src/main.js';
+
+describe('slugify', () => {
+  it('lowercases the input', () => {
+    expect(slugify('Hello World')).toBe('hello-world');
+  });
+
+  it('replaces spaces with hyphens', () => {
+    expect(slugify('foo bar baz')).toBe('foo-bar-baz');
+  });
+
+  it('removes special characters', () => {
+    expect(slugify('Hello, World!')).toBe('hello-world');
+  });
+
+  it('trims whitespace', () => {
+    expect(slugify('  hello  ')).toBe('hello');
+  });
+
+  it('collapses multiple hyphens', () => {
+    expect(slugify('foo---bar')).toBe('foo-bar');
+  });
+});`,
+)}
+
+Run the tests — all 5 should fail:
+
+${codeBlock('bash', 'npm run test:unit')}
+
+#### Step 3 — Implement until green
+
+Update the function in \`src/main.ts\`:
+
+${codeBlock(
+  'ts',
+  `export function slugify(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\\s-]/g, '')
+    .replace(/\\s+/g, '-')
+    .replace(/-+/g, '-');
+}`,
+)}
+
+Run again — all 5 pass:
+
+${codeBlock('bash', 'npm run test:unit')}
+
+#### Step 4 — Verify the build output
+
+${codeBlock('bash', 'npm run build\nls dist/')}
+
+Confirm \`slugify\` appears in \`dist/main.d.ts\`.
+
+**What you learned**: Export-first API design, testing pure functions, verifying declaration files in the build output.
+
+---
+
+### Tutorial 2: Add a typed \`Result\` utility
+
+A generic \`Result<T, E>\` type for type-safe error handling. This introduces exporting types alongside runtime functions.
+
+#### Step 1 — Define the types and constructors
+
+Create \`src/result.ts\`:
+
+${codeBlock(
+  'ts',
+  `export type Result<T, E = Error> =
+  | { ok: true; value: T }
+  | { ok: false; error: E };
+
+export function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value };
+}
+
+export function err<E>(error: E): Result<never, E> {
+  return { ok: false, error };
+}`,
+)}
+
+Re-export from \`src/main.ts\`:
+
+${codeBlock('ts', `export { err, ok } from './result.js';\nexport type { Result } from './result.js';`)}
+
+#### Step 2 — Write tests
+
+Create \`tests/result.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `import { describe, expect, it } from 'vitest';
+
+import { err, ok } from '../src/main.js';
+
+describe('Result', () => {
+  it('creates an ok result', () => {
+    const result = ok(42);
+    expect(result).toEqual({ ok: true, value: 42 });
+  });
+
+  it('creates an error result', () => {
+    const result = err('not found');
+    expect(result).toEqual({ ok: false, error: 'not found' });
+  });
+
+  it('narrows types via ok flag', () => {
+    const result = ok('hello');
+    if (result.ok) {
+      expect(result.value).toBe('hello');
+    }
+  });
+});`,
+)}
+
+#### Step 3 — Build and verify types
+
+${codeBlock('bash', 'npm run build\ncat dist/main.d.ts')}
+
+Confirm the \`Result\` type and \`ok\`/\`err\` functions appear in the declaration file.
+
+**What you learned**: Exporting types alongside runtime values, discriminated union pattern, re-exporting from a barrel file.
+
+---
+
+### Tutorial 3: Evolve the API without breaking consumers
+
+Add an optional \`separator\` parameter to \`slugify\` while keeping the default behavior unchanged. This is the safe pattern for evolving a library API.
+
+#### Step 1 — Extend the signature
+
+Update \`slugify\` in \`src/main.ts\`:
+
+${codeBlock(
+  'ts',
+  `export function slugify(input: string, separator = '-'): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\\s-]/g, '')
+    .replace(/\\s+/g, separator)
+    .replace(new RegExp(\`\${separator}+\`, 'g'), separator);
+}`,
+)}
+
+#### Step 2 — Add tests for the new parameter
+
+Add to \`tests/slugify.test.ts\`:
+
+${codeBlock(
+  'ts',
+  `it('uses custom separator', () => {
+  expect(slugify('hello world', '_')).toBe('hello_world');
+});
+
+it('defaults to hyphen separator', () => {
+  expect(slugify('hello world')).toBe('hello-world');
+});`,
+)}
+
+#### Step 3 — Verify backwards compatibility
+
+All existing tests still pass because the new parameter is optional with a default value:
+
+${codeBlock('bash', 'npm run test:unit')}
+
+**What you learned**: Optional parameters with defaults for backwards-compatible API evolution, why existing tests are the safety net for refactoring.`);
+
+  return sections.join('\n\n---\n\n');
+}
+
+// ---------------------------------------------------------------------------
+// App (React Native) — Implementation Workflow + Tutorial
+// ---------------------------------------------------------------------------
+
+function getAppImplementationWorkflow(answers) {
+  const { setupAppJest } = answers;
+  const sections = [];
+
+  const testCommand = setupAppJest ? 'npm test' : 'npm run test:unit';
+
+  // Workflow steps
+  sections.push(`1. **Start the dev server** — run \`npm start\` and scan the QR code with Expo Go on your device, or press \`i\` for the iOS simulator / \`a\` for Android emulator. Every saved change reloads automatically.
+
+2. **Create the screen** — add a new \`.tsx\` file in \`src/screens/\`. Follow the patterns in \`src/screens/HomeScreen.tsx\`: default export, \`StyleSheet.create\` for styles, \`ScrollView\` or \`View\` as the root container.
+
+3. **Write a failing test first** — create a matching test file in \`tests/unit/\` (e.g. \`ProfileScreen.unit.test.tsx\`). Use \`render\` and \`screen\` from \`@testing-library/react-native\` to assert the expected behavior, then run \`${testCommand}\` to confirm the test fails.
+
+4. **Implement until tests pass** — fill in the screen code until \`${testCommand}\` goes green. Check the device/simulator to verify visually — Expo picks up saved changes immediately.
+
+5. **Wire navigation and run the quality gate** — register the screen in \`src/navigation/index.tsx\` as a \`<Stack.Screen>\`. Then run the full check:
+
+${codeBlock('bash', 'npm run check    # format, lint, typecheck, spellcheck, secretlint, tests')}
+
+Commit using the conventional format enforced by commitlint:
+
+${codeBlock('bash', 'git commit -m "feat(screens): add ProfileScreen"')}`);
+
+  // Tutorial
+  sections.push(`## Mobile App Tutorial
+
+Three progressive tutorials that build on this project. Each one introduces a real pattern you will use when building features with React Native and Expo.
+
+### Tutorial 1: Build a ProfileScreen with TDD
+
+A screen that displays a user name and email. This tutorial walks through the screen-first TDD cycle.
+
+#### Step 1 — Create the screen
+
+Create \`src/screens/ProfileScreen.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { StyleSheet, Text, View } from 'react-native';
+
+type ProfileScreenProps = {
+  name?: string;
+  email?: string;
+};
+
+export default function ProfileScreen({
+  name = 'Guest',
+  email = 'guest@example.com',
+}: ProfileScreenProps) {
+  return null; // start empty — tests will drive the implementation
+}
+
+const styles = StyleSheet.create({});`,
+)}
+
+#### Step 2 — Write failing tests
+
+Create \`tests/unit/ProfileScreen.unit.test.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { render, screen } from '@testing-library/react-native';
+
+import ProfileScreen from '../../src/screens/ProfileScreen';
+
+describe('ProfileScreen', () => {
+  it('renders the default name', () => {
+    render(<ProfileScreen />);
+    expect(screen.getByText('Guest')).toBeTruthy();
+  });
+
+  it('renders a custom name', () => {
+    render(<ProfileScreen name="Alice" />);
+    expect(screen.getByText('Alice')).toBeTruthy();
+  });
+
+  it('renders the email', () => {
+    render(<ProfileScreen email="alice@example.com" />);
+    expect(screen.getByText('alice@example.com')).toBeTruthy();
+  });
+});`,
+)}
+
+Run the tests — all 3 should fail:
+
+${codeBlock('bash', testCommand)}
+
+#### Step 3 — Implement until green
+
+Update \`src/screens/ProfileScreen.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { StyleSheet, Text, View } from 'react-native';
+
+type ProfileScreenProps = {
+  name?: string;
+  email?: string;
+};
+
+export default function ProfileScreen({
+  name = 'Guest',
+  email = 'guest@example.com',
+}: ProfileScreenProps) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
+      </View>
+      <Text style={styles.name}>{name}</Text>
+      <Text style={styles.email}>{email}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 24,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#0a7ea4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  avatarText: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  email: {
+    fontSize: 16,
+    color: '#666',
+  },
+});`,
+)}
+
+Run again — all 3 pass:
+
+${codeBlock('bash', testCommand)}
+
+**What you learned**: Screen component with typed props and defaults, \`StyleSheet.create\` for styles, \`@testing-library/react-native\` for rendering and assertions.
+
+---
+
+### Tutorial 2: Add navigation between screens
+
+Wire \`ProfileScreen\` into the navigator and add a button on \`HomeScreen\` to navigate to it. This introduces the \`useNavigation\` hook.
+
+#### Step 1 — Register the screen
+
+Update \`src/navigation/index.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import HomeScreen from '../screens/HomeScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+
+const Stack = createNativeStackNavigator();
+
+export function RootNavigator() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+    </Stack.Navigator>
+  );
+}`,
+)}
+
+#### Step 2 — Add a navigation button
+
+In \`src/screens/HomeScreen.tsx\`, add a button that navigates to Profile. Import \`useNavigation\`:
+
+${codeBlock(
+  'tsx',
+  `import { useNavigation } from '@react-navigation/native';
+
+// inside HomeScreen, before the closing </View>:
+const navigation = useNavigation();
+
+<Pressable
+  style={styles.button}
+  onPress={() => navigation.navigate('Profile')}
+  accessibilityRole="button"
+  accessibilityLabel="Go to profile"
+>
+  <Text style={styles.buttonText}>View Profile</Text>
+</Pressable>`,
+)}
+
+#### Step 3 — Write a navigation test
+
+Create \`tests/unit/Navigation.unit.test.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { NavigationContainer } from '@react-navigation/native';
+import { render, screen } from '@testing-library/react-native';
+
+import { RootNavigator } from '../../src/navigation/index';
+
+describe('Navigation', () => {
+  it('renders HomeScreen by default', () => {
+    render(
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>,
+    );
+    expect(screen.getByText('Welcome to Your App')).toBeTruthy();
+  });
+});`,
+)}
+
+**What you learned**: Stack navigator screen registration, \`useNavigation\` for programmatic navigation, wrapping navigators in \`NavigationContainer\` for tests.
+
+---
+
+### Tutorial 3: Build a shared Card component
+
+A reusable \`Card\` component used across multiple screens. This introduces the \`src/components/\` pattern for shared UI.
+
+#### Step 1 — Create the component
+
+Create \`src/components/Card.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import type { ReactNode } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+type CardProps = {
+  title: string;
+  children: ReactNode;
+};
+
+export default function Card({ title, children }: CardProps) {
+  return (
+    <View style={styles.card}>
+      <Text style={styles.title}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 12,
+  },
+});`,
+)}
+
+#### Step 2 — Write tests
+
+Create \`tests/unit/Card.unit.test.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import { render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
+
+import Card from '../../src/components/Card';
+
+describe('Card', () => {
+  it('renders the title', () => {
+    render(
+      <Card title="Stats">
+        <Text>Content</Text>
+      </Card>,
+    );
+    expect(screen.getByText('Stats')).toBeTruthy();
+  });
+
+  it('renders children', () => {
+    render(
+      <Card title="Stats">
+        <Text>Hello from inside</Text>
+      </Card>,
+    );
+    expect(screen.getByText('Hello from inside')).toBeTruthy();
+  });
+});`,
+)}
+
+#### Step 3 — Use it in a screen
+
+Import the Card in \`src/screens/HomeScreen.tsx\`:
+
+${codeBlock(
+  'tsx',
+  `import Card from '../components/Card';
+
+// replace the counter <View> with:
+<Card title="Counter">
+  <Pressable
+    style={styles.button}
+    onPress={() => setCount((prev) => prev + 1)}
+  >
+    <Text style={styles.buttonText}>count is {count}</Text>
+  </Pressable>
+</Card>`,
+)}
+
+**What you learned**: Shared component architecture with \`src/components/\`, \`children\` prop with \`ReactNode\` type, reusing components across screens, \`StyleSheet\` elevation for Android shadow.`);
+
+  return sections.join('\n\n---\n\n');
 }
 
 function getTestingWorkflow(answers) {
@@ -1225,6 +4155,34 @@ function getQualityChecksDescription(answers) {
   return `${checks.slice(0, -1).join(', ')}, and ${checks.at(-1)}`;
 }
 
+function getAutomatedPublishingSetup(answers) {
+  if (!answers.setupSemanticRelease || !['cli', 'npm-lib'].includes(answers.projectType)) {
+    return '';
+  }
+
+  return [
+    'semantic-release needs repository secrets before the first release can publish to npm.',
+    '',
+    '1. **Create an npm access token**',
+    '   - Sign in to [npmjs.com](https://www.npmjs.com/) and open **Access Tokens**.',
+    '   - Click **Generate New Token** and choose **Granular Access Token**.',
+    '   - Grant read and write access for the package or scope you want to publish.',
+    '',
+    '2. **Add the token to your GitHub repository secrets**',
+    '   - Open your repository on GitHub.',
+    '   - Go to **Settings -> Secrets and variables -> Actions**.',
+    '   - Add a new repository secret named `NPM_TOKEN` and paste the token value.',
+    '',
+    '3. **Use the built-in GitHub token**',
+    '   - The workflow already receives `GITHUB_TOKEN` automatically from GitHub Actions.',
+    '   - You do not need to create or store that token yourself for the generated release workflow.',
+    '',
+    '4. **Publish through CI**',
+    '   - Push Conventional Commits to `main`.',
+    '   - semantic-release will determine the next version, publish to npm, and create the GitHub release.',
+  ].join('\n');
+}
+
 function getScriptsTable(answers) {
   const {
     projectType,
@@ -1234,14 +4192,15 @@ function getScriptsTable(answers) {
     setupAppDetox,
     setupDocker,
     lintOption = [],
+    linter = 'eslint',
   } = answers;
   const rows = [];
 
   rows.push('| Script | Description |');
   rows.push('| --- | --- |');
   rows.push('| `npm run check` | Run all quality checks |');
-  rows.push('| `npm run format` | Format code with Prettier |');
-  rows.push('| `npm run lint` | Lint with ESLint |');
+  rows.push(`| \`npm run format\` | Format code with ${linter === 'biome' ? 'Biome' : 'Prettier'} |`);
+  rows.push(`| \`npm run lint\` | Lint with ${linter === 'biome' ? 'Biome' : 'ESLint'} |`);
   rows.push('| `npm run typecheck` | Type-check with TypeScript |');
 
   if (lintOption.includes('cspell')) rows.push('| `npm run spellcheck` | Check spelling |');
@@ -1289,6 +4248,10 @@ function getScriptsTable(answers) {
 // ---------------------------------------------------------------------------
 
 export function generateReadme(answers) {
+  if (answers.projectType === 'backend') {
+    return generateBackendReadme(answers);
+  }
+
   const pkg = answers._pkgName || 'my-project';
 
   const sections = [];
@@ -1321,6 +4284,11 @@ export function generateReadme(answers) {
     `## Quality Checks\n\n${codeBlock('bash', 'npm run check')}\n\nRuns ${getQualityChecksDescription(answers)} in sequence.`,
   );
 
+  const publishingSetup = getAutomatedPublishingSetup(answers);
+  if (publishingSetup) {
+    sections.push(`## Automated Publishing Setup\n\n${publishingSetup}`);
+  }
+
   // Deep project structure
   sections.push(`## Project Structure\n\n${getProjectStructure(answers)}`);
 
@@ -1334,7 +4302,7 @@ export function generateReadme(answers) {
 
   sections.push(`## Scripts Reference\n\n${getScriptsTable(answers)}`);
 
-  return sections.join('\n\n---\n\n') + '\n';
+  return adaptPackageManagerCommands(sections.join('\n\n---\n\n'), answers) + '\n';
 }
 
 export async function writeReadme(answers, cwd) {
@@ -1343,13 +4311,21 @@ export async function writeReadme(answers, cwd) {
     return false;
   }
 
+  const readmeAnswers = { ...answers };
+
   const pkgPath = path.join(cwd, 'package.json');
   if (await fs.pathExists(pkgPath)) {
     const pkg = await fs.readJson(pkgPath);
-    answers._pkgName = pkg.name || 'my-project';
+    readmeAnswers._pkgName = pkg.name || 'my-project';
+    readmeAnswers._scripts = pkg.scripts ?? {};
   }
 
-  const content = generateReadme(answers);
+  const envPath = path.join(cwd, '.env.example');
+  if (await fs.pathExists(envPath)) {
+    readmeAnswers._envExample = await fs.readFile(envPath, 'utf-8');
+  }
+
+  const content = generateReadme(readmeAnswers);
   await fs.writeFile(readmePath, content);
   return true;
 }
@@ -1401,5 +4377,5 @@ export async function offerReadmePreview(cwd) {
   // Fallback: raw output with install hint
   const content = await fs.readFile(readmePath, 'utf-8');
   console.log(content);
-  console.log(pc.dim('\nTip: install glow for a better preview → https://github.com/charmbracelet/glow\n'));
+  console.log(pc.dim('\nTip: install glow for a richer README preview.\n'));
 }

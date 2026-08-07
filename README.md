@@ -27,7 +27,6 @@ The CLI first asks what you're building, then tailors everything to that choice:
 | **backend service** | Hono/Fastify/Express/Elysia templates + optional Docker + tests |
 | **frontend app**    | React + Vite + Tailwind CSS v4 starter with component tests     |
 | **mobile app**      | React Native + Expo starter with optional Jest and Detox        |
-| **fullstack app**   | Shared baseline now, dedicated fullstack templates planned      |
 
 All project types share a common foundation: ESLint 9 flat config, Prettier, TypeScript strict mode, and optional tooling (Vitest, Husky, CSpell, Secretlint, Commitlint).
 
@@ -50,8 +49,10 @@ All project types share a common foundation: ESLint 9 flat config, Prettier, Typ
 - **Framework choice:** Hono, Fastify, Express, or Elysia (Bun)
 - **Dev server:** `tsx --watch` for hot reload
 - **Env validation:** optional Zod schema (`src/env.ts`) for type-safe environment variables
-- **Docker:** optional `Dockerfile` + `docker-compose.yml` + `Makefile` with lifecycle-safe setup
+- **Docker:** optional `Dockerfile` + `docker-compose.yml` with lifecycle-safe setup
 - **Tests:** framework-specific test templates included
+
+> Database scaffolding is intentionally a **backend capability**. Non-backend project types do not prompt for database setup.
 
 ### Frontend app
 
@@ -77,7 +78,7 @@ All project types share a common foundation: ESLint 9 flat config, Prettier, Typ
 
 Running `npm create @jeportie/tskickstart` inside a project directory will:
 
-1. **Ask your project type** — npm library, CLI tool, backend, frontend, mobile, or fullstack
+1. **Ask your project type** — npm library, CLI tool, backend, frontend, or mobile
 2. **Ensure `package.json` exists** — creates one with `npm init -y` if missing, or patches `"type": "module"`
 3. **Install** all required dev dependencies for your selections
 4. **Copy** config files and starter templates into your project root
@@ -95,7 +96,7 @@ Running `npm create @jeportie/tskickstart` inside a project directory will:
 | **Select more lint options** | Multi-select: `cspell`, `secretlint`, `commitlint` |
 | **Set up Vitest?** | Optional test runner — choose Native or Coverage preset |
 | **Set up pre-commit hook?** | Husky + lint-staged wired to your selected tools |
-| **Set up Playwright?** | E2E testing with Playwright (frontend/fullstack only) |
+| **Set up Playwright?** | E2E testing with Playwright (frontend only) |
 
 All existing files are left untouched (the CLI skips them with a notice). The wizard supports `← Back` navigation to revisit previous choices.
 
@@ -183,7 +184,7 @@ The frontend gets its own `eslint.config.js` with:
 
 ## Playwright E2E testing
 
-Available for **frontend** and **fullstack** project types. When enabled:
+Available for **frontend** project types. When enabled:
 
 - Installs `@playwright/test`
 - Copies `playwright.config.ts` (configured with `testDir: 'tests/e2e'`, `baseURL: 'http://localhost:5173'`)
@@ -218,13 +219,13 @@ npm create @jeportie/tskickstart
         └──▶ npm downloads the create-tskickstart package
             └──▶ node runs ./src/index.js
                 │
-                ├─ 1. prompt — project type (npm-lib / cli / backend / frontend / app / fullstack)
+                ├─ 1. prompt — project type (npm-lib / cli / backend / frontend / app)
                 ├─ 2. prompt — type-specific options (framework, Docker, semantic-release, etc.)
                 ├─ 3. prompt — author name (git config → prompt)
                 ├─ 4. prompt — lint options (cspell / secretlint / commitlint)
                 ├─ 5. prompt — Vitest preset (none / native / coverage)
                 ├─ 6. prompt — pre-commit hook (husky + lint-staged)
-                ├─ 7. prompt — Playwright E2E (frontend/fullstack only)
+                ├─ 7. prompt — Playwright E2E (frontend only)
                 ├─ 8. ensure package.json + "type": "module"
                 ├─ 9. npm install all selected dependencies
                 ├─ 10. copy common config templates → project root
@@ -478,7 +479,7 @@ VITEST_PRESET=native node ./src/index.js
 VITEST_PRESET=coverage node ./src/index.js
 VITEST_PRESET=none node ./src/index.js
 
-# Playwright (frontend/fullstack only)
+# Playwright (frontend only)
 PLAYWRIGHT=1 node ./src/index.js
 PLAYWRIGHT=0 node ./src/index.js
 
@@ -560,7 +561,7 @@ tskickstart/
 │   │   ├── common.js               # Shared config generation (all types)
 │   │   ├── npm-lib.js              # tsup, exports, semantic-release setup
 │   │   ├── cli.js                  # bin wiring, command templates
-│   │   ├── backend.js              # Server, Docker, Makefile templates
+│   │   ├── backend.js              # Server, Docker templates
 │   │   ├── frontend.js             # React + Vite + Tailwind generation
 │   │   ├── app.js                  # Expo + React Native generation
 │   │   └── playwright.js           # Playwright config and spec generation
@@ -568,7 +569,7 @@ tskickstart/
 │   │   ├── common/                 # Shared templates (eslint, prettier, tsconfig)
 │   │   ├── npm-lib/                # tsup config, CI workflows
 │   │   ├── cli/                    # Command and test templates
-│   │   ├── backend/                # Server, Docker, Makefile templates
+│   │   ├── backend/                # Server, Docker templates
 │   │   ├── frontend/               # React starter (components, tests, configs)
 │   │   ├── app/                    # Expo starter (screens, navigation, configs)
 │   │   └── playwright/             # Playwright config and example specs

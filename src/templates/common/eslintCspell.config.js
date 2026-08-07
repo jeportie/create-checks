@@ -50,6 +50,7 @@ export default tseslint.config(
       'import/no-self-import': 'error',
       'import/no-unresolved': 'error',
       'import/no-useless-path-segments': 'error',
+      'import/enforce-node-protocol-usage': ['error', 'always'],
       'import/order': [
         'error',
         {

@@ -48,7 +48,7 @@ export async function askCliQuestions() {
         type: 'confirm',
         name: 'setupSemanticRelease',
         message: 'Set up semantic-release for automated npm publishing?',
-        default: false,
+        default: true,
       },
     ]);
     setupSemanticRelease = result.setupSemanticRelease;

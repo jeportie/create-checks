@@ -23,6 +23,15 @@ function runCli(cwd, extraEnv = {}) {
   });
 }
 
+function runCliWithOutput(cwd, extraEnv = {}) {
+  return execSync(`node ${cliPath}`, {
+    cwd,
+    env: { ...process.env, NO_INSTALL: '1', ...extraEnv },
+    stdio: 'pipe',
+    encoding: 'utf-8',
+  });
+}
+
 describe('tskickstart CLI', () => {
   let tmpDir;
 
@@ -36,6 +45,37 @@ describe('tskickstart CLI', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(true);
+  });
+
+  it('prints the full branded tskickstart banner', () => {
+    tmpDir = createTmpProject();
+    const output = runCliWithOutput(tmpDir);
+    // eslint-disable-next-line no-control-regex
+    const clean = output.replace(/\x1B\[[0-9;]*m/g, '');
+
+    expect(clean).toContain('████████ ███████ ██   ██ ██  ██████ ██   ██ ███████ ████████  █████  ██████  ████████');
+  });
+
+  it('keeps non-banner CLI output within 80 columns', () => {
+    tmpDir = createTmpProject();
+    const output = runCliWithOutput(tmpDir);
+    // eslint-disable-next-line no-control-regex
+    const clean = output.replace(/\x1B\[[0-9;]*m/g, '');
+    const lines = clean
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .filter((line) => line.trim().length > 0)
+      .filter((line) => !/^[█ ]+$/.test(line));
+
+    expect(Math.max(...lines.map((line) => line.length))).toBeLessThanOrEqual(80);
+  });
+
+  it('eslint config enforces node: protocol for built-in imports', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir);
+    const content = readFileSync(join(tmpDir, 'eslint.config.js'), 'utf-8');
+    expect(content).toContain('import/enforce-node-protocol-usage');
+    expect(content).toContain("'always'");
   });
 
   it('copies prettier.config.js to the target directory', () => {
@@ -151,6 +191,14 @@ describe('tskickstart CLI', () => {
     expect(content).toContain("'@'");
   });
 
+  it('native vitest.config.ts uses node: import protocol for path', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { VITEST_PRESET: 'native' });
+    const content = readFileSync(join(tmpDir, 'vitest.config.ts'), 'utf-8');
+    expect(content).toContain("from 'node:path'");
+    expect(content).not.toContain("from 'path'");
+  });
+
   it('native vitest.config.ts includes both test and tests directories', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { VITEST_PRESET: 'native' });
@@ -191,6 +239,14 @@ describe('tskickstart CLI', () => {
     expect(content).toContain('coverage');
     expect(content).toContain('json-summary');
     expect(content).toContain('reportOnFailure');
+  });
+
+  it('coverage vitest.config.ts uses node: import protocol for path', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { VITEST_PRESET: 'coverage' });
+    const content = readFileSync(join(tmpDir, 'vitest.config.ts'), 'utf-8');
+    expect(content).toContain("from 'node:path'");
+    expect(content).not.toContain("from 'path'");
   });
 
   it('injects test, test:unit, test:integration, test:coverage scripts for coverage preset', () => {
@@ -307,6 +363,21 @@ describe('tskickstart CLI', () => {
     writeFileSync(join(huskyDir, 'pre-commit'), '# custom hook\n');
     runCli(tmpDir);
     expect(readFileSync(join(huskyDir, 'pre-commit'), 'utf-8')).toBe('# custom hook\n');
+  });
+
+  it('SETUP_PRECOMMIT=0 skips husky entirely (no hook, prepare, or lint-staged)', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: '0' });
+    expect(existsSync(join(tmpDir, '.husky', 'pre-commit'))).toBe(false);
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts).not.toHaveProperty('prepare');
+    expect(pkg['lint-staged']).toBeUndefined();
+  });
+
+  it('SETUP_PRECOMMIT=1 sets up the husky pre-commit hook', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: '1' });
+    expect(existsSync(join(tmpDir, '.husky', 'pre-commit'))).toBe(true);
   });
 
   /* ---------------- lint-staged config ---------------- */

@@ -12,7 +12,6 @@ const FRONTEND_FILES = [
   'tsconfig.app.json',
   'tsconfig.node.json',
   'tsconfig.test.json',
-  'eslint.config.js',
   'src/main.tsx',
   'src/App.tsx',
   'src/Welcome.tsx',
@@ -33,9 +32,13 @@ async function copyFrontendFile(relativePath, cwd) {
   await copyIfMissing(src, dest, relativePath);
 }
 
-export async function generateFrontend(_answers, cwd = process.cwd()) {
+export async function generateFrontend(answers, cwd = process.cwd()) {
   console.log(pc.green('→') + '  copying frontend starter files...');
   for (const file of FRONTEND_FILES) {
     await copyFrontendFile(file, cwd);
+  }
+
+  if (answers.linter !== 'biome') {
+    await copyFrontendFile('eslint.config.js', cwd);
   }
 }

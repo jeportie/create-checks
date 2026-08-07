@@ -46,6 +46,7 @@ export default function Welcome() {
       <h1 className="animate-bounce text-4xl font-bold leading-tight my-4">Vite + React + Tailwind</h1>
       <div className="p-8 border-black border-solid border-2 rounded-lg flex flex-col items-center">
         <button
+          type="button"
           onClick={() => setCount((prev) => prev + 1)}
           className="
             text-white rounded-lg border border-amber-600

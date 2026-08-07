@@ -11,7 +11,6 @@ const APP_CORE_FILES = [
   'babel.config.cjs',
   'metro.config.cjs',
   'tsconfig.json',
-  'eslint.config.js',
   '.mise.toml',
   'src/App.tsx',
   'src/screens/HomeScreen.tsx',
@@ -53,6 +52,10 @@ export async function generateApp(answers, cwd) {
 
   for (const file of APP_CORE_FILES) {
     await copyAppFile(file, cwd, { overwrite: APP_OVERWRITE_FILES.has(file) });
+  }
+
+  if (answers.linter !== 'biome') {
+    await copyAppFile('eslint.config.js', cwd, { overwrite: true });
   }
 
   if (setupAppJest) {

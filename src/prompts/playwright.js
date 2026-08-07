@@ -6,7 +6,7 @@ function fromEnv() {
 }
 
 export async function askPlaywrightQuestion(projectType) {
-  if (projectType !== 'frontend' && projectType !== 'fullstack') {
+  if (projectType !== 'frontend') {
     return { setupPlaywright: false };
   }
 
@@ -24,7 +24,7 @@ export async function askPlaywrightQuestion(projectType) {
       type: 'confirm',
       name: 'setupPlaywright',
       message: 'Set up Playwright for E2E testing?',
-      default: false,
+      default: true,
     },
   ]);
 

@@ -12,7 +12,5 @@ dist
 coverage
 .eslintcache
 
-# Dev-only files (not shipped)
-CLAUDE.md
-TODO.md
-NEXT.md
+# E2E matrix runner output
+e2e-report.json
