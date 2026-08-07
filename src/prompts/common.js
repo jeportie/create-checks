@@ -71,7 +71,11 @@ export async function askCommonQuestions(projectType) {
   const { setupPlaywright } = await askPlaywrightQuestion(projectType);
 
   let setupPrecommit = true;
-  if (process.stdin.isTTY) {
+  if (process.env.SETUP_PRECOMMIT === '1') {
+    setupPrecommit = true;
+  } else if (process.env.SETUP_PRECOMMIT === '0') {
+    setupPrecommit = false;
+  } else if (process.stdin.isTTY) {
     const result = await prompt([
       {
         type: 'confirm',
