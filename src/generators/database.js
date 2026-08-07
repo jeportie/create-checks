@@ -329,15 +329,15 @@ export default defineConfig({
 }
 
 function renderDbConnectivityTest(engine, orm) {
-  const relativeImport =
-    orm === 'mongoose' ? "import { connectDb } from '../../src/db';" : "import { db } from '../../src/db';";
+  const lazyImport =
+    orm === 'mongoose'
+      ? "const { connectDb } = await import('../../src/db');"
+      : "const { db } = await import('../../src/db');";
   const externalImports = ["import { describe, expect, it } from 'vitest';"];
 
   if (orm === 'drizzle') {
     externalImports.unshift("import { sql } from 'drizzle-orm';");
   }
-
-  const isSyncSqlite = engine === 'sqlite' && !['drizzle', 'prisma', 'mongoose'].includes(orm);
 
   let connectivityBody = '';
   if (orm === 'mongoose') {
@@ -377,14 +377,14 @@ function renderDbConnectivityTest(engine, orm) {
 
   return `${externalImports.join('\n')}
 
-${relativeImport}
-
 describe('database connectivity', () => {
-  it('executes a basic query path when DATABASE_URL is configured', ${isSyncSqlite ? '() => {' : 'async () => {'}
-    if (!process.env.DATABASE_URL && process.env.CI !== 'true') {
-      // Starter guard: provide env then remove this guard for strict CI usage.
+  it('executes a basic query path when DATABASE_URL is configured', async () => {
+    if (!process.env.DATABASE_URL) {
+      // Starter guard: only runs when DATABASE_URL points at a reachable database.
+      // Set it (locally or in CI) to exercise the real query path.
       return;
     }
+    ${lazyImport}
 ${connectivityBody}
   });
 });
