@@ -76,7 +76,21 @@
     "rulesets",
     "ruleset",
     "idempotent",
-    "paginate"
+    "paginate",
+    "Rodin",
+    "Socratic",
+    "steelman",
+    "steelmanning",
+    "reflexion",
+    "subagent",
+    "subagents",
+    "allowlist",
+    "orchestrator",
+    "roadmap",
+    "upstash",
+    "opencode",
+    "frontmatter",
+    "backlog"
   ],
   "ignorePaths": [
     ".vscode/",
