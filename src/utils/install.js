@@ -75,7 +75,7 @@ export async function installDeps(answers, options = {}) {
     if (linter !== 'biome') {
       devDeps.push('@cspell/eslint-plugin');
     }
-    devDeps.push('cspell');
+    devDeps.push('cspell@^8');
   }
 
   if (lintOption.includes('commitlint')) {
