@@ -1,0 +1,93 @@
+name: AI Review (free model)
+
+# Free AI PR review via any OpenAI-compatible provider. Non-blocking.
+#
+# SETUP: create a free API key and add it as the `AI_REVIEW_API_KEY` repo secret.
+#   Default provider = Groq free tier (no credit card): https://console.groq.com
+#   Swap provider WITHOUT editing this file by setting repo Variables:
+#     AI_REVIEW_ENDPOINT  e.g. https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+#     AI_REVIEW_MODEL     e.g. gemini-2.0-flash   (then use a Gemini AI Studio key as the secret)
+# The job skips cleanly until the secret exists (no red check).
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    # Skip fork PRs (read-only token can't comment).
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    env:
+      AI_ENDPOINT: ${{ vars.AI_REVIEW_ENDPOINT || 'https://api.groq.com/openai/v1/chat/completions' }}
+      AI_MODEL: ${{ vars.AI_REVIEW_MODEL || 'llama-3.3-70b-versatile' }}
+      AI_KEY: ${{ secrets.AI_REVIEW_API_KEY }}
+    steps:
+      - name: Check for API key
+        id: guard
+        run: |
+          if [ -z "$AI_KEY" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AI_REVIEW_API_KEY not set — skipping AI review."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.guard.outputs.present == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Review with a free model
+        if: steps.guard.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          git diff --unified=1 "$BASE_SHA" "$HEAD_SHA" \
+            -- . ':(exclude)**/package-lock.json' ':(exclude)**/pnpm-lock.yaml' > full.diff || true
+          {
+            echo "You are reviewing a pull request for the tskickstart scaffolding CLI. Be concise."
+            echo "Prioritise correctness, security, and generator/template changes that could break a"
+            echo "scaffolded project. Reply in markdown: a one-paragraph summary, then bulleted findings"
+            echo "with file:line where possible. If it looks good, say so briefly."
+            echo
+            echo "PR title: ${PR_TITLE}"
+            echo
+            echo '```diff'
+            head -c 40000 full.diff
+            echo
+            echo '```'
+          } > prompt.txt
+
+          BODY="$(jq -n --arg model "$AI_MODEL" --rawfile prompt prompt.txt \
+            '{model: $model, temperature: 0.2, max_tokens: 1000, messages: [{role: "user", content: $prompt}]}')"
+
+          RESP="$(curl -sS "$AI_ENDPOINT" \
+            -H "Authorization: Bearer $AI_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" || echo '{}')"
+
+          CONTENT="$(printf '%s' "$RESP" | jq -r '.choices[0].message.content // .error.message // "No response from the model."' 2>/dev/null || echo "Could not parse the model response.")"
+
+          {
+            echo "🤖 **AI review (free model · ${AI_MODEL})**"
+            echo
+            printf '%s\n' "$CONTENT"
+            echo
+            echo "_Automated, non-blocking. Swap the model via repo Variables — see the workflow header._"
+          } > review.md
+
+          gh pr comment "$PR" --body-file review.md
