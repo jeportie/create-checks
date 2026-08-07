@@ -11,3 +11,10 @@ dist
 
 coverage
 .eslintcache
+
+# Claude Code / company-OS local state
+.claude/.cc-writes/
+.claude/settings.local.json
+
+# e2e harness report
+e2e-report.json
