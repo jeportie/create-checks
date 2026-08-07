@@ -365,6 +365,21 @@ describe('tskickstart CLI', () => {
     expect(readFileSync(join(huskyDir, 'pre-commit'), 'utf-8')).toBe('# custom hook\n');
   });
 
+  it('SETUP_PRECOMMIT=0 skips husky entirely (no hook, prepare, or lint-staged)', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: '0' });
+    expect(existsSync(join(tmpDir, '.husky', 'pre-commit'))).toBe(false);
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts).not.toHaveProperty('prepare');
+    expect(pkg['lint-staged']).toBeUndefined();
+  });
+
+  it('SETUP_PRECOMMIT=1 sets up the husky pre-commit hook', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: '1' });
+    expect(existsSync(join(tmpDir, '.husky', 'pre-commit'))).toBe(true);
+  });
+
   /* ---------------- lint-staged config ---------------- */
 
   it('adds lint-staged config with format and lint commands to package.json', () => {
