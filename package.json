@@ -37,6 +37,9 @@
     "test": "vitest --run",
     "test:coverage": "vitest --coverage --run",
     "test:integration": "vitest int --run",
+    "e2e:gen": "node scripts/e2e/run.mjs --tier=gen",
+    "e2e:verify": "node scripts/e2e/run.mjs --tier=verify",
+    "check": "npm run lint && npm run secretlint && npm run spellcheck && npm run test && npm run test:integration",
     "prepare": "husky || true"
   },
   "dependencies": {
