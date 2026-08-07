@@ -1,23 +1,29 @@
-## Summary
+### Checklist
 
-<!-- What does this PR change and why? -->
-
-## Type of change
-
-- [ ] feat — new feature
-- [ ] fix — bug fix
-- [ ] support — refactor / tests / CI / tooling
-- [ ] docs — documentation only
-- [ ] chore — maintenance / config
-
-## Related
-
-<!-- Link the issue or CURRFIX id, e.g. Closes #123 / CF-0XX -->
-
-## Checklist
-
-- [ ] `npm run lint` passes
-- [ ] `npm test` and `npm run test:integration` pass
+- [ ] `npm run check` passes (format, lint, typecheck)
+- [ ] `npm test` / `npm run test:integration` pass
 - [ ] `npm run e2e:gen` passes for the affected project type(s)
-- [ ] Docs / README updated if behavior changed
-- [ ] Commits follow Conventional Commits
+- [ ] **Covered by tests.** <!-- explain if partial/none -->
+- [ ] Docs / generated README updated if behavior changed
+- [ ] Conventional-commit types are correct (they drive the release)
+
+### Description
+
+<!-- Problem: what & why. Solution: how; before/after for fixes. -->
+
+### Impact / QA focus
+
+<!-- Which project types / generators / templates are affected and what to exercise. -->
+
+### Context
+
+- **Issue:** <!-- #123 or N/A -->
+
+---
+
+### For reviewers
+
+- Code matches the linked issue / stated intent.
+- Generator/template changes don't break a scaffolded project — check the E2E matrix (`scripts/e2e`).
+- The promptless env-var interface (`src/prompts`) stays consistent.
+- No undocumented trade-offs; new dependencies are justified.
