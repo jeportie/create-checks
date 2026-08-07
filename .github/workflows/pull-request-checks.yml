@@ -48,3 +48,23 @@ jobs:
       - name: Report Coverage
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
+
+  e2e-gen:
+    name: e2e-gen
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: E2E generation matrix (Tier 1)
+        run: npm run e2e:gen
