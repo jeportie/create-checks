@@ -66,7 +66,17 @@
     "currfix",
     "unstub",
     "psql",
-    "mongosh"
+    "mongosh",
+    "labeler",
+    "anthropics",
+    "promptless",
+    "scaffolded",
+    "repro",
+    "dependabot",
+    "rulesets",
+    "ruleset",
+    "idempotent",
+    "paginate"
   ],
   "ignorePaths": [
     ".vscode/",
@@ -79,7 +89,8 @@
     "package.json",
     "package-lock.json",
     "pnpm-lock.yaml",
-    "tests/data"
+    "tests/data",
+    "scripts"
   ],
   "languageSettings": [
     {
