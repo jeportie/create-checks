@@ -2,7 +2,7 @@
 
 ## Current State Assessment
 
-The current `tskickstart` is a **type-aware scaffolding CLI** (`@jeportie/create-tskickstart`) with a modular architecture. It supports a two-level prompt system that routes to type-specific generators. Implemented project types: `npm-lib`, `cli`, `backend`, `frontend`, and `app` (React Native). Features include a wizard-based prompt system with back navigation, animated spinner, comprehensive README generation, and optional tools per mode. 286 tests currently pass on `dev`.
+The current `tskickstart` is a **type-aware scaffolding CLI** (`@jeportie/create-tskickstart`) with a modular architecture. It supports a two-level prompt system that routes to type-specific generators. Implemented project types: `npm-lib`, `cli`, `backend`, `frontend`, and `app` (React Native). Features include a wizard-based prompt system with back navigation, animated spinner, comprehensive README generation, and optional tools per mode. 300+ tests currently pass on `dev`.
 
 ## Sprint 2 Status (Current)
 
@@ -12,6 +12,16 @@ Phase 1 is implemented, fixed through `CURRFIX.md`, and merged to `dev`.
 - [x] BIOME-01 Biome alternative (completed via CURRFIX campaign)
 - [x] CICD-01 CI/CD pipeline option (completed via CURRFIX campaign)
 - [x] HOUSE-01 Codebase housekeeping (completed via CURRFIX campaign)
+
+## Release-Gating DevOps Epic (Done — shipped in v1.9.0 / v1.9.1)
+
+Before promoting `dev` → `main`, a two-tier E2E install matrix + repo CI/CD were built to prove
+generated projects actually install/build/lint/test (the existing suite only ran with `NO_INSTALL`).
+
+- [x] **E2E install matrix** (`scripts/e2e`) — Tier 1 generation (162/162) + Tier 2 real-install verify (16/16 green on Linux CI); filters, tree recap, `e2e-report.json`
+- [x] **Repo CI/CD** — auto-labeler, issue/PR templates (Ledger emoji style), CODEOWNERS, Dependabot (→ `dev`), dev/release pipeline gates (`e2e-gen`, pre-publish `checks`), branch-protection rulesets, free-tier AI PR review (Groq)
+- [x] **Scaffold fixes** CF-040..046 (see `CURRFIX.md`) surfaced by the gate
+- [x] **Released** v1.9.0 then v1.9.1 to npm via semantic-release
 
 ---
 
@@ -370,6 +380,8 @@ Each tutorial includes complete, copy-paste-ready code for every file (component
 - [ ] **Ink for `cli` mode** — Add a React-based Node.js TUI framework option alongside `commander`, `inquirer`, and `@clack/prompts`
 - [ ] **Ink add-on toolkit** — Scaffold `@inkjs/ui` by default for Ink-based CLIs (inputs, select, spinner, progress, alerts), with `ink-markdown` and `ink-table` as optional specialized extras
 - [ ] **Ink single-purpose addons** — Only evaluate `ink-text-input`, `ink-spinner`, and `ink-select-input` if a lighter alternative to `@inkjs/ui` is needed
+- [ ] **`electron` desktop project type** — new type alongside `frontend`/`app` (Ledger-tools epic; needs a `ledger-live` discovery pass)
+- [ ] **Tool-option alternatives** — `hk` vs husky (pre-commit hooks), `oxlint` / `oxfmt` vs ESLint/Prettier (Ledger-tools epic)
 
 ---
 
@@ -388,3 +400,4 @@ Each tutorial includes complete, copy-paste-ready code for every file (component
 11. [x] **CI/CD pipeline option** — GitHub Actions, deploy workflows
 12. [ ] **Add `fullstack` type** — pnpm monorepo with workspaces + changesets (next, depends on #10)
 13. [ ] **Add `fullstack + app` type** — Extends fullstack with mobile workspace (depends on #12)
+14. [ ] **`electron` type + tool-option alternatives** — Ledger-tools epic (deferred, needs `ledger-live` discovery)

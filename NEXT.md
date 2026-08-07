@@ -15,6 +15,17 @@ Phase 1 feature work is implemented, fixed, and merged to `dev`.
 
 All sprint issues from this phase were tracked in `CURRFIX.md` and are now closed.
 
+### Release-Gating DevOps Epic (Done)
+
+After Phase 1, a two-tier E2E install matrix + Ledger-style repo CI/CD were added to gate releases;
+every red path the gate surfaced was fixed (CF-040..046 in `CURRFIX.md`), and `dev` was promoted to
+`main` — **v1.9.0** then **v1.9.1** published to npm via semantic-release. Dependabot now targets `dev`.
+
+### Next Focus
+
+- `fullstack` / `fullstack + app` monorepo types (Phase 2 below)
+- **Ledger-tools epic** — `electron` desktop type + tool-option alternatives (`hk`, `oxlint` / `oxfmt`); needs a `ledger-live` discovery pass first
+
 ---
 
 ## Tooling Requirements

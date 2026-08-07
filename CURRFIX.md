@@ -10,7 +10,7 @@ Track every issue you report from the current sprint before we mark Sprint 2 Pha
 - `IN_PROGRESS`: Currently being fixed
 - `DONE`: Fixed and verified
 
-All reported issues are now `DONE` and merged into `dev`.
+All reported issues are now `DONE` and merged into `dev`. CF-001..039 came from the Sprint 2 fix campaign; CF-040..046 were surfaced later by the E2E install-matrix gate (the release-gating DevOps epic) and shipped in v1.9.0 / v1.9.1.
 
 ## Reported Issues
 
@@ -52,6 +52,20 @@ All reported issues are now `DONE` and merged into `dev`.
 - [x] CF-037 | DX/CLI | Restore full branded `tskickstart` banner; keep 80-column rule for regular CLI output only | STATUS=DONE | reported_by=user | GH=#52 | PR=#54 merged to dev
 - [x] CF-038 | LINT/BIOME | Replace invalid `files.ignore` with Biome v2-compatible file exclusion config in generated `biome.json` | STATUS=DONE | reported_by=user | GH=#56 | PR=#57 merged to dev
 - [x] CF-039 | LINT/CSPELL | Ignore `pnpm-lock.yaml` in generated `cspell.json` when pnpm is selected | STATUS=DONE | reported_by=user | GH=#58 | PR=#59 merged to dev
+
+## E2E Install-Matrix Gate (Release-Gating Epic)
+
+Fixes surfaced by the two-tier E2E install matrix (`scripts/e2e`) — real installs proved scaffold
+bugs the `NO_INSTALL` generation tests could not. All `DONE`, shipped in v1.9.0 / v1.9.1. Verify
+tier is **16/16 green on Linux CI**.
+
+- [x] CF-040 | E2E/INSTALL | Pin volatile test deps + add missing scaffold deps: `vitest` + `@vitest/coverage-v8` `^2` (vitest 3's rolldown native binding broke fresh installs), frontend `@vitest/coverage-v8`, `prisma` + `@prisma/client` `^6` (Prisma 7 rejects `url` in datasource on Node ≥22), `@testing-library/react-native` `^12`, `@types/better-sqlite3`, `@react-native/jest-preset` | STATUS=DONE | reported_by=assistant | commit 31611f2
+- [x] CF-041 | E2E/DB | Generated DB scaffolds now lint- and type-check clean (import order, `require-await`, sqlite migrate/index type annotations) | STATUS=DONE | reported_by=assistant | commit 2d16ad9
+- [x] CF-042 | E2E/APP | Pin `@testing-library/react-native` `^12` for jest-expo preset compatibility | STATUS=DONE | reported_by=assistant | commit e1d8e3a
+- [x] CF-043 | E2E/BACKEND | Default generated vitest to the `forks` pool so native drivers (better-sqlite3) don't crash the worker | STATUS=DONE | reported_by=assistant | commit ea36ab6
+- [x] CF-044 | E2E/DB | DB-connectivity test skips without `DATABASE_URL` and lazy-imports the db module — fixes CI-without-a-database failures (`ECONNREFUSED` / mongo timeout) | STATUS=DONE | reported_by=assistant | commit ee0c9d4
+- [x] CF-045 | E2E/DB | `better-sqlite3` native addon crashed the vitest worker on teardown (darwin-arm64); resolved by CF-044's lazy-import (native addon no longer loads when the test skips) — 16/16 green on Linux CI | STATUS=DONE | reported_by=assistant | commit ee0c9d4
+- [x] CF-046 | E2E/TEST | Exclude `dist/**` from vitest (compiled tests double-ran); pin generated `cspell` `^8` (cspell ≥9 requires Node ≥22.18; scaffolds target Node 20) | STATUS=DONE | reported_by=assistant | commit fbb1375
 
 ## Issue Entry Template
 
