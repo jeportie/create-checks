@@ -195,7 +195,7 @@ export async function installDeps(answers, options = {}) {
         '@react-native/jest-preset',
         '@jest/globals',
         '@types/jest@^29.5.14',
-        '@testing-library/react-native',
+        '@testing-library/react-native@^12',
       );
     }
     if (answers.setupAppDetox) {
