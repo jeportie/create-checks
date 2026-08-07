@@ -90,11 +90,11 @@ export async function installDeps(answers, options = {}) {
   }
 
   if (vitestPreset === 'native' || vitestPreset === 'coverage') {
-    devDeps.push('vitest');
+    devDeps.push('vitest@^2');
   }
 
   if (vitestPreset === 'coverage') {
-    devDeps.push('@vitest/coverage-v8');
+    devDeps.push('@vitest/coverage-v8@^2');
   }
 
   if (projectType === 'frontend') {
@@ -111,6 +111,7 @@ export async function installDeps(answers, options = {}) {
       'eslint-plugin-react-hooks',
       'eslint-plugin-react-refresh',
       'globals',
+      '@vitest/coverage-v8@^2',
     );
   }
 
@@ -152,12 +153,13 @@ export async function installDeps(answers, options = {}) {
 
         if (answers.databaseEngine === 'sqlite') {
           extraProdDeps.push('better-sqlite3');
+          devDeps.push('@types/better-sqlite3');
         }
       }
 
       if (answers.databaseOrm === 'prisma') {
-        devDeps.push('prisma');
-        extraProdDeps.push('@prisma/client');
+        devDeps.push('prisma@^6');
+        extraProdDeps.push('@prisma/client@^6');
       }
 
       if (answers.databaseOrm === 'mongoose') {
@@ -174,6 +176,7 @@ export async function installDeps(answers, options = {}) {
         }
         if (answers.databaseEngine === 'sqlite') {
           extraProdDeps.push('better-sqlite3');
+          devDeps.push('@types/better-sqlite3');
         }
       }
 
@@ -189,9 +192,10 @@ export async function installDeps(answers, options = {}) {
       devDeps.push(
         'jest@~29.7.0',
         'jest-expo',
+        '@react-native/jest-preset',
         '@jest/globals',
         '@types/jest@^29.5.14',
-        '@testing-library/react-native',
+        '@testing-library/react-native@^12',
       );
     }
     if (answers.setupAppDetox) {
