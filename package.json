@@ -43,7 +43,7 @@
     "prepare": "husky || true"
   },
   "dependencies": {
-    "execa": "^8.0.1",
+    "execa": "^10.0.1",
     "fs-extra": "^11.2.0",
     "inquirer": "~10.2.2",
     "picocolors": "^1.0.0"
