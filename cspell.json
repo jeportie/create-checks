@@ -79,7 +79,8 @@
     "package.json",
     "package-lock.json",
     "pnpm-lock.yaml",
-    "tests/data"
+    "tests/data",
+    "scripts"
   ],
   "languageSettings": [
     {
