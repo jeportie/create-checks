@@ -1,0 +1,10 @@
+# Default owner for everything in the repo.
+* @jeportie
+
+# Area owners (kept aligned with .github/labeler.yml).
+/src/prompts/     @jeportie
+/src/generators/  @jeportie
+/src/templates/   @jeportie
+/src/utils/       @jeportie
+/scripts/         @jeportie
+/.github/         @jeportie
