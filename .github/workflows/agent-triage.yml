@@ -1,0 +1,101 @@
+name: Agent Triage (free model)
+
+# On a new issue, a free model classifies it into a routing level, then labels + comments.
+# Classification only — the crew (or a human) does the actual work, and nothing is merged.
+# See .claude/skills/triage-router for the rubric.
+#
+# SETUP: reuses the AI review secret/variables — no new setup if AI review is configured.
+#   Secret:    AI_REVIEW_API_KEY   (Groq free tier by default: https://console.groq.com)
+#   Variables: AI_REVIEW_ENDPOINT / AI_REVIEW_MODEL   (optional — swap provider without editing this file)
+#   Labels:    run `node scripts/ci/labels.mjs` once to create the triage:* labels.
+# The job skips cleanly until the secret exists (no red check).
+# NOTE: `issues:` workflows run from the DEFAULT branch — this activates once merged to `main`.
+
+on:
+  issues:
+    types: [opened, reopened]
+
+concurrency:
+  group: agent-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    env:
+      AI_ENDPOINT: ${{ vars.AI_REVIEW_ENDPOINT || 'https://api.groq.com/openai/v1/chat/completions' }}
+      AI_MODEL: ${{ vars.AI_REVIEW_MODEL || 'llama-3.3-70b-versatile' }}
+      AI_KEY: ${{ secrets.AI_REVIEW_API_KEY }}
+    steps:
+      - name: Check for API key
+        id: guard
+        run: |
+          if [ -z "$AI_KEY" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AI_REVIEW_API_KEY not set — skipping agent triage."
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Classify & route
+        if: steps.guard.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          {
+            echo "You are the triage router for the tskickstart scaffolding CLI — a governed repo run by an AI crew."
+            echo "Classify the GitHub issue below into exactly ONE routing level, using this rubric:"
+            echo "- L1 = trivial, low-risk, clearly useful, testable; NOT touching the published src/ API, UI, or security (docs, typos, config/lint nits, small obvious bug fixes). The crew implements it and opens a PR."
+            echo "- L2 = medium scope, worth prioritising; a well-scoped bug or small feature with clear acceptance criteria. Route to a Jira ticket for human approval, then a human or a scheduled agent works it."
+            echo "- L3 = human-only: new features, UI/UX, security-sensitive, architecture, changes to the published src/ API, or anything ambiguous/underspecified."
+            echo "- REJECT = not useful, out of scope, a duplicate, or too underspecified to act on."
+            echo "When unsure between two levels, pick the MORE conservative (higher) one."
+            echo "Output the FIRST line EXACTLY as: VERDICT: <L1|L2|L3|REJECT>"
+            echo "Then a blank line, then 2-4 sentences of rationale and the recommended next step. Be concise."
+            echo
+            echo "Issue #${ISSUE} — ${ISSUE_TITLE}"
+            echo
+            printf '%s\n' "${ISSUE_BODY}" | head -c 6000
+          } > prompt.txt
+
+          BODY="$(jq -n --arg model "$AI_MODEL" --rawfile prompt prompt.txt \
+            '{model: $model, temperature: 0.1, max_tokens: 600, messages: [{role: "user", content: $prompt}]}')"
+
+          RESP="$(curl -sS "$AI_ENDPOINT" \
+            -H "Authorization: Bearer $AI_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" || echo '{}')"
+
+          CONTENT="$(printf '%s' "$RESP" | jq -r '.choices[0].message.content // .error.message // "VERDICT: L3\n\nCould not reach the model — defaulting to human review."' 2>/dev/null || printf 'VERDICT: L3\n\nCould not parse the model response — defaulting to human review.')"
+
+          # Parse the verdict; default to L3 (human) when unparseable — the safe fallback.
+          VERDICT="$(printf '%s' "$CONTENT" | grep -oiE 'VERDICT:[[:space:]]*(L1|L2|L3|REJECT)' | head -1 | grep -oiE '(L1|L2|L3|REJECT)' | tr '[:lower:]' '[:upper:]')"
+          VERDICT="${VERDICT:-L3}"
+
+          case "$VERDICT" in
+            L1)     LABEL="triage:l1-do-now";  NEXT="**L1 — do now.** Queued for the crew to implement on a \`fix/\` branch and open a PR (a human still merges).";;
+            L2)     LABEL="triage:l2-delegate"; NEXT="**L2 — delegate.** Route to a Jira ticket for human approval, then a human or the half-daily cron agent works it. _(Jira auto-creation is stubbed — a human files the ticket for now.)_";;
+            L3)     LABEL="triage:l3-human";    NEXT="**L3 — human.** New feature / UI / security / architecture / ambiguous — needs a human owner. Not auto-worked.";;
+            REJECT) LABEL="triage:needs-info";  NEXT="**Needs info / out of scope.** A human should confirm scope, ask for a repro, or close as a duplicate.";;
+          esac
+
+          gh issue edit "$ISSUE" --add-label "$LABEL" || echo "::warning::could not add label $LABEL — run scripts/ci/labels.mjs to create the triage:* labels."
+
+          {
+            echo "🤖 **Agent triage (free model · ${AI_MODEL})**"
+            echo
+            printf '%s\n' "$CONTENT"
+            echo
+            echo "➡️ ${NEXT}"
+            echo
+            echo "_Automated, non-blocking classification per \`.claude/skills/triage-router\`. The human gate holds at every level — nothing is merged automatically._"
+          } > comment.md
+
+          gh issue comment "$ISSUE" --body-file comment.md
