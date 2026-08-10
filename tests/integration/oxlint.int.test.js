@@ -66,4 +66,14 @@ describe('oxlint option', () => {
     expect(pkg.scripts.format).toBe('oxfmt .');
     expect(pkg['lint-staged']['**/*']).toEqual(expect.arrayContaining(['npm run format', 'npm run lint']));
   });
+
+  it('describes oxlint/oxfmt in the generated README', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { LINTER: 'oxlint' });
+
+    const readme = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
+    expect(readme).toMatch(/oxlint/i);
+    expect(readme).toMatch(/oxfmt/i);
+    expect(readme).not.toMatch(/ESLint|Prettier/);
+  });
 });
