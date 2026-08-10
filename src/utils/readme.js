@@ -1628,7 +1628,11 @@ function getEslintPlaybook(answers) {
   }
 
   if (answers.linter === 'oxlint') {
-    return `### oxlint + oxfmt\n\noxlint and oxfmt are fast Rust-based tools that handle linting and formatting in a single toolchain.\n\n${codeBlock('bash', 'npm run lint\nnpm run format')}`;
+    return (
+      `### oxlint + oxfmt\n\n` +
+      `oxlint and oxfmt are fast Rust-based tools that handle linting and formatting in a single toolchain.\n\n` +
+      codeBlock('bash', 'npm run lint\nnpm run format')
+    );
   }
 
   const contextMap = {
