@@ -90,7 +90,12 @@
     "upstash",
     "opencode",
     "frontmatter",
-    "backlog"
+    "backlog",
+    "oxlint",
+    "oxfmt",
+    "oxc",
+    "oxlintrc",
+    "oxfmtrc"
   ],
   "ignorePaths": [
     ".vscode/",

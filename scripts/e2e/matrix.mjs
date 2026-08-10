@@ -10,7 +10,7 @@
  * The engine/ORM pairs mirror `ormChoicesByEngine` in src/prompts/database.js.
  */
 
-const linter = { eslint: { LINTER: 'eslint' }, biome: { LINTER: 'biome' } };
+const linter = { eslint: { LINTER: 'eslint' }, biome: { LINTER: 'biome' }, oxlint: { LINTER: 'oxlint' } };
 
 // engine + ORM pairs (ORM choices are constrained by engine — see src/prompts/database.js)
 const dbPairs = {
@@ -180,7 +180,7 @@ export const MANIFESTS = {
   app: ['app.json', 'src/App.tsx'],
 };
 
-export const LINTER_FILES = { eslint: 'eslint.config.js', biome: 'biome.json' };
+export const LINTER_FILES = { eslint: 'eslint.config.js', biome: 'biome.json', oxlint: '.oxlintrc.json' };
 
 export function expectedFiles(combo) {
   return [...MANIFESTS.common, ...(MANIFESTS[combo.type] || [])];
@@ -214,6 +214,7 @@ export const VERIFY = [
     LINT_OPTIONS: 'cspell,secretlint,commitlint',
   }),
   verifyCombo('npm-lib', 'biome-sr', { LINTER: 'biome', PKG_MANAGER: 'npm', SEMANTIC_RELEASE: '1' }),
+  verifyCombo('npm-lib', 'oxlint-npm', { LINTER: 'oxlint', PKG_MANAGER: 'npm', SEMANTIC_RELEASE: '0' }),
   verifyCombo('cli', 'commander', { LINTER: 'eslint', CLI_FRAMEWORK: 'commander', SEMANTIC_RELEASE: '0', VITEST_PRESET: 'native' }),
   verifyCombo('cli', 'inquirer', { LINTER: 'eslint', CLI_FRAMEWORK: 'inquirer', SEMANTIC_RELEASE: '0' }),
   verifyCombo('cli', 'clack-biome', { LINTER: 'biome', CLI_FRAMEWORK: 'clack', SEMANTIC_RELEASE: '0' }),
