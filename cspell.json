@@ -95,7 +95,13 @@
     "oxfmt",
     "oxc",
     "oxlintrc",
-    "oxfmtrc"
+    "oxfmtrc",
+    "Groq",
+    "ECONNREFUSED",
+    "rspack",
+    "nsis",
+    "agentic",
+    "portier"
   ],
   "ignorePaths": [
     ".vscode/",
