@@ -56,4 +56,14 @@ describe('oxlint option', () => {
     expect(existsSync(join(tmpDir, 'cspell.json'))).toBe(true);
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(false);
   });
+
+  it('uses oxlint/oxfmt scripts and the format+lint lint-staged commands', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { LINTER: 'oxlint', VITEST_PRESET: 'native' });
+
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts.lint).toBe('oxlint .');
+    expect(pkg.scripts.format).toBe('oxfmt .');
+    expect(pkg['lint-staged']['**/*']).toEqual(expect.arrayContaining(['npm run format', 'npm run lint']));
+  });
 });
