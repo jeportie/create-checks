@@ -5,7 +5,7 @@ import { askCicdQuestions } from './cicd.js';
 import { askPlaywrightQuestion } from './playwright.js';
 
 export async function askCommonQuestions(projectType) {
-  let linter = process.env.LINTER === 'biome' ? 'biome' : 'eslint';
+  let linter = ['biome', 'oxlint'].includes(process.env.LINTER) ? process.env.LINTER : 'eslint';
   if (!process.env.LINTER && process.stdin.isTTY) {
     const result = await prompt([
       {
@@ -15,6 +15,7 @@ export async function askCommonQuestions(projectType) {
         choices: [
           { name: 'ESLint + Prettier', value: 'eslint' },
           { name: 'Biome', value: 'biome' },
+          { name: 'oxlint + oxfmt (fast, Rust)', value: 'oxlint' },
         ],
         default: 'eslint',
       },

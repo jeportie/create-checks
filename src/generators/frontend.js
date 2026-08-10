@@ -38,7 +38,7 @@ export async function generateFrontend(answers, cwd = process.cwd()) {
     await copyFrontendFile(file, cwd);
   }
 
-  if (answers.linter !== 'biome') {
+  if (answers.linter === 'eslint') {
     await copyFrontendFile('eslint.config.js', cwd);
   }
 }
