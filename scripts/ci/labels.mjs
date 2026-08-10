@@ -17,6 +17,10 @@ const labels = [
   ['dependencies', '0366d6', 'dependency updates'],
   ['bug', 'd73a4a', 'something is broken'],
   ['enhancement', 'a2eeef', 'feature request'],
+  ['triage:l1-do-now', '1a7f37', 'auto-fixable now — crew opens a PR'],
+  ['triage:l2-delegate', 'd4a72c', 'delegate via Jira ticket + human approval'],
+  ['triage:l3-human', 'd93f0b', 'human-only (features, UI, security, architecture)'],
+  ['triage:needs-info', '8b949e', 'unclear / out of scope / duplicate — needs a human'],
 ];
 
 for (const [name, color, description] of labels) {

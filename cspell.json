@@ -90,7 +90,14 @@
     "upstash",
     "opencode",
     "frontmatter",
-    "backlog"
+    "backlog",
+    "Jira",
+    "Groq",
+    "cron",
+    "autofix",
+    "ECONNREFUSED",
+    "oxlint",
+    "oxfmt"
   ],
   "ignorePaths": [
     ".vscode/",
