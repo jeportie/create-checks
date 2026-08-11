@@ -2,7 +2,7 @@
 
 import pc from 'picocolors';
 
-import { generateCommon } from './generators/common.js';
+import { generateCommon, ensureHkInMise } from './generators/common.js';
 import { askCommonQuestions } from './prompts/common.js';
 import { askProjectType } from './prompts/project-type.js';
 import { prompt, BACK } from './utils/prompt.js';
@@ -122,6 +122,12 @@ if (answers.projectType === 'app') {
   } catch {
     // App module is optional until feature branch is merged.
   }
+}
+
+if (answers.setupPrecommit && answers.precommitTool === 'hk') {
+  // Runs AFTER the type generator so it appends hk/pkl/[hooks] to the type's real
+  // .mise.toml (e.g. bun for elysia) instead of clobbering it with a node-only create.
+  await ensureHkInMise(process.cwd());
 }
 
 if (answers.setupPlaywright) {

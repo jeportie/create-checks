@@ -88,6 +88,15 @@ describe('hk pre-commit option', () => {
     expect(mise).toContain('[hooks]');
   });
 
+  it('hk appends to the elysia .mise.toml keeping bun instead of clobbering with node', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: 'hk', PROJECT_TYPE: 'backend', BACKEND_FRAMEWORK: 'elysia' });
+    const mise = readFileSync(join(tmpDir, '.mise.toml'), 'utf-8');
+    expect(mise).toContain('bun =');
+    expect(mise).toContain('hk = "1.40.0"');
+    expect(mise).toContain('[hooks]');
+  });
+
   it('hk includes a spellcheck step when cspell is selected', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { SETUP_PRECOMMIT: 'hk', LINT_OPTIONS: 'cspell' });

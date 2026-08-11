@@ -31,7 +31,7 @@ function renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }) {
   return pkl + '\n}\n';
 }
 
-async function ensureHkInMise(cwd, nodeVersion = '22') {
+export async function ensureHkInMise(cwd, nodeVersion = '22') {
   const misePath = path.join(cwd, '.mise.toml');
   // Build line-by-line and join with newlines so the source never glues a "\n"
   // onto a following word (which would create a bogus cspell token).
@@ -272,7 +272,8 @@ export async function generateCommon(answers, cwd = process.cwd()) {
         await fs.writeFile(hkDest, renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }));
         console.log(pc.green('✔') + '    hk.pkl');
       }
-      await ensureHkInMise(cwd);
+      // .mise.toml (hk + pkl + [hooks]) is ensured after the type generator runs — see src/index.js
+      // so it appends to the type's real .mise.toml (e.g. bun for elysia) instead of clobbering it.
     } else {
       const huskyDir = path.join(cwd, '.husky');
       await fs.ensureDir(huskyDir);
