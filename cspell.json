@@ -101,7 +101,14 @@
     "rspack",
     "nsis",
     "agentic",
-    "portier"
+    "portier",
+    "Jira",
+    "cron",
+    "autofix",
+    "Slack",
+    "Gmail",
+    "Obsidian",
+    "OAuth"
   ],
   "ignorePaths": [
     ".vscode/",

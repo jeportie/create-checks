@@ -3,6 +3,7 @@ import { execa } from 'execa';
 import { prompt } from '../utils/prompt.js';
 import { askCicdQuestions } from './cicd.js';
 import { askPlaywrightQuestion } from './playwright.js';
+import { askAgentCrewQuestion } from './agentCrew.js';
 
 export async function askCommonQuestions(projectType) {
   let linter = ['biome', 'oxlint'].includes(process.env.LINTER) ? process.env.LINTER : 'eslint';
@@ -70,6 +71,7 @@ export async function askCommonQuestions(projectType) {
   }
 
   const { setupPlaywright } = await askPlaywrightQuestion(projectType);
+  const { includeAgentCrew } = await askAgentCrewQuestion();
 
   let setupPrecommit = true;
   if (process.env.SETUP_PRECOMMIT === '1') {
@@ -161,6 +163,7 @@ export async function askCommonQuestions(projectType) {
     lintOption,
     vitestPreset,
     setupPlaywright,
+    includeAgentCrew,
     ...cicdAnswers,
     setupPrecommit,
     authorName,
