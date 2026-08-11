@@ -76,4 +76,22 @@ describe('oxlint option', () => {
     expect(readme).toMatch(/oxfmt/i);
     expect(readme).not.toMatch(/ESLint|Prettier/);
   });
+
+  it('keeps oxlint standalone for the frontend project type', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { LINTER: 'oxlint', PROJECT_TYPE: 'frontend' });
+
+    expect(existsSync(join(tmpDir, '.oxlintrc.json'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(false);
+    expect(existsSync(join(tmpDir, 'prettier.config.js'))).toBe(false);
+  });
+
+  it('keeps oxlint standalone for the app project type', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { LINTER: 'oxlint', PROJECT_TYPE: 'app', EXPO_WORKFLOW: 'managed' });
+
+    expect(existsSync(join(tmpDir, '.oxlintrc.json'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(false);
+    expect(existsSync(join(tmpDir, 'prettier.config.js'))).toBe(false);
+  });
 });
