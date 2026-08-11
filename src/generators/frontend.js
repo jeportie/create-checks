@@ -5,6 +5,7 @@ import path from 'node:path';
 import { copyIfMissing, templatePath } from '../utils/file-system.js';
 
 const FRONTEND_FILES = [
+  '.nvmrc',
   'index.html',
   'vite.config.ts',
   'vitest.config.ts',
