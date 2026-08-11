@@ -67,4 +67,24 @@ describe('hk pre-commit option', () => {
     const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
     expect(pkg.scripts.prepare).toBe('husky');
   });
+
+  it('hk ensures a .mise.toml pinning hk with a postinstall hook (type without mise)', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: 'hk', PROJECT_TYPE: 'npm-lib' });
+    expect(existsSync(join(tmpDir, '.mise.toml'))).toBe(true);
+    const mise = readFileSync(join(tmpDir, '.mise.toml'), 'utf-8');
+    expect(mise).toContain('hk = "1.40.0"');
+    expect(mise).toContain('pkl = "0.31.1"');
+    expect(mise).toContain('[hooks]');
+    expect(mise).toContain('hk install');
+  });
+
+  it('hk extends an existing .mise.toml (backend/cli) without dropping node', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: 'hk', PROJECT_TYPE: 'cli', CLI_FRAMEWORK: 'commander' });
+    const mise = readFileSync(join(tmpDir, '.mise.toml'), 'utf-8');
+    expect(mise).toContain('node =');
+    expect(mise).toContain('hk = "1.40.0"');
+    expect(mise).toContain('[hooks]');
+  });
 });

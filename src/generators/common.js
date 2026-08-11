@@ -29,6 +29,28 @@ function renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }) {
   return pkl + '\n}\n';
 }
 
+async function ensureHkInMise(cwd, nodeVersion = '22') {
+  const misePath = path.join(cwd, '.mise.toml');
+  // Build line-by-line and join with newlines so the source never glues a "\n"
+  // onto a following word (which would create a bogus cspell token).
+  const toolPins = ['hk = "1.40.0"', 'pkl = "0.31.1"'];
+  const hooksBlock = ['[hooks]', 'postinstall = "hk install --mise"'];
+  if (await fs.pathExists(misePath)) {
+    const content = (await fs.readFile(misePath, 'utf-8')).trimEnd();
+    if (!content.includes('hk =')) {
+      // existing templates are a single [tools] section, so appending the two
+      // tool pins keeps them under [tools], then [hooks] follows.
+      const lines = [content, ...toolPins, '', ...hooksBlock];
+      await fs.writeFile(misePath, `${lines.join('\n')}\n`);
+      console.log(pc.green('✔') + '    .mise.toml (+ hk)');
+    }
+  } else {
+    const lines = ['[tools]', `node = "${nodeVersion}"`, ...toolPins, '', ...hooksBlock];
+    await fs.writeFile(misePath, `${lines.join('\n')}\n`);
+    console.log(pc.green('✔') + '    .mise.toml');
+  }
+}
+
 async function ensurePackageJson(pkgPath) {
   if (!(await fs.pathExists(pkgPath))) {
     console.log(pc.red('\n⨯'), pc.yellow(' No package.json found — running npm init -y...'));
@@ -248,7 +270,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
         await fs.writeFile(hkDest, renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }));
         console.log(pc.green('✔') + '    hk.pkl');
       }
-      // .mise.toml (hk + pkl + postinstall) is ensured in Task 2's ensureHkInMise(cwd)
+      await ensureHkInMise(cwd);
     } else {
       const huskyDir = path.join(cwd, '.husky');
       await fs.ensureDir(huskyDir);
