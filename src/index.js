@@ -133,6 +133,15 @@ if (answers.setupPlaywright) {
   }
 }
 
+if (answers.includeAgentCrew) {
+  try {
+    const { generateAgentCrew } = await import('./generators/agentCrew.js');
+    await generateAgentCrew(answers, process.cwd());
+  } catch {
+    // Agent crew module is optional.
+  }
+}
+
 await offerReadmePreview(process.cwd());
 
 console.log(pc.green('\n✅ Done!\n'));
