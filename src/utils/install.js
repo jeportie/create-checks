@@ -55,7 +55,7 @@ export async function installDeps(answers, options = {}) {
   if (linter === 'biome') {
     devDeps.push('@biomejs/biome');
   } else if (linter === 'oxlint') {
-    devDeps.push('oxlint@^1.51.0', 'oxfmt@^0.36.0');
+    devDeps.push('oxlint@~1.51.0', 'oxfmt@^0.36.0');
   } else {
     devDeps.push(
       'eslint@^9',
