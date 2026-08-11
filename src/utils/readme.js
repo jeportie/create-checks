@@ -196,6 +196,8 @@ function getQualityStackLabel(answers) {
   const tools = ['TypeScript (strict)'];
   if (answers.linter === 'biome') {
     tools.push('Biome');
+  } else if (answers.linter === 'oxlint') {
+    tools.push('oxlint', 'oxfmt');
   } else {
     tools.push('ESLint', 'Prettier');
   }
@@ -651,8 +653,8 @@ function renderBackendTestingSection(answers, framework) {
 
 function renderBackendQualitySection(answers) {
   const checks = [
-    answers.linter === 'biome' ? 'biome format --write .' : 'prettier . --write',
-    answers.linter === 'biome' ? 'biome check .' : 'eslint .',
+    answers.linter === 'biome' ? 'biome format --write .' : answers.linter === 'oxlint' ? 'oxfmt .' : 'prettier . --write',
+    answers.linter === 'biome' ? 'biome check .' : answers.linter === 'oxlint' ? 'oxlint .' : 'eslint .',
     'tsc --noEmit',
   ];
 
@@ -761,6 +763,9 @@ function renderBackendProjectStructure(answers) {
 
   if (answers.linter === 'biome') {
     lines.push('biome.json                # Biome config');
+  } else if (answers.linter === 'oxlint') {
+    lines.push('.oxlintrc.json            # oxlint config');
+    lines.push('.oxfmtrc.json             # oxfmt config');
   } else {
     lines.push('eslint.config.js          # ESLint config');
     lines.push('prettier.config.js        # Prettier config');
@@ -783,8 +788,8 @@ function renderBackendScriptsReference(answers, engineInfo) {
   rows.push('| `npm run build` | Compile TypeScript output |');
   rows.push('| `npm start` | Run compiled build |');
   rows.push('| `npm run check` | Run full quality gate |');
-  rows.push(`| \`npm run format\` | Format code with ${answers.linter === 'biome' ? 'Biome' : 'Prettier'} |`);
-  rows.push(`| \`npm run lint\` | Lint with ${answers.linter === 'biome' ? 'Biome' : 'ESLint'} |`);
+  rows.push(`| \`npm run format\` | Format code with ${answers.linter === 'biome' ? 'Biome' : answers.linter === 'oxlint' ? 'oxfmt' : 'Prettier'} |`);
+  rows.push(`| \`npm run lint\` | Lint with ${answers.linter === 'biome' ? 'Biome' : answers.linter === 'oxlint' ? 'oxlint' : 'ESLint'} |`);
   rows.push('| `npm run typecheck` | Run TypeScript type checks |');
 
   if (answers.lintOption?.includes('cspell')) rows.push('| `npm run spellcheck` | Spell-check project files |');
@@ -867,6 +872,8 @@ function renderBackendTools(answers, framework) {
 
   if (answers.linter === 'biome') {
     tools.push('- **[Biome](https://biomejs.dev/)** — linting and formatting');
+  } else if (answers.linter === 'oxlint') {
+    tools.push('- **[oxlint](https://oxc.rs/)** + **[oxfmt](https://oxc.rs/)** — fast Rust-based linting and formatting');
   } else {
     tools.push('- **[ESLint](https://eslint.org/)** + **[Prettier](https://prettier.io/)** — linting and formatting');
   }
@@ -1229,7 +1236,12 @@ function getTestStack(answers) {
 
 function getQualityStack(answers) {
   const { lintOption = [] } = answers;
-  const tools = answers.linter === 'biome' ? ['TypeScript', 'Biome'] : ['TypeScript', 'ESLint', 'Prettier'];
+  const tools =
+    answers.linter === 'biome'
+      ? ['TypeScript', 'Biome']
+      : answers.linter === 'oxlint'
+        ? ['TypeScript', 'oxlint', 'oxfmt']
+        : ['TypeScript', 'ESLint', 'Prettier'];
   if (lintOption.includes('cspell')) tools.push('CSpell');
   if (lintOption.includes('secretlint')) tools.push('Secretlint');
   if (lintOption.includes('commitlint')) tools.push('Commitlint');
@@ -1613,6 +1625,14 @@ function getEslintPlaybook(answers) {
 
   if (answers.linter === 'biome') {
     return `### Biome\n\nBiome replaces ESLint + Prettier with a single fast toolchain for linting and formatting.\n\n${codeBlock('bash', 'npm run lint\nnpm run format')}`;
+  }
+
+  if (answers.linter === 'oxlint') {
+    return (
+      `### oxlint + oxfmt\n\n` +
+      `oxlint and oxfmt are fast Rust-based tools that handle linting and formatting in a single toolchain.\n\n` +
+      codeBlock('bash', 'npm run lint\nnpm run format')
+    );
   }
 
   const contextMap = {
@@ -2257,6 +2277,8 @@ function getToolsSection(answers) {
   tools.push('- **TypeScript** \u2014 strict type checking');
   if (answers.linter === 'biome') {
     tools.push('- **Biome** \u2014 linting and formatting');
+  } else if (answers.linter === 'oxlint') {
+    tools.push('- **oxlint + oxfmt** \u2014 fast Rust-based linting and formatting');
   } else {
     tools.push('- **ESLint** v9 + **Prettier** \u2014 code quality and formatting');
   }
@@ -4199,8 +4221,10 @@ function getScriptsTable(answers) {
   rows.push('| Script | Description |');
   rows.push('| --- | --- |');
   rows.push('| `npm run check` | Run all quality checks |');
-  rows.push(`| \`npm run format\` | Format code with ${linter === 'biome' ? 'Biome' : 'Prettier'} |`);
-  rows.push(`| \`npm run lint\` | Lint with ${linter === 'biome' ? 'Biome' : 'ESLint'} |`);
+  const fmtTool = linter === 'biome' ? 'Biome' : linter === 'oxlint' ? 'oxfmt' : 'Prettier';
+  const lintTool = linter === 'biome' ? 'Biome' : linter === 'oxlint' ? 'oxlint' : 'ESLint';
+  rows.push(`| \`npm run format\` | Format code with ${fmtTool} |`);
+  rows.push(`| \`npm run lint\` | Lint with ${lintTool} |`);
   rows.push('| `npm run typecheck` | Type-check with TypeScript |');
 
   if (lintOption.includes('cspell')) rows.push('| `npm run spellcheck` | Check spelling |');

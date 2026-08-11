@@ -54,7 +54,7 @@ export async function generateApp(answers, cwd) {
     await copyAppFile(file, cwd, { overwrite: APP_OVERWRITE_FILES.has(file) });
   }
 
-  if (answers.linter !== 'biome') {
+  if (answers.linter === 'eslint') {
     await copyAppFile('eslint.config.js', cwd, { overwrite: true });
   }
 

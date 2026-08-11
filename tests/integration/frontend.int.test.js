@@ -38,6 +38,13 @@ describe('frontend starter scaffold', () => {
     expect(existsSync(join(tmpDir, 'vitest.config.ts'))).toBe(true);
   });
 
+  it('pins Node 22 via .nvmrc', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir);
+    expect(existsSync(join(tmpDir, '.nvmrc'))).toBe(true);
+    expect(readFileSync(join(tmpDir, '.nvmrc'), 'utf-8').trim()).toBe('22');
+  });
+
   it('creates frontend TypeScript configs', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);

@@ -54,6 +54,8 @@ export async function installDeps(answers, options = {}) {
 
   if (linter === 'biome') {
     devDeps.push('@biomejs/biome');
+  } else if (linter === 'oxlint') {
+    devDeps.push('oxlint@~1.51.0', 'oxfmt@^0.36.0');
   } else {
     devDeps.push(
       'eslint@^9',
@@ -72,7 +74,7 @@ export async function installDeps(answers, options = {}) {
   }
 
   if (lintOption.includes('cspell')) {
-    if (linter !== 'biome') {
+    if (linter === 'eslint') {
       devDeps.push('@cspell/eslint-plugin');
     }
     devDeps.push('cspell@^8');

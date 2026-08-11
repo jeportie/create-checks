@@ -91,8 +91,8 @@ export function buildScripts(pkg, answers) {
   pkg.scripts = {
     ...pkg.scripts,
     check: checkParts.join(' && '),
-    format: linter === 'biome' ? 'biome format --write .' : 'prettier . --write',
-    lint: linter === 'biome' ? 'biome check .' : 'eslint .',
+    format: linter === 'biome' ? 'biome format --write .' : linter === 'oxlint' ? 'oxfmt .' : 'prettier . --write',
+    lint: linter === 'biome' ? 'biome check .' : linter === 'oxlint' ? 'oxlint .' : 'eslint .',
     typecheck: projectType === 'frontend' ? 'tsc -b' : 'tsc --noEmit',
   };
 

@@ -123,12 +123,16 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   if (linter === 'biome') {
     await fs.copyFile(templatePath('common', 'biome.json'), path.join(cwd, 'biome.json'));
     console.log(pc.green('✔') + '    biome.json');
+  } else if (linter === 'oxlint') {
+    await fs.copyFile(templatePath('common', '.oxlintrc.json'), path.join(cwd, '.oxlintrc.json'));
+    await fs.copyFile(templatePath('common', '.oxfmtrc.json'), path.join(cwd, '.oxfmtrc.json'));
+    console.log(pc.green('✔') + '    .oxlintrc.json + .oxfmtrc.json');
   } else {
     await fs.copyFile(templatePath('common', 'prettier.config.js'), path.join(cwd, 'prettier.config.js'));
     console.log(pc.green('✔') + '    prettier.config.js');
   }
 
-  if (!isFrontend && !isApp && linter !== 'biome') {
+  if (!isFrontend && !isApp && linter === 'eslint') {
     const eslintTemplate = lintOption.includes('cspell') ? 'eslintCspell.config.js' : 'eslint.config.js';
     await fs.copyFile(templatePath('common', eslintTemplate), path.join(cwd, 'eslint.config.js'));
     console.log(pc.green('✔') + '    eslint.config.js');
@@ -193,7 +197,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   await copyIfMissing(templatePath('common', '.editorconfig'), path.join(cwd, '.editorconfig'), '.editorconfig');
   await copyIfMissing(templatePath('common', '_gitignore'), path.join(cwd, '.gitignore'), '.gitignore');
-  if (linter !== 'biome') {
+  if (linter === 'eslint') {
     await copyIfMissing(
       templatePath('common', '.prettierignore'),
       path.join(cwd, '.prettierignore'),
