@@ -532,15 +532,35 @@ chore: upgrade eslint to v9
 
 ## Development
 
-Node.js 20+ required. Run `npm install` after cloning.
+Node.js 22+ required — `.nvmrc` pins the version, so let nvm, mise, or fnm match it. Install dependencies with `npm ci` after cloning.
+
+### Run the checks
+
+Reproduce the CI gates locally before opening a PR:
+
+```sh
+npm run check       # lint + secretlint + spellcheck + tests (the `checks` gate)
+npm run e2e:gen     # no-network scaffold smoke test (the `e2e-gen` gate)
+```
 
 ### Run tests
 
 ```sh
-npm test                  # all 262 integration tests
+npm test                  # full test suite (vitest --run)
 npm run test:integration  # integration tests only
 npm run test:coverage     # with coverage report
 ```
+
+### Try the CLI locally
+
+The generator writes into the current working directory, so run it from an empty scratch directory — **never the repo root**, or it will scaffold on top of this project:
+
+```sh
+mkdir -p /tmp/tskickstart-play && cd /tmp/tskickstart-play
+node /path/to/tskickstart/src/index.js
+```
+
+To drive it without prompts, set the environment variables from the **Non-interactive / CI usage** section above (for example `PROJECT_TYPE=frontend NO_INSTALL=1`).
 
 ### Project structure
 
