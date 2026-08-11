@@ -31,6 +31,7 @@ const CREW_FILES = [
   '.claude/agents/review.md',
   '.claude/agents/quality.md',
   '.claude/agents/triage.md',
+  '.claude/skills/onboard-company/SKILL.md',
 ];
 
 describe('agent crew generator', () => {

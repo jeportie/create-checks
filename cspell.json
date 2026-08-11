@@ -97,7 +97,11 @@
     "autofix",
     "ECONNREFUSED",
     "oxlint",
-    "oxfmt"
+    "oxfmt",
+    "Slack",
+    "Gmail",
+    "Obsidian",
+    "OAuth"
   ],
   "ignorePaths": [
     ".vscode/",
