@@ -11,7 +11,9 @@ import { buildScripts, orderPackageKeys } from '../utils/scripts.js';
 
 function renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }) {
   const step = (id, cmd) => `      ["${id}"] {\n        check = "${cmd}"\n      }`;
-  const pre = [step('format', 'npm run format'), step('lint', 'npm run lint'), step('typecheck', 'npm run typecheck')];
+  const pre = [step('format', 'npm run format'), step('lint', 'npm run lint')];
+  if (lintOption.includes('cspell')) pre.push(step('spellcheck', 'npm run spellcheck'));
+  pre.push(step('typecheck', 'npm run typecheck'));
   if (lintOption.includes('secretlint')) pre.push(step('secretlint', 'npm run secretlint'));
   if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
     pre.push(step('test', 'npm run test'));

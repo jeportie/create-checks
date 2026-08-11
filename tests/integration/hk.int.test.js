@@ -87,4 +87,18 @@ describe('hk pre-commit option', () => {
     expect(mise).toContain('hk = "1.40.0"');
     expect(mise).toContain('[hooks]');
   });
+
+  it('hk includes a spellcheck step when cspell is selected', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: 'hk', LINT_OPTIONS: 'cspell' });
+    const pkl = readFileSync(join(tmpDir, 'hk.pkl'), 'utf-8');
+    expect(pkl).toContain('npm run spellcheck');
+  });
+
+  it('hk omits the spellcheck step when cspell is not selected', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: 'hk' });
+    const pkl = readFileSync(join(tmpDir, 'hk.pkl'), 'utf-8');
+    expect(pkl).not.toContain('npm run spellcheck');
+  });
 });
