@@ -669,7 +669,11 @@ function renderBackendQualitySection(answers) {
 
   if (answers.setupPrecommit) {
     lines.push('', '### Pre-commit hooks', '');
-    lines.push('- `pre-commit`: lint-staged + typecheck + tests');
+    if (answers.precommitTool === 'hk') {
+      lines.push('- `pre-commit`: format + lint + typecheck (via hk)');
+    } else {
+      lines.push('- `pre-commit`: lint-staged + typecheck + tests');
+    }
     if (answers.lintOption?.includes('commitlint')) {
       lines.push('- `commit-msg`: commitlint validation for Conventional Commits');
     }
@@ -741,10 +745,15 @@ function renderBackendProjectStructure(answers) {
   }
 
   if (answers.setupPrecommit) {
-    lines.push('.husky/');
-    lines.push('  pre-commit              # lint-staged + typecheck + tests');
-    if (answers.lintOption?.includes('commitlint')) {
-      lines.push('  commit-msg              # commitlint validation');
+    if (answers.precommitTool === 'hk') {
+      lines.push('hk.pkl                    # hk git-hook config');
+      lines.push('.mise.toml                # tool versions + hk install hook');
+    } else {
+      lines.push('.husky/');
+      lines.push('  pre-commit              # lint-staged + typecheck + tests');
+      if (answers.lintOption?.includes('commitlint')) {
+        lines.push('  commit-msg              # commitlint validation');
+      }
     }
   }
 
@@ -891,7 +900,11 @@ function renderBackendTools(answers, framework) {
   }
 
   if (answers.setupPrecommit) {
-    tools.push('- **[Husky](https://typicode.github.io/husky/)** — Git hooks');
+    if (answers.precommitTool === 'hk') {
+      tools.push('- **[hk](https://github.com/jdx/hk)** — Git hooks (installed via mise)');
+    } else {
+      tools.push('- **[Husky](https://typicode.github.io/husky/)** — Git hooks');
+    }
   }
 
   if (answers.setupDocker) {

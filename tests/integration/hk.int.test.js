@@ -110,4 +110,15 @@ describe('hk pre-commit option', () => {
     const pkl = readFileSync(join(tmpDir, 'hk.pkl'), 'utf-8');
     expect(pkl).not.toContain('npm run spellcheck');
   });
+
+  it('describes hk + mise in the generated README (not husky) for hk projects', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: 'hk' });
+    const readme = readFileSync(join(tmpDir, 'README.md'), 'utf-8');
+    expect(readme).toContain('hk.pkl');
+    expect(readme).toMatch(/mise install/);
+    expect(readme).not.toContain('.husky/');
+    expect(readme).not.toContain('lint-staged');
+    expect(readme).not.toMatch(/Husky/);
+  });
 });
