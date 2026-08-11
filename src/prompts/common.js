@@ -74,20 +74,30 @@ export async function askCommonQuestions(projectType) {
   const { includeAgentCrew } = await askAgentCrewQuestion();
 
   let setupPrecommit = true;
-  if (process.env.SETUP_PRECOMMIT === '1') {
-    setupPrecommit = true;
-  } else if (process.env.SETUP_PRECOMMIT === '0') {
+  let precommitTool = 'husky';
+  const sp = process.env.SETUP_PRECOMMIT;
+  if (sp === '0') {
     setupPrecommit = false;
-  } else if (process.stdin.isTTY) {
+  } else if (sp === 'hk') {
+    precommitTool = 'hk';
+  } else if (sp === '1' || sp === 'husky') {
+    precommitTool = 'husky';
+  } else if (sp === undefined && process.stdin.isTTY) {
     const result = await prompt([
       {
-        type: 'confirm',
-        name: 'setupPrecommit',
-        message: 'Do you want to set up pre-commit hook (husky + lint-staged)?',
-        default: true,
+        type: 'list',
+        name: 'precommit',
+        message: 'Pre-commit hooks?',
+        choices: [
+          { name: 'Husky + lint-staged', value: 'husky' },
+          { name: 'hk (Ledger-style, needs mise)', value: 'hk' },
+          { name: 'None', value: 'none' },
+        ],
+        default: 'husky',
       },
     ]);
-    setupPrecommit = result.setupPrecommit;
+    if (result.precommit === 'none') setupPrecommit = false;
+    else precommitTool = result.precommit;
   }
 
   const cicdAnswers = await askCicdQuestions(projectType);
@@ -166,6 +176,7 @@ export async function askCommonQuestions(projectType) {
     includeAgentCrew,
     ...cicdAnswers,
     setupPrecommit,
+    precommitTool,
     authorName,
     captureSecrets,
     secretValues,

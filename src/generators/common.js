@@ -9,6 +9,26 @@ import { installDeps } from '../utils/install.js';
 import { writeReadme } from '../utils/readme.js';
 import { buildScripts, orderPackageKeys } from '../utils/scripts.js';
 
+function renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }) {
+  const step = (id, cmd) => `      ["${id}"] {\n        check = "${cmd}"\n      }`;
+  const pre = [step('format', 'npm run format'), step('lint', 'npm run lint'), step('typecheck', 'npm run typecheck')];
+  if (lintOption.includes('secretlint')) pre.push(step('secretlint', 'npm run secretlint'));
+  if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+    pre.push(step('test', 'npm run test'));
+  }
+  let pkl =
+    'amends "package://github.com/jdx/hk/releases/download/v1.40.0/hk@1.40.0#/Config.pkl"\n\n' +
+    'hooks {\n  ["pre-commit"] {\n    steps {\n' +
+    pre.join('\n') +
+    '\n    }\n  }';
+  if (lintOption.includes('commitlint')) {
+    pkl +=
+      '\n  ["commit-msg"] {\n    steps {\n      ["commitlint"] {\n' +
+      '        check = "npx commitlint --edit {{ commit_msg_file }}"\n      }\n    }\n  }';
+  }
+  return pkl + '\n}\n';
+}
+
 async function ensurePackageJson(pkgPath) {
   if (!(await fs.pathExists(pkgPath))) {
     console.log(pc.red('\n⨯'), pc.yellow(' No package.json found — running npm init -y...'));
@@ -95,7 +115,15 @@ async function bootstrapEnvFiles(cwd, answers) {
 
 export async function generateCommon(answers, cwd = process.cwd()) {
   const pkgPath = path.join(cwd, 'package.json');
-  const { lintOption = [], vitestPreset, setupPrecommit = true, authorName, projectType, linter = 'eslint' } = answers;
+  const {
+    lintOption = [],
+    vitestPreset,
+    setupPrecommit = true,
+    precommitTool = 'husky',
+    authorName,
+    projectType,
+    linter = 'eslint',
+  } = answers;
   const isFrontend = projectType === 'frontend';
   const isApp = projectType === 'app';
 
@@ -214,24 +242,33 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   }
 
   if (setupPrecommit) {
-    const huskyDir = path.join(cwd, '.husky');
-    await fs.ensureDir(huskyDir);
-
-    const preCommitDest = path.join(huskyDir, 'pre-commit');
-    if (!(await fs.pathExists(preCommitDest))) {
-      const lines = ['npx lint-staged', 'npm run typecheck'];
-      if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
-        lines.push('npm run test');
+    if (precommitTool === 'hk') {
+      const hkDest = path.join(cwd, 'hk.pkl');
+      if (!(await fs.pathExists(hkDest))) {
+        await fs.writeFile(hkDest, renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }));
+        console.log(pc.green('✔') + '    hk.pkl');
       }
-      await fs.writeFile(preCommitDest, `${lines.join('\n')}\n`);
-      console.log(pc.green('✔') + '    .husky/pre-commit');
+      // .mise.toml (hk + pkl + postinstall) is ensured in Task 2's ensureHkInMise(cwd)
     } else {
-      console.log(pc.dim('–') + '    .husky/pre-commit (already exists, skipped)');
-    }
+      const huskyDir = path.join(cwd, '.husky');
+      await fs.ensureDir(huskyDir);
 
-    if (lintOption.includes('commitlint')) {
-      const commitMsgDest = path.join(huskyDir, 'commit-msg');
-      await copyIfMissing(templatePath('common', '.husky/commit-msg'), commitMsgDest, '.husky/commit-msg');
+      const preCommitDest = path.join(huskyDir, 'pre-commit');
+      if (!(await fs.pathExists(preCommitDest))) {
+        const lines = ['npx lint-staged', 'npm run typecheck'];
+        if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+          lines.push('npm run test');
+        }
+        await fs.writeFile(preCommitDest, `${lines.join('\n')}\n`);
+        console.log(pc.green('✔') + '    .husky/pre-commit');
+      } else {
+        console.log(pc.dim('–') + '    .husky/pre-commit (already exists, skipped)');
+      }
+
+      if (lintOption.includes('commitlint')) {
+        const commitMsgDest = path.join(huskyDir, 'commit-msg');
+        await copyIfMissing(templatePath('common', '.husky/commit-msg'), commitMsgDest, '.husky/commit-msg');
+      }
     }
   }
 
