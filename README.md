@@ -553,14 +553,15 @@ npm run test:coverage     # with coverage report
 
 ### Try the CLI locally
 
-The generator writes into the current working directory, so run it from an empty scratch directory — **never the repo root**, or it will scaffold on top of this project:
+`npm run try:cli` scaffolds into a fresh throwaway temp dir and prints its path, so you can eyeball generator output without touching the repo:
 
 ```sh
-mkdir -p /tmp/tskickstart-play && cd /tmp/tskickstart-play
-node /path/to/tskickstart/src/index.js
+npm run try:cli                                      # interactive wizard
+NO_INSTALL=1 npm run try:cli                         # skip the dependency install (fast)
+PROJECT_TYPE=frontend NO_INSTALL=1 npm run try:cli   # non-interactive
 ```
 
-To drive it without prompts, set the environment variables from the **Non-interactive / CI usage** section above (for example `PROJECT_TYPE=frontend NO_INSTALL=1`).
+Under the hood it just runs the CLI from a temp directory. The generator writes into the current working directory, so running `node src/index.js` in the repo root would scaffold on top of this project — the script sidesteps that. Environment variables (see **Non-interactive / CI usage** above) pass straight through.
 
 ### Project structure
 
