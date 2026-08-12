@@ -532,15 +532,36 @@ chore: upgrade eslint to v9
 
 ## Development
 
-Node.js 20+ required. Run `npm install` after cloning.
+Node.js 22+ required — `.nvmrc` pins the version, so let nvm, mise, or fnm match it. Install dependencies with `npm ci` after cloning.
+
+### Run the checks
+
+Reproduce the CI gates locally before opening a PR:
+
+```sh
+npm run check       # lint + secretlint + spellcheck + tests (the `checks` gate)
+npm run e2e:gen     # no-network scaffold smoke test (the `e2e-gen` gate)
+```
 
 ### Run tests
 
 ```sh
-npm test                  # all 262 integration tests
+npm test                  # full test suite (vitest --run)
 npm run test:integration  # integration tests only
 npm run test:coverage     # with coverage report
 ```
+
+### Try the CLI locally
+
+`npm run try:cli` scaffolds into a fresh throwaway temp dir and prints its path, so you can eyeball generator output without touching the repo:
+
+```sh
+npm run try:cli                                      # interactive wizard
+NO_INSTALL=1 npm run try:cli                         # skip the dependency install (fast)
+PROJECT_TYPE=frontend NO_INSTALL=1 npm run try:cli   # non-interactive
+```
+
+Under the hood it just runs the CLI from a temp directory. The generator writes into the current working directory, so running `node src/index.js` in the repo root would scaffold on top of this project — the script sidesteps that. Environment variables (see **Non-interactive / CI usage** above) pass straight through.
 
 ### Project structure
 
