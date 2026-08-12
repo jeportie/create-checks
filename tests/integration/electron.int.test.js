@@ -76,4 +76,17 @@ describe('electron project type', () => {
     expect(pkg.main).toBe('out/main/index.js');
     expect(pkg.main).not.toBe('src/main.ts');
   });
+
+  it('copies eslint.config.js when LINTER=eslint is selected', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { LINTER: 'eslint' });
+    expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(true);
+  });
+
+  it('uses oxlint config with no eslint.config.js when LINTER=oxlint', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { LINTER: 'oxlint' });
+    expect(existsSync(join(tmpDir, '.oxlintrc.json'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(false);
+  });
 });

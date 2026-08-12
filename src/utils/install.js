@@ -130,6 +130,10 @@ export async function installDeps(answers, options = {}) {
     );
   }
 
+  if (projectType === 'electron' && linter === 'eslint') {
+    devDeps.push('eslint-plugin-react-hooks', 'eslint-plugin-react-refresh', 'globals');
+  }
+
   if (projectType === 'npm-lib') {
     devDeps.push('tsup');
     if (answers.setupSemanticRelease) {

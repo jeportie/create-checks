@@ -31,4 +31,7 @@ export async function generateElectron(answers, cwd = process.cwd()) {
   for (const file of ELECTRON_FILES) {
     await copyElectronFile(file, cwd);
   }
+  if (answers.linter === 'eslint') {
+    await copyElectronFile('eslint.config.js', cwd);
+  }
 }
