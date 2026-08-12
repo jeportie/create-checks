@@ -117,6 +117,15 @@ describe('app project scaffold', () => {
     expect(content).toContain('legacy-peer-deps=true');
   });
 
+  // #86: npm strips a real `.npmrc` from the published tarball, so the template
+  // must ship as `_npmrc` (mirroring `_gitignore`) or the published CLI scaffolds
+  // an app with no `.npmrc` and later crashes with ENOENT.
+  it('ships the npmrc template as _npmrc so npm does not strip it on publish', () => {
+    const templateDir = resolve(__dirname, '../../src/templates/app');
+    expect(existsSync(join(templateDir, '_npmrc'))).toBe(true);
+    expect(existsSync(join(templateDir, '.npmrc'))).toBe(false);
+  });
+
   it('adds expo start script', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir);
