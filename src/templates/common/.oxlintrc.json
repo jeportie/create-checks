@@ -3,7 +3,7 @@
   "env": { "node": true, "browser": true },
   "plugins": ["eslint", "typescript", "import", "unicorn", "oxc", "react", "jsx-a11y"],
   "categories": { "correctness": "error", "suspicious": "warn", "pedantic": "off" },
-  "ignorePatterns": ["node_modules", "dist", "coverage"],
+  "ignorePatterns": ["node_modules", "dist", "out", "coverage"],
   "rules": {
     "eslint/no-unused-vars": "warn",
     "eslint/no-empty-pattern": "warn",
