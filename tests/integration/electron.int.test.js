@@ -97,4 +97,12 @@ describe('electron project type', () => {
     expect(pkl).toContain('"pre-commit"');
     expect(pkl).not.toContain('npm run test');
   });
+
+  it('ships no vitest, so package.json omits the test script and check does not chain it', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { VITEST_PRESET: 'native' });
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts.test).toBeUndefined();
+    expect(pkg.scripts.check).not.toContain('npm run test');
+  });
 });

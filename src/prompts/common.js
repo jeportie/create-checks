@@ -42,7 +42,7 @@ export async function askCommonQuestions(projectType) {
   }
 
   let vitestPreset = process.env.VITEST_PRESET;
-  if (projectType === 'app') {
+  if (projectType === 'app' || projectType === 'electron') {
     vitestPreset = undefined;
   } else if (!vitestPreset && process.stdin.isTTY) {
     const { setupVitest } = await prompt([
