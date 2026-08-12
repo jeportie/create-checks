@@ -1210,6 +1210,7 @@ function getProjectTitle(answers) {
     cli: 'CLI Tool',
     'npm-lib': 'NPM Library',
     app: 'Mobile Application',
+    electron: 'Electron Desktop App',
   };
   return titles[projectType] || 'Project';
 }
@@ -1218,6 +1219,7 @@ function getPrimaryFramework(answers) {
   const { projectType, backendFramework, cliFramework } = answers;
 
   if (projectType === 'frontend') return 'React + Vite + Tailwind CSS';
+  if (projectType === 'electron') return 'Electron + Vite + React';
   if (projectType === 'backend') {
     const fw = { hono: 'Hono', fastify: 'Fastify', express: 'Express', elysia: 'Elysia (Bun)' };
     return fw[backendFramework] || 'Hono';
@@ -1453,6 +1455,9 @@ function getBuild(answers) {
 
   if (projectType === 'frontend') {
     return '```bash\nnpm run build\n```\n\nType-checks and builds for production with Vite. Output in `dist/`.';
+  }
+  if (projectType === 'electron') {
+    return '```bash\nnpm run build\n```\n\nBundles the main, preload, and renderer processes with electron-vite. Output in `out/`.';
   }
   if (projectType === 'backend') {
     return '```bash\nnpm run build\n```\n\nCompiles TypeScript to `dist/`. Run with `npm start`.';
@@ -2267,6 +2272,7 @@ function getToolsSection(answers) {
   const tools = [];
 
   if (projectType === 'frontend') tools.push('- **React** + **Vite** + **Tailwind CSS v4**');
+  if (projectType === 'electron') tools.push('- **Electron** + **Vite** + **React**');
   if (projectType === 'backend') {
     const fw = { hono: 'Hono', fastify: 'Fastify', express: 'Express', elysia: 'Elysia (Bun)' };
     tools.push(`- **${fw[backendFramework] || 'Hono'}** \u2014 HTTP framework`);
@@ -4263,10 +4269,10 @@ function getScriptsTable(answers) {
       rows.push('| `npm run test:e2e` | Run Playwright E2E tests |');
       rows.push('| `npm run test:e2e:ui` | Playwright interactive mode |');
     }
-    if (['frontend', 'backend', 'cli'].includes(projectType)) {
+    if (['frontend', 'backend', 'cli', 'electron'].includes(projectType)) {
       rows.push('| `npm run dev` | Start development server |');
     }
-    if (['frontend', 'backend', 'cli', 'npm-lib'].includes(projectType)) {
+    if (['frontend', 'backend', 'cli', 'npm-lib', 'electron'].includes(projectType)) {
       rows.push('| `npm run build` | Build for production |');
     }
     if (projectType === 'backend' && setupDocker) {

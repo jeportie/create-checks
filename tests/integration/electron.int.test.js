@@ -105,4 +105,20 @@ describe('electron project type', () => {
     expect(pkg.scripts.test).toBeUndefined();
     expect(pkg.scripts.check).not.toContain('npm run test');
   });
+
+  it('defaults electron to oxlint + hk', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir); // no LINTER / SETUP_PRECOMMIT overrides
+    expect(existsSync(join(tmpDir, '.oxlintrc.json'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(false);
+    expect(existsSync(join(tmpDir, 'hk.pkl'))).toBe(true);
+    expect(existsSync(join(tmpDir, '.husky'))).toBe(false);
+  });
+
+  it('honors explicit overrides (eslint + husky) over the electron defaults', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { LINTER: 'eslint', SETUP_PRECOMMIT: '1' });
+    expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(true);
+    expect(existsSync(join(tmpDir, '.husky', 'pre-commit'))).toBe(true);
+  });
 });

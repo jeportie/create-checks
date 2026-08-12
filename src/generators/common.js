@@ -217,6 +217,9 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     if (isFrontend) {
       await appendWordsToCspell(cwd, ['tailwindcss', 'Tailwind']);
     }
+    if (isElectron) {
+      await appendWordsToCspell(cwd, ['electron', 'Electron', 'renderer', 'preload', 'contextBridge']);
+    }
     if (projectType === 'cli') {
       await appendWordsToCspell(cwd, ['shebang', 'subcommands']);
     }

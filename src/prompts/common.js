@@ -6,7 +6,8 @@ import { askPlaywrightQuestion } from './playwright.js';
 import { askAgentCrewQuestion } from './agentCrew.js';
 
 export async function askCommonQuestions(projectType) {
-  let linter = ['biome', 'oxlint'].includes(process.env.LINTER) ? process.env.LINTER : 'eslint';
+  let linter = ['biome', 'oxlint', 'eslint'].includes(process.env.LINTER) ? process.env.LINTER : undefined;
+  if (linter === undefined) linter = projectType === 'electron' ? 'oxlint' : 'eslint';
   if (!process.env.LINTER && process.stdin.isTTY) {
     const result = await prompt([
       {
@@ -98,6 +99,8 @@ export async function askCommonQuestions(projectType) {
     ]);
     if (result.precommit === 'none') setupPrecommit = false;
     else precommitTool = result.precommit;
+  } else if (sp === undefined && !process.stdin.isTTY) {
+    precommitTool = projectType === 'electron' ? 'hk' : 'husky';
   }
 
   const cicdAnswers = await askCicdQuestions(projectType);
