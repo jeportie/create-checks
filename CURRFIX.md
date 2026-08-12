@@ -66,6 +66,7 @@ tier is **16/16 green on Linux CI**.
 - [x] CF-044 | E2E/DB | DB-connectivity test skips without `DATABASE_URL` and lazy-imports the db module — fixes CI-without-a-database failures (`ECONNREFUSED` / mongo timeout) | STATUS=DONE | reported_by=assistant | commit ee0c9d4
 - [x] CF-045 | E2E/DB | `better-sqlite3` native addon crashed the vitest worker on teardown (darwin-arm64); resolved by CF-044's lazy-import (native addon no longer loads when the test skips) — 16/16 green on Linux CI | STATUS=DONE | reported_by=assistant | commit ee0c9d4
 - [x] CF-046 | E2E/TEST | Exclude `dist/**` from vitest (compiled tests double-ran); pin generated `cspell` `^8` (cspell ≥9 requires Node ≥22.18; scaffolds target Node 20) | STATUS=DONE | reported_by=assistant | commit fbb1375
+- [ ] CF-048 | E2E/APP | app managed+jest: unpinned @react-native/jest-preset mismatches the Expo-pinned react-native (cannot resolve react-native/setup-env) | STATUS=OPEN | reported_by=jeportie | GH=#102
 
 ## Issue Entry Template
 
