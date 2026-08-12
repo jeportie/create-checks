@@ -150,6 +150,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   } = answers;
   const isFrontend = projectType === 'frontend';
   const isApp = projectType === 'app';
+  const isElectron = projectType === 'electron';
 
   await ensurePackageJson(pkgPath);
 
@@ -161,7 +162,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   console.log(pc.green('→') + '  copying config files...');
 
-  if (!isFrontend && !isApp) {
+  if (!isFrontend && !isApp && !isElectron) {
     await copyIfMissing(
       templatePath('common', 'tsconfig.base.json'),
       path.join(cwd, 'tsconfig.base.json'),
@@ -184,7 +185,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     console.log(pc.green('✔') + '    prettier.config.js');
   }
 
-  if (!isFrontend && !isApp && linter === 'eslint') {
+  if (!isFrontend && !isApp && !isElectron && linter === 'eslint') {
     const eslintTemplate = lintOption.includes('cspell') ? 'eslintCspell.config.js' : 'eslint.config.js';
     await fs.copyFile(templatePath('common', eslintTemplate), path.join(cwd, 'eslint.config.js'));
     console.log(pc.green('✔') + '    eslint.config.js');
@@ -234,7 +235,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     }
   }
 
-  if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+  if (!isFrontend && !isApp && !isElectron && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
     await fs.copyFile(templatePath('common', `vitest.config.${vitestPreset}.ts`), path.join(cwd, 'vitest.config.ts'));
     console.log(pc.green('✔') + '    vitest.config.ts');
   }
@@ -299,7 +300,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   console.log(pc.green('→') + '  creating project directories:');
 
-  if (!isFrontend && !isApp && projectType !== 'cli' && projectType !== 'backend') {
+  if (!isFrontend && !isApp && !isElectron && projectType !== 'cli' && projectType !== 'backend') {
     const srcDir = path.join(cwd, 'src');
     await fs.ensureDir(srcDir);
     const mainTs = path.join(srcDir, 'main.ts');
