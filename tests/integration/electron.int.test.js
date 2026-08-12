@@ -89,4 +89,12 @@ describe('electron project type', () => {
     expect(existsSync(join(tmpDir, '.oxlintrc.json'))).toBe(true);
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(false);
   });
+
+  it('omits the "npm run test" pre-commit step from hk.pkl (electron ships no vitest config)', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SETUP_PRECOMMIT: 'hk', VITEST_PRESET: 'native' });
+    const pkl = readFileSync(join(tmpDir, 'hk.pkl'), 'utf-8');
+    expect(pkl).toContain('"pre-commit"');
+    expect(pkl).not.toContain('npm run test');
+  });
 });

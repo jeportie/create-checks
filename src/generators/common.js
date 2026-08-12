@@ -9,13 +9,13 @@ import { installDeps } from '../utils/install.js';
 import { writeReadme } from '../utils/readme.js';
 import { buildScripts, orderPackageKeys } from '../utils/scripts.js';
 
-function renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }) {
+function renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp, isElectron }) {
   const step = (id, cmd) => `      ["${id}"] {\n        check = "${cmd}"\n      }`;
   const pre = [step('format', 'npm run format'), step('lint', 'npm run lint')];
   if (lintOption.includes('cspell')) pre.push(step('spellcheck', 'npm run spellcheck'));
   pre.push(step('typecheck', 'npm run typecheck'));
   if (lintOption.includes('secretlint')) pre.push(step('secretlint', 'npm run secretlint'));
-  if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+  if (!isFrontend && !isApp && !isElectron && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
     pre.push(step('test', 'npm run test'));
   }
   let pkl =
@@ -270,7 +270,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     if (precommitTool === 'hk') {
       const hkDest = path.join(cwd, 'hk.pkl');
       if (!(await fs.pathExists(hkDest))) {
-        await fs.writeFile(hkDest, renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp }));
+        await fs.writeFile(hkDest, renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp, isElectron }));
         console.log(pc.green('✔') + '    hk.pkl');
       }
       // .mise.toml (hk + pkl + [hooks]) is ensured after the type generator runs — see src/index.js
@@ -282,7 +282,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
       const preCommitDest = path.join(huskyDir, 'pre-commit');
       if (!(await fs.pathExists(preCommitDest))) {
         const lines = ['npx lint-staged', 'npm run typecheck'];
-        if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+        if (!isFrontend && !isApp && !isElectron && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
           lines.push('npm run test');
         }
         await fs.writeFile(preCommitDest, `${lines.join('\n')}\n`);
