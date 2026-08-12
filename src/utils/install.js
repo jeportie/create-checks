@@ -44,6 +44,22 @@ async function installWithRetry(args, startText, successText, failureText) {
   console.log(pc.green('✔') + `  ${successText}`);
 }
 
+// Install a dev dependency pinned to the exact version of an already-installed
+// package (e.g. an Expo-pinned one), falling back to the unpinned latest.
+async function installDevPinnedTo(sourcePkg, targetName, startText, doneText) {
+  const stop = startSpinner(startText);
+  try {
+    const { stdout: version } = await execa('node', [
+      '-e',
+      `process.stdout.write(require('${sourcePkg}/package.json').version)`,
+    ]);
+    await execa('npm', ['install', '-D', `${targetName}@${version}`], { stdio: 'pipe' });
+  } catch {
+    await execa('npm', ['install', '-D', targetName], { stdio: 'pipe' });
+  }
+  stop(doneText);
+}
+
 export async function installDeps(answers, options = {}) {
   if (shouldSkipInstall()) return;
 
@@ -222,7 +238,6 @@ export async function installDeps(answers, options = {}) {
       devDeps.push(
         'jest@~29.7.0',
         'jest-expo',
-        '@react-native/jest-preset',
         '@jest/globals',
         '@types/jest@^29.5.14',
         '@testing-library/react-native@^12',
@@ -329,18 +344,22 @@ export async function installDeps(answers, options = {}) {
     stopSpinner('Expo-compatible versions installed');
 
     if (answers.setupAppJest) {
-      // react-test-renderer must exactly match the Expo-pinned react version
-      const stopRtr = startSpinner('Installing react-test-renderer...');
-      try {
-        const { stdout: reactVersion } = await execa('node', [
-          '-e',
-          "process.stdout.write(require('react/package.json').version)",
-        ]);
-        await execa('npm', ['install', '-D', `react-test-renderer@${reactVersion}`], { stdio: 'pipe' });
-      } catch {
-        await execa('npm', ['install', '-D', 'react-test-renderer'], { stdio: 'pipe' });
-      }
-      stopRtr('react-test-renderer installed');
+      // Both packages must exactly match the Expo-pinned versions. The unpinned
+      // latest @react-native/jest-preset expects a newer react-native internal
+      // layout (react-native/setup-env) and breaks the jest-expo preset (CF-048);
+      // react-test-renderer must line up with react.
+      await installDevPinnedTo(
+        'react-native',
+        '@react-native/jest-preset',
+        'Installing @react-native/jest-preset...',
+        '@react-native/jest-preset installed',
+      );
+      await installDevPinnedTo(
+        'react',
+        'react-test-renderer',
+        'Installing react-test-renderer...',
+        'react-test-renderer installed',
+      );
     }
   }
 }
