@@ -147,6 +147,23 @@ describe('electron project type', () => {
     expect(pkg.scripts.check).not.toContain('npm run test');
   });
 
+  it('offers Playwright (_electron flavor) with a build-first e2e script when PLAYWRIGHT=1', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { PLAYWRIGHT: '1' });
+    expect(existsSync(join(tmpDir, 'playwright.config.ts'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'tests/e2e/app.e2e.ts'))).toBe(true);
+    expect(readFileSync(join(tmpDir, 'tests/e2e/app.e2e.ts'), 'utf-8')).toContain('_electron');
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts['test:e2e']).toContain('electron-vite build');
+  });
+
+  it('ships no Playwright by default (PLAYWRIGHT=0): omits the config and e2e spec', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { PLAYWRIGHT: '0' });
+    expect(existsSync(join(tmpDir, 'playwright.config.ts'))).toBe(false);
+    expect(existsSync(join(tmpDir, 'tests/e2e/app.e2e.ts'))).toBe(false);
+  });
+
   it('defaults electron to oxlint + hk', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir); // no LINTER / SETUP_PRECOMMIT overrides
