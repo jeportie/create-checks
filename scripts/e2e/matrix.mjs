@@ -65,6 +65,11 @@ export const GROUPS = [
     },
   },
   {
+    id: 'electron',
+    type: 'electron',
+    dims: { linter },
+  },
+  {
     id: 'app',
     type: 'app',
     dims: {
@@ -182,6 +187,7 @@ export const MANIFESTS = {
   backend: ['src/index.ts', 'tsconfig.json'],
   frontend: ['vite.config.ts', 'src/main.tsx'],
   app: ['app.json', 'src/App.tsx'],
+  electron: ['electron.vite.config.ts', 'src/main/index.ts'],
 };
 
 export const LINTER_FILES = { eslint: 'eslint.config.js', biome: 'biome.json', oxlint: '.oxlintrc.json' };
@@ -273,4 +279,6 @@ export const VERIFY = [
     SETUP_REDIS: '0',
     DOCKER: '1',
   }),
+  verifyCombo('electron', 'oxlint', { LINTER: 'oxlint', VITEST_PRESET: 'none' }),
+  verifyCombo('electron', 'eslint', { LINTER: 'eslint', VITEST_PRESET: 'none' }),
 ];

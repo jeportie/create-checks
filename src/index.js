@@ -26,6 +26,7 @@ const typeSpecificAskers = {
   'npm-lib': () => import('./prompts/npm-lib.js').then((m) => m.askNpmLibQuestions()),
   cli: () => import('./prompts/cli.js').then((m) => m.askCliQuestions()),
   app: () => import('./prompts/app.js').then((m) => m.askAppQuestions()),
+  electron: () => import('./prompts/electron.js').then((m) => m.askElectronQuestions()),
 };
 
 const modeLabels = {
@@ -34,6 +35,7 @@ const modeLabels = {
   'npm-lib': 'npm library',
   cli: 'CLI tool',
   app: 'mobile app',
+  electron: 'desktop app',
 };
 
 const answers = await runWizard([
@@ -121,6 +123,15 @@ if (answers.projectType === 'app') {
     await generateApp(answers, process.cwd());
   } catch {
     // App module is optional until feature branch is merged.
+  }
+}
+
+if (answers.projectType === 'electron') {
+  try {
+    const { generateElectron } = await import('./generators/electron.js');
+    await generateElectron(answers, process.cwd());
+  } catch {
+    // Electron module is optional until the feature branch merges.
   }
 }
 
