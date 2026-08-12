@@ -64,4 +64,16 @@ describe('electron project type', () => {
     expect(existsSync(join(tmpDir, 'src/main.ts'))).toBe(false);
     expect(existsSync(join(tmpDir, 'tsconfig.base.json'))).toBe(false);
   });
+
+  it('adds electron-vite scripts and sets main to out/main/index.js', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir);
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts.dev).toBe('electron-vite dev');
+    expect(pkg.scripts.build).toBe('electron-vite build');
+    expect(pkg.scripts.preview).toBe('electron-vite preview');
+    expect(pkg.scripts.dist).toBe('electron-builder');
+    expect(pkg.main).toBe('out/main/index.js');
+    expect(pkg.main).not.toBe('src/main.ts');
+  });
 });

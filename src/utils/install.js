@@ -117,6 +117,19 @@ export async function installDeps(answers, options = {}) {
     );
   }
 
+  if (projectType === 'electron') {
+    devDeps.push(
+      'electron@^39',
+      'electron-vite@^5',
+      'electron-builder@^26',
+      'vite@^7',
+      '@vitejs/plugin-react@^5',
+      '@electron-toolkit/tsconfig@^2',
+      '@types/react@^19',
+      '@types/react-dom@^19',
+    );
+  }
+
   if (projectType === 'npm-lib') {
     devDeps.push('tsup');
     if (answers.setupSemanticRelease) {
@@ -249,6 +262,10 @@ export async function installDeps(answers, options = {}) {
       'tailwindcss',
       '@tailwindcss/vite',
     );
+  }
+
+  if (projectType === 'electron') {
+    prodDeps.push('react@^19', 'react-dom@^19', '@electron-toolkit/preload@^3', '@electron-toolkit/utils@^4');
   }
 
   const finalProdDeps = unique(prodDeps);

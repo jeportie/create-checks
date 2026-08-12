@@ -17,6 +17,7 @@ export function orderScripts(scripts) {
     'build',
     'dev',
     'preview',
+    'dist',
     'start',
     'docker:up',
     'docker:down',
@@ -93,7 +94,12 @@ export function buildScripts(pkg, answers) {
     check: checkParts.join(' && '),
     format: linter === 'biome' ? 'biome format --write .' : linter === 'oxlint' ? 'oxfmt .' : 'prettier . --write',
     lint: linter === 'biome' ? 'biome check .' : linter === 'oxlint' ? 'oxlint .' : 'eslint .',
-    typecheck: projectType === 'frontend' ? 'tsc -b' : 'tsc --noEmit',
+    typecheck:
+      projectType === 'frontend'
+        ? 'tsc -b'
+        : projectType === 'electron'
+          ? 'tsc --noEmit -p tsconfig.node.json --composite false && tsc --noEmit -p tsconfig.web.json --composite false'
+          : 'tsc --noEmit',
   };
 
   if (lintOption.includes('cspell')) {
@@ -122,6 +128,14 @@ export function buildScripts(pkg, answers) {
     pkg.scripts.dev = 'vite';
     pkg.scripts.build = 'tsc -b && vite build';
     pkg.scripts.preview = 'vite preview';
+  }
+
+  if (projectType === 'electron') {
+    pkg.scripts.dev = 'electron-vite dev';
+    pkg.scripts.build = 'electron-vite build';
+    pkg.scripts.preview = 'electron-vite preview';
+    pkg.scripts.dist = 'electron-builder';
+    pkg.main = 'out/main/index.js';
   }
 
   if (projectType === 'npm-lib') {
@@ -230,7 +244,7 @@ export function buildScripts(pkg, answers) {
   if (!pkg.license) pkg.license = 'MIT';
   if (!pkg.keywords) pkg.keywords = [];
   if (
-    !['frontend', 'npm-lib', 'cli', 'backend', 'app'].includes(projectType) &&
+    !['frontend', 'npm-lib', 'cli', 'backend', 'app', 'electron'].includes(projectType) &&
     (!pkg.main || pkg.main === 'index.js')
   ) {
     pkg.main = 'src/main.ts';
