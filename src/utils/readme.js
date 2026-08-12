@@ -1348,6 +1348,16 @@ function getIntroduction(answers) {
     );
   }
 
+  if (projectType === 'electron') {
+    return (
+      `This is a cross-platform desktop application built with Electron, electron-vite, and React. ` +
+      `It is split across three processes: a Node.js main process that owns the window and native OS access, ` +
+      `a preload script that exposes a safe, typed API over the contextBridge, and a React renderer that draws the UI. ` +
+      `Context isolation is enabled by default, so the renderer reaches the system only through the API you deliberately expose. ` +
+      `electron-vite drives development with hot module replacement for the renderer and fast reloads for the main and preload processes.`
+    );
+  }
+
   return 'A TypeScript project scaffolded with tskickstart.';
 }
 
@@ -1403,6 +1413,14 @@ function getGettingStarted(answers) {
     );
   }
 
+  if (projectType === 'electron') {
+    lines.push(`\nLaunch the app in development:\n`);
+    lines.push(codeBlock('bash', 'npm run dev'));
+    lines.push(
+      `\nAn Electron window opens with the React renderer served by electron-vite. Hot module replacement updates the UI instantly, and the main and preload processes reload automatically when you edit them.`,
+    );
+  }
+
   if (projectType === 'cli') {
     lines.push(`\nRun the example command to verify the setup:\n`);
     lines.push(codeBlock('bash', 'npm run dev -- hello World'));
@@ -1434,6 +1452,9 @@ function getDevelopment(answers) {
 
   if (projectType === 'frontend') {
     return '```bash\nnpm run dev\n```\n\nOpens the Vite dev server with hot module replacement.';
+  }
+  if (projectType === 'electron') {
+    return '```bash\nnpm run dev\n```\n\nStarts the electron-vite dev server: hot module replacement for the renderer, and automatic reloads for the main and preload processes.';
   }
   if (projectType === 'backend') {
     if (backendFramework === 'elysia') {
@@ -1587,6 +1608,22 @@ tests/
 \`\`\``;
   }
 
+  if (projectType === 'electron') {
+    return `\`\`\`
+electron.vite.config.ts    # electron-vite config \u2014 separate main, preload, and renderer builds
+electron-builder.yml       # electron-builder packaging config for producing distributable builds
+src/main/index.ts          # Main process (Node) \u2014 creates the BrowserWindow and owns the app lifecycle
+                           # contextIsolation is on; external links open via setWindowOpenHandler
+src/preload/index.ts       # Preload bridge \u2014 contextBridge.exposeInMainWorld exposes a safe API
+src/preload/index.d.ts     # Types the API surface added to the renderer's window object
+src/renderer/index.html    # Renderer HTML entry loaded by electron-vite
+src/renderer/src/main.tsx  # React root \u2014 mounts <App /> into #root
+src/renderer/src/App.tsx   # Root React component \u2014 your UI starts here
+tsconfig.node.json         # TypeScript config for the main + preload processes (Node)
+tsconfig.web.json          # TypeScript config for the renderer (DOM)
+\`\`\``;
+  }
+
   return '';
 }
 
@@ -1628,6 +1665,12 @@ function getTypescriptPlaybook(answers) {
       '- Validate screen component props and navigation params\n' +
       '- Catch incorrect hook usage in React Native components\n' +
       '- Enforce type-safe API response handling',
+    electron:
+      'TypeScript is configured in strict mode across all three Electron processes. The dual `tsconfig.node.json` (main and preload) and `tsconfig.web.json` (renderer) type each process against the right globals — Node.js for main and preload, the DOM for the renderer.\n\n' +
+      'Use cases:\n' +
+      '- Type the API surface exposed over the contextBridge so the renderer gets full IntelliSense\n' +
+      '- Keep Node-only APIs out of the renderer and DOM-only APIs out of the main process\n' +
+      '- Catch IPC channel and payload mismatches between preload and renderer at compile time',
   };
 
   const context = contextMap[projectType] || contextMap.backend;
@@ -2248,6 +2291,38 @@ ${codeBlock('tsx', "import { Pressable, Text, StyleSheet } from 'react-native';\
 ${codeBlock('bash', '# Expo Go (fastest iteration)\nnpm start\n# Scan QR code with Expo Go app\n\n# iOS Simulator\nnpm run ios\n\n# Android Emulator\nnpm run android')}`);
   }
 
+  if (projectType === 'electron') {
+    sections.push(`### How to expose a new API to the renderer
+
+1. Import \`ipcRenderer\` in \`src/preload/index.ts\` and add a method to the \`api\` object exposed over the \`contextBridge\`:
+
+${codeBlock('ts', "const api = {\n  ping: (): Promise<string> => ipcRenderer.invoke('ping'),\n};")}
+
+2. Handle that channel in the main process in \`src/main/index.ts\` (import \`ipcMain\` from \`electron\`):
+
+${codeBlock('ts', "ipcMain.handle('ping', () => 'pong');")}
+
+3. Declare the shape in \`src/preload/index.d.ts\`, then call it from the renderer:
+
+${codeBlock('ts', "const reply = await window.api.ping(); // 'pong'")}`);
+
+    sections.push(`### How to add a renderer component
+
+Create the component under \`src/renderer/src/\` and render it from \`App.tsx\`:
+
+${codeBlock('tsx', "export function StatusBar({ online }: { online: boolean }) {\n  return <span>{online ? 'Online' : 'Offline'}</span>;\n}")}`);
+
+    sections.push(`### How to build a distributable
+
+${codeBlock('bash', 'npm run build')}
+
+Bundles the main, preload, and renderer into \`out/\`. Then package the app for the current platform:
+
+${codeBlock('bash', 'npm run dist')}
+
+Packaging is driven by \`electron-builder.yml\`; installers are written to \`dist/\`.`);
+  }
+
   return sections.join('\n\n');
 }
 
@@ -2330,9 +2405,32 @@ function getImplementationWorkflow(answers) {
       return getNpmLibImplementationWorkflow();
     case 'app':
       return getAppImplementationWorkflow(answers);
+    case 'electron':
+      return getElectronImplementationWorkflow();
     default:
       return '';
   }
+}
+
+// A deliberately concise walkthrough: one IPC round-trip over the contextBridge.
+function getElectronImplementationWorkflow() {
+  return `1. **Add the API to the preload bridge** — in \`src/preload/index.ts\`, import \`ipcRenderer\` from \`electron\` and add a method to the \`api\` object exposed via \`contextBridge.exposeInMainWorld\`:
+
+${codeBlock('ts', "const api = {\n  ping: (): Promise<string> => ipcRenderer.invoke('ping'),\n};")}
+
+2. **Type the surface** — mirror the method in \`src/preload/index.d.ts\` so the renderer gets IntelliSense and compile-time checking:
+
+${codeBlock('ts', 'interface Window {\n  electron: ElectronAPI;\n  api: { ping: () => Promise<string> };\n}')}
+
+3. **Handle the channel in the main process** — in \`src/main/index.ts\`, import \`ipcMain\` from \`electron\` and register a handler when the app is ready:
+
+${codeBlock('ts', "ipcMain.handle('ping', () => 'pong');")}
+
+4. **Call it from the renderer** — invoke the exposed method from \`src/renderer/src/App.tsx\`:
+
+${codeBlock('ts', "const reply = await window.api.ping(); // 'pong'")}
+
+5. **Run it and check quality** — \`npm run dev\` opens the window with electron-vite HMR; \`npm run typecheck\` validates both tsconfigs and \`npm run check\` runs the full gate.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -4301,8 +4399,9 @@ export function generateReadme(answers) {
 
   // Title + rich introduction
   const title = getProjectTitle(answers);
+  const tagline = answers.projectType === 'electron' ? 'An Electron desktop app' : `A ${title.toLowerCase()}`;
   sections.push(
-    `# ${pkg}\n\n> A ${title.toLowerCase()} scaffolded with [tskickstart](https://github.com/jeportie/tskickstart).\n\n${getIntroduction(answers)}`,
+    `# ${pkg}\n\n> ${tagline} scaffolded with [tskickstart](https://github.com/jeportie/tskickstart).\n\n${getIntroduction(answers)}`,
   );
 
   sections.push(`## Project Snapshot\n\n${getProjectSnapshot(answers)}`);

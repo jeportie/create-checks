@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const cliPath = resolve(__dirname, '../../src/index.js');
@@ -21,6 +21,25 @@ function runCli(cwd, extraEnv = {}) {
     env: { ...process.env, NO_INSTALL: '1', PROJECT_TYPE: 'electron', ...extraEnv },
     stdio: 'pipe',
   });
+}
+
+// Returns the trimmed body of a `## <heading>` section (up to the next `---` rule).
+function sectionBody(readme, heading) {
+  const marker = `## ${heading}\n`;
+  const start = readme.indexOf(marker);
+  if (start === -1) return null;
+  const rest = readme.slice(start + marker.length);
+  const end = rest.indexOf('\n---\n');
+  return (end === -1 ? rest : rest.slice(0, end)).trim();
+}
+
+// Returns just the `### TypeScript` playbook block (up to the next `###` subsection).
+function typescriptPlaybook(readme) {
+  const start = readme.indexOf('### TypeScript');
+  if (start === -1) return '';
+  const rest = readme.slice(start);
+  const end = rest.indexOf('\n### ', 1);
+  return end === -1 ? rest : rest.slice(0, end);
 }
 
 describe('electron project type', () => {
@@ -120,5 +139,65 @@ describe('electron project type', () => {
     runCli(tmpDir, { LINTER: 'eslint', SETUP_PRECOMMIT: '1' });
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(true);
     expect(existsSync(join(tmpDir, '.husky', 'pre-commit'))).toBe(true);
+  });
+});
+
+describe('electron README generation', () => {
+  let dir;
+  let readme;
+
+  beforeAll(() => {
+    dir = createTmpProject();
+    runCli(dir);
+    readme = readFileSync(join(dir, 'README.md'), 'utf-8');
+  });
+
+  afterAll(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('titles the project with the correct article ("An Electron desktop app")', () => {
+    expect(readme).toContain('> An Electron desktop app');
+    expect(readme).not.toContain('> A electron desktop app');
+  });
+
+  it('replaces the generic intro with an electron-specific paragraph', () => {
+    expect(readme).not.toContain('A TypeScript project scaffolded with tskickstart.');
+  });
+
+  it('adds a run-the-app step to Getting Started', () => {
+    const gettingStarted = sectionBody(readme, 'Getting Started');
+    expect(gettingStarted).toContain('npm run dev');
+    expect(gettingStarted).toContain('electron-vite');
+  });
+
+  it('describes the electron-vite dev server in Development', () => {
+    expect(sectionBody(readme, 'Development')).toContain('electron-vite');
+  });
+
+  it('documents the three-process file tree in Project Structure', () => {
+    const structure = sectionBody(readme, 'Project Structure');
+    expect(structure).toContain('src/main');
+    expect(structure).toContain('src/preload');
+    expect(structure).toContain('src/renderer');
+  });
+
+  it('contextualizes the TypeScript playbook for electron, not backend', () => {
+    const playbook = typescriptPlaybook(readme);
+    expect(playbook).not.toContain('backend');
+    expect(playbook).not.toContain('route handlers');
+    expect(playbook).not.toContain('middleware');
+  });
+
+  it('leaves no narrative section empty', () => {
+    expect(sectionBody(readme, 'Project Structure')).not.toBe('');
+    expect(sectionBody(readme, 'Implementation Workflow')).not.toBe('');
+    expect(sectionBody(readme, 'Common Tasks')).not.toBe('');
+  });
+
+  it('lists electron-specific Common Tasks (contextBridge, distributable)', () => {
+    const tasks = sectionBody(readme, 'Common Tasks');
+    expect(tasks).toContain('contextBridge');
+    expect(tasks).toContain('npm run dist');
   });
 });
