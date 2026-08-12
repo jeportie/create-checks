@@ -67,6 +67,10 @@ tier is **16/16 green on Linux CI**.
 - [x] CF-045 | E2E/DB | `better-sqlite3` native addon crashed the vitest worker on teardown (darwin-arm64); resolved by CF-044's lazy-import (native addon no longer loads when the test skips) — 16/16 green on Linux CI | STATUS=DONE | reported_by=assistant | commit ee0c9d4
 - [x] CF-046 | E2E/TEST | Exclude `dist/**` from vitest (compiled tests double-ran); pin generated `cspell` `^8` (cspell ≥9 requires Node ≥22.18; scaffolds target Node 20) | STATUS=DONE | reported_by=assistant | commit fbb1375
 
+## Post-Phase-F fixes (surfaced after the electron PR / by the full Tier-2 verify sweep)
+
+- [ ] CF-047 | APP/PUBLISH | app scaffold crashes with ENOENT — npm strips `src/templates/app/.npmrc` from the published tarball; ship it as `_npmrc` (mirrors `_gitignore`) | STATUS=OPEN | reported_by=jeportie | GH=#86
+
 ## Issue Entry Template
 
 Use this line format for each new issue:
