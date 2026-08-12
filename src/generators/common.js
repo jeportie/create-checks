@@ -155,7 +155,8 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   await ensurePackageJson(pkgPath);
 
   if (isApp) {
-    await fs.copyFile(templatePath('app', '.npmrc'), path.join(cwd, '.npmrc'));
+    // #86: template ships as `_npmrc` (npm strips a real `.npmrc` from the published tarball).
+    await fs.copyFile(templatePath('app', '_npmrc'), path.join(cwd, '.npmrc'));
   }
 
   await installDeps(answers);
