@@ -77,6 +77,8 @@ export default tseslint.config(
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       // Allow unsafe assignment for asset imports
       '@typescript-eslint/no-unsafe-assignment': 'off',
+      // Electron preload ships upstream's vendored @ts-ignore (paired with index.d.ts)
+      '@typescript-eslint/ban-ts-comment': ['error', { 'ts-ignore': 'allow-with-description' }],
     },
   },
 
