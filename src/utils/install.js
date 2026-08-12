@@ -87,7 +87,7 @@ export async function installDeps(answers, options = {}) {
     }
   }
 
-  if (setupPrecommit) {
+  if (setupPrecommit && answers.precommitTool !== 'hk') {
     devDeps.push('husky', 'lint-staged');
   }
 

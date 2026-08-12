@@ -123,7 +123,8 @@
     "pnpm-lock.yaml",
     "tests/data",
     "scripts",
-    "e2e-report.json"
+    "e2e-report.json",
+    "docs/superpowers/"
   ],
   "languageSettings": [
     {

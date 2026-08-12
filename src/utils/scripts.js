@@ -104,7 +104,7 @@ export function buildScripts(pkg, answers) {
     pkg.scripts.secretlint = 'secretlint **/*';
   }
 
-  if (setupPrecommit) {
+  if (setupPrecommit && answers.precommitTool !== 'hk') {
     pkg.scripts.prepare = 'husky';
   }
 
@@ -219,7 +219,7 @@ export function buildScripts(pkg, answers) {
     pkg.scripts['test:e2e:ui'] = 'npx playwright test --ui';
   }
 
-  if (setupPrecommit) {
+  if (setupPrecommit && answers.precommitTool !== 'hk') {
     const lintStagedCmds = linter === 'biome' ? ['biome check --write .'] : ['npm run format', 'npm run lint'];
     if (lintOption.includes('cspell')) lintStagedCmds.push('npm run spellcheck');
     if (lintOption.includes('secretlint')) lintStagedCmds.push('npm run secretlint');
