@@ -134,6 +134,17 @@ export async function installDeps(answers, options = {}) {
     devDeps.push('eslint-plugin-react-hooks', 'eslint-plugin-react-refresh', 'globals');
   }
 
+  if (projectType === 'electron' && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+    devDeps.push(
+      'happy-dom',
+      '@testing-library/react',
+      '@testing-library/jest-dom',
+      '@testing-library/user-event',
+      '@testing-library/dom',
+      '@vitest/coverage-v8@^2',
+    );
+  }
+
   if (projectType === 'npm-lib') {
     devDeps.push('tsup');
     if (answers.setupSemanticRelease) {

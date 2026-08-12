@@ -26,6 +26,8 @@ async function copyElectronFile(relativePath, cwd) {
   await copyIfMissing(src, dest, relativePath);
 }
 
+const ELECTRON_VITEST_FILES = ['vitest.config.ts', 'tests/setup.ts', 'tests/unit/App.unit.test.tsx'];
+
 export async function generateElectron(answers, cwd = process.cwd()) {
   console.log(pc.green('→') + '  copying electron starter files...');
   for (const file of ELECTRON_FILES) {
@@ -33,5 +35,10 @@ export async function generateElectron(answers, cwd = process.cwd()) {
   }
   if (answers.linter === 'eslint') {
     await copyElectronFile('eslint.config.js', cwd);
+  }
+  if (answers.vitestPreset === 'native' || answers.vitestPreset === 'coverage') {
+    for (const file of ELECTRON_VITEST_FILES) {
+      await copyElectronFile(file, cwd);
+    }
   }
 }

@@ -109,7 +109,7 @@ describe('electron project type', () => {
     expect(existsSync(join(tmpDir, 'eslint.config.js'))).toBe(false);
   });
 
-  it('omits the "npm run test" pre-commit step from hk.pkl (electron ships no vitest config)', () => {
+  it('keeps vitest out of the pre-commit hook even with a preset (mirrors frontend: test runs in check, not pre-commit)', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { SETUP_PRECOMMIT: 'hk', VITEST_PRESET: 'native' });
     const pkl = readFileSync(join(tmpDir, 'hk.pkl'), 'utf-8');
@@ -117,9 +117,31 @@ describe('electron project type', () => {
     expect(pkl).not.toContain('npm run test');
   });
 
-  it('ships no vitest, so package.json omits the test script and check does not chain it', () => {
+  it('offers native Vitest: ships renderer test config/files and wires the test script into check', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { VITEST_PRESET: 'native' });
+    expect(existsSync(join(tmpDir, 'vitest.config.ts'))).toBe(true);
+    expect(readFileSync(join(tmpDir, 'vitest.config.ts'), 'utf-8')).toContain('happy-dom');
+    expect(existsSync(join(tmpDir, 'tests/setup.ts'))).toBe(true);
+    expect(existsSync(join(tmpDir, 'tests/unit/App.unit.test.tsx'))).toBe(true);
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts.test).toBe('vitest --run');
+    expect(pkg.scripts.check).toContain('npm run test');
+  });
+
+  it('adds the coverage script when VITEST_PRESET=coverage', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { VITEST_PRESET: 'coverage' });
+    expect(existsSync(join(tmpDir, 'vitest.config.ts'))).toBe(true);
+    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.scripts['test:coverage']).toBe('vitest --coverage --run');
+  });
+
+  it('ships no Vitest by default (no preset): omits the config, test files, and test script', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir);
+    expect(existsSync(join(tmpDir, 'vitest.config.ts'))).toBe(false);
+    expect(existsSync(join(tmpDir, 'tests/unit/App.unit.test.tsx'))).toBe(false);
     const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'));
     expect(pkg.scripts.test).toBeUndefined();
     expect(pkg.scripts.check).not.toContain('npm run test');
