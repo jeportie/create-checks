@@ -9,50 +9,6 @@ import { installDeps } from '../utils/install.js';
 import { writeReadme } from '../utils/readme.js';
 import { buildScripts, orderPackageKeys } from '../utils/scripts.js';
 
-function renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp, isElectron }) {
-  const step = (id, cmd) => `      ["${id}"] {\n        check = "${cmd}"\n      }`;
-  const pre = [step('format', 'npm run format'), step('lint', 'npm run lint')];
-  if (lintOption.includes('cspell')) pre.push(step('spellcheck', 'npm run spellcheck'));
-  pre.push(step('typecheck', 'npm run typecheck'));
-  if (lintOption.includes('secretlint')) pre.push(step('secretlint', 'npm run secretlint'));
-  if (!isFrontend && !isApp && !isElectron && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
-    pre.push(step('test', 'npm run test'));
-  }
-  let pkl =
-    'amends "package://github.com/jdx/hk/releases/download/v1.40.0/hk@1.40.0#/Config.pkl"\n\n' +
-    'hooks {\n  ["pre-commit"] {\n    steps {\n' +
-    pre.join('\n') +
-    '\n    }\n  }';
-  if (lintOption.includes('commitlint')) {
-    pkl +=
-      '\n  ["commit-msg"] {\n    steps {\n      ["commitlint"] {\n' +
-      '        check = "npx commitlint --edit {{ commit_msg_file }}"\n      }\n    }\n  }';
-  }
-  return pkl + '\n}\n';
-}
-
-export async function ensureHkInMise(cwd, nodeVersion = '22') {
-  const misePath = path.join(cwd, '.mise.toml');
-  // Build line-by-line and join with newlines so the source never glues a "\n"
-  // onto a following word (which would create a bogus cspell token).
-  const toolPins = ['hk = "1.40.0"', 'pkl = "0.31.1"'];
-  const hooksBlock = ['[hooks]', 'postinstall = "hk install --mise"'];
-  if (await fs.pathExists(misePath)) {
-    const content = (await fs.readFile(misePath, 'utf-8')).trimEnd();
-    if (!content.includes('hk =')) {
-      // existing templates are a single [tools] section, so appending the two
-      // tool pins keeps them under [tools], then [hooks] follows.
-      const lines = [content, ...toolPins, '', ...hooksBlock];
-      await fs.writeFile(misePath, `${lines.join('\n')}\n`);
-      console.log(pc.green('✔') + '    .mise.toml (+ hk)');
-    }
-  } else {
-    const lines = ['[tools]', `node = "${nodeVersion}"`, ...toolPins, '', ...hooksBlock];
-    await fs.writeFile(misePath, `${lines.join('\n')}\n`);
-    console.log(pc.green('✔') + '    .mise.toml');
-  }
-}
-
 async function ensurePackageJson(pkgPath) {
   if (!(await fs.pathExists(pkgPath))) {
     console.log(pc.red('\n⨯'), pc.yellow(' No package.json found — running npm init -y...'));
@@ -139,31 +95,21 @@ async function bootstrapEnvFiles(cwd, answers) {
 
 export async function generateCommon(answers, cwd = process.cwd()) {
   const pkgPath = path.join(cwd, 'package.json');
-  const {
-    lintOption = [],
-    vitestPreset,
-    setupPrecommit = true,
-    precommitTool = 'husky',
-    authorName,
-    projectType,
-    linter = 'eslint',
-  } = answers;
+  const { lintOption = [], vitestPreset, setupPrecommit = true, authorName, projectType, linter = 'eslint' } = answers;
   const isFrontend = projectType === 'frontend';
   const isApp = projectType === 'app';
-  const isElectron = projectType === 'electron';
 
   await ensurePackageJson(pkgPath);
 
   if (isApp) {
-    // #86: template ships as `_npmrc` (npm strips a real `.npmrc` from the published tarball).
-    await fs.copyFile(templatePath('app', '_npmrc'), path.join(cwd, '.npmrc'));
+    await fs.copyFile(templatePath('app', '.npmrc'), path.join(cwd, '.npmrc'));
   }
 
   await installDeps(answers);
 
   console.log(pc.green('→') + '  copying config files...');
 
-  if (!isFrontend && !isApp && !isElectron) {
+  if (!isFrontend && !isApp) {
     await copyIfMissing(
       templatePath('common', 'tsconfig.base.json'),
       path.join(cwd, 'tsconfig.base.json'),
@@ -177,16 +123,12 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   if (linter === 'biome') {
     await fs.copyFile(templatePath('common', 'biome.json'), path.join(cwd, 'biome.json'));
     console.log(pc.green('✔') + '    biome.json');
-  } else if (linter === 'oxlint') {
-    await fs.copyFile(templatePath('common', '.oxlintrc.json'), path.join(cwd, '.oxlintrc.json'));
-    await fs.copyFile(templatePath('common', '.oxfmtrc.json'), path.join(cwd, '.oxfmtrc.json'));
-    console.log(pc.green('✔') + '    .oxlintrc.json + .oxfmtrc.json');
   } else {
     await fs.copyFile(templatePath('common', 'prettier.config.js'), path.join(cwd, 'prettier.config.js'));
     console.log(pc.green('✔') + '    prettier.config.js');
   }
 
-  if (!isFrontend && !isApp && !isElectron && linter === 'eslint') {
+  if (!isFrontend && !isApp && linter !== 'biome') {
     const eslintTemplate = lintOption.includes('cspell') ? 'eslintCspell.config.js' : 'eslint.config.js';
     await fs.copyFile(templatePath('common', eslintTemplate), path.join(cwd, 'eslint.config.js'));
     console.log(pc.green('✔') + '    eslint.config.js');
@@ -218,9 +160,6 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     if (isFrontend) {
       await appendWordsToCspell(cwd, ['tailwindcss', 'Tailwind']);
     }
-    if (isElectron) {
-      await appendWordsToCspell(cwd, ['electron', 'Electron', 'renderer', 'preload', 'contextBridge']);
-    }
     if (projectType === 'cli') {
       await appendWordsToCspell(cwd, ['shebang', 'subcommands']);
     }
@@ -239,7 +178,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
     }
   }
 
-  if (!isFrontend && !isApp && !isElectron && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+  if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
     await fs.copyFile(templatePath('common', `vitest.config.${vitestPreset}.ts`), path.join(cwd, 'vitest.config.ts'));
     console.log(pc.green('✔') + '    vitest.config.ts');
   }
@@ -254,7 +193,7 @@ export async function generateCommon(answers, cwd = process.cwd()) {
 
   await copyIfMissing(templatePath('common', '.editorconfig'), path.join(cwd, '.editorconfig'), '.editorconfig');
   await copyIfMissing(templatePath('common', '_gitignore'), path.join(cwd, '.gitignore'), '.gitignore');
-  if (linter === 'eslint') {
+  if (linter !== 'biome') {
     await copyIfMissing(
       templatePath('common', '.prettierignore'),
       path.join(cwd, '.prettierignore'),
@@ -271,40 +210,30 @@ export async function generateCommon(answers, cwd = process.cwd()) {
   }
 
   if (setupPrecommit) {
-    if (precommitTool === 'hk') {
-      const hkDest = path.join(cwd, 'hk.pkl');
-      if (!(await fs.pathExists(hkDest))) {
-        await fs.writeFile(hkDest, renderHkPkl({ lintOption, vitestPreset, isFrontend, isApp, isElectron }));
-        console.log(pc.green('✔') + '    hk.pkl');
+    const huskyDir = path.join(cwd, '.husky');
+    await fs.ensureDir(huskyDir);
+
+    const preCommitDest = path.join(huskyDir, 'pre-commit');
+    if (!(await fs.pathExists(preCommitDest))) {
+      const lines = ['npx lint-staged', 'npm run typecheck'];
+      if (!isFrontend && !isApp && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+        lines.push('npm run test');
       }
-      // .mise.toml (hk + pkl + [hooks]) is ensured after the type generator runs — see src/index.js
-      // so it appends to the type's real .mise.toml (e.g. bun for elysia) instead of clobbering it.
+      await fs.writeFile(preCommitDest, `${lines.join('\n')}\n`);
+      console.log(pc.green('✔') + '    .husky/pre-commit');
     } else {
-      const huskyDir = path.join(cwd, '.husky');
-      await fs.ensureDir(huskyDir);
+      console.log(pc.dim('–') + '    .husky/pre-commit (already exists, skipped)');
+    }
 
-      const preCommitDest = path.join(huskyDir, 'pre-commit');
-      if (!(await fs.pathExists(preCommitDest))) {
-        const lines = ['npx lint-staged', 'npm run typecheck'];
-        if (!isFrontend && !isApp && !isElectron && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
-          lines.push('npm run test');
-        }
-        await fs.writeFile(preCommitDest, `${lines.join('\n')}\n`);
-        console.log(pc.green('✔') + '    .husky/pre-commit');
-      } else {
-        console.log(pc.dim('–') + '    .husky/pre-commit (already exists, skipped)');
-      }
-
-      if (lintOption.includes('commitlint')) {
-        const commitMsgDest = path.join(huskyDir, 'commit-msg');
-        await copyIfMissing(templatePath('common', '.husky/commit-msg'), commitMsgDest, '.husky/commit-msg');
-      }
+    if (lintOption.includes('commitlint')) {
+      const commitMsgDest = path.join(huskyDir, 'commit-msg');
+      await copyIfMissing(templatePath('common', '.husky/commit-msg'), commitMsgDest, '.husky/commit-msg');
     }
   }
 
   console.log(pc.green('→') + '  creating project directories:');
 
-  if (!isFrontend && !isApp && !isElectron && projectType !== 'cli' && projectType !== 'backend') {
+  if (!isFrontend && !isApp && projectType !== 'cli' && projectType !== 'backend') {
     const srcDir = path.join(cwd, 'src');
     await fs.ensureDir(srcDir);
     const mainTs = path.join(srcDir, 'main.ts');

@@ -5,7 +5,6 @@ import path from 'node:path';
 import { copyIfMissing, templatePath } from '../utils/file-system.js';
 
 const FRONTEND_FILES = [
-  '.nvmrc',
   'index.html',
   'vite.config.ts',
   'vitest.config.ts',
@@ -39,7 +38,7 @@ export async function generateFrontend(answers, cwd = process.cwd()) {
     await copyFrontendFile(file, cwd);
   }
 
-  if (answers.linter === 'eslint') {
+  if (answers.linter !== 'biome') {
     await copyFrontendFile('eslint.config.js', cwd);
   }
 }
