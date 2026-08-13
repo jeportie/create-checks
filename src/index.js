@@ -2,7 +2,7 @@
 
 import pc from 'picocolors';
 
-import { generateCommon, ensureHkInMise } from './generators/common.js';
+import { generateCommon } from './generators/common.js';
 import { askCommonQuestions } from './prompts/common.js';
 import { askProjectType } from './prompts/project-type.js';
 import { prompt, BACK } from './utils/prompt.js';
@@ -26,7 +26,6 @@ const typeSpecificAskers = {
   'npm-lib': () => import('./prompts/npm-lib.js').then((m) => m.askNpmLibQuestions()),
   cli: () => import('./prompts/cli.js').then((m) => m.askCliQuestions()),
   app: () => import('./prompts/app.js').then((m) => m.askAppQuestions()),
-  electron: () => import('./prompts/electron.js').then((m) => m.askElectronQuestions()),
 };
 
 const modeLabels = {
@@ -35,7 +34,6 @@ const modeLabels = {
   'npm-lib': 'npm library',
   cli: 'CLI tool',
   app: 'mobile app',
-  electron: 'desktop app',
 };
 
 const answers = await runWizard([
@@ -126,36 +124,12 @@ if (answers.projectType === 'app') {
   }
 }
 
-if (answers.projectType === 'electron') {
-  try {
-    const { generateElectron } = await import('./generators/electron.js');
-    await generateElectron(answers, process.cwd());
-  } catch {
-    // Electron module is optional until the feature branch merges.
-  }
-}
-
-if (answers.setupPrecommit && answers.precommitTool === 'hk') {
-  // Runs AFTER the type generator so it appends hk/pkl/[hooks] to the type's real
-  // .mise.toml (e.g. bun for elysia) instead of clobbering it with a node-only create.
-  await ensureHkInMise(process.cwd());
-}
-
 if (answers.setupPlaywright) {
   try {
     const { generatePlaywright } = await import('./generators/playwright.js');
     await generatePlaywright(answers, process.cwd());
   } catch {
     // Playwright module is optional until feature branch is merged.
-  }
-}
-
-if (answers.includeAgentCrew) {
-  try {
-    const { generateAgentCrew } = await import('./generators/agentCrew.js');
-    await generateAgentCrew(answers, process.cwd());
-  } catch {
-    // Agent crew module is optional.
   }
 }
 

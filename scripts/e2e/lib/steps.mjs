@@ -40,8 +40,8 @@ function checkManifest(dir, combo) {
   for (const rel of expectedFiles(combo)) {
     if (!existsSync(join(dir, rel))) missing.push(rel);
   }
-  const hasLinter = Object.values(LINTER_FILES).some((f) => existsSync(join(dir, f)));
-  if (!hasLinter) missing.push(Object.values(LINTER_FILES).join('|'));
+  const hasLinter = existsSync(join(dir, LINTER_FILES.eslint)) || existsSync(join(dir, LINTER_FILES.biome));
+  if (!hasLinter) missing.push(`${LINTER_FILES.eslint}|${LINTER_FILES.biome}`);
   return missing;
 }
 

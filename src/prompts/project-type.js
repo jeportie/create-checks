@@ -20,7 +20,6 @@ export async function askProjectType() {
         { name: 'backend service', value: 'backend' },
         { name: 'frontend app', value: 'frontend' },
         { name: 'mobile app', value: 'app' },
-        { name: 'desktop app (Electron)', value: 'electron' },
       ],
     },
   ]);

@@ -22,14 +22,12 @@ async function appendGitignoreEntries(cwd) {
   await fs.appendFile(gitignorePath, `${prefix}${missing.join('\n')}\n`);
 }
 
-async function addPlaywrightScripts(pkgPath, isElectron) {
+async function addPlaywrightScripts(pkgPath) {
   const pkg = await fs.readJson(pkgPath);
-  // The electron app must be built before the _electron launcher has an entry point.
-  const prefix = isElectron ? 'electron-vite build && ' : '';
   pkg.scripts = {
     ...pkg.scripts,
-    'test:e2e': `${prefix}npx playwright test`,
-    'test:e2e:ui': `${prefix}npx playwright test --ui`,
+    'test:e2e': 'npx playwright test',
+    'test:e2e:ui': 'npx playwright test --ui',
   };
   pkg.scripts = orderScripts(pkg.scripts);
   await fs.writeJson(pkgPath, orderPackageKeys(pkg), { spaces: 2 });
@@ -37,24 +35,19 @@ async function addPlaywrightScripts(pkgPath, isElectron) {
 
 export async function generatePlaywright(answers, cwd = process.cwd()) {
   const { projectType } = answers;
-  const isElectron = projectType === 'electron';
   console.log(pc.green('→') + '  copying Playwright files...');
 
-  const configTemplate = isElectron
-    ? templatePath('electron', 'playwright.config.ts')
-    : templatePath('playwright', 'playwright.config.ts');
-  await copyIfMissing(configTemplate, path.join(cwd, 'playwright.config.ts'), 'playwright.config.ts');
+  await copyIfMissing(
+    templatePath('playwright', 'playwright.config.ts'),
+    path.join(cwd, 'playwright.config.ts'),
+    'playwright.config.ts',
+  );
 
   await fs.ensureDir(path.join(cwd, 'tests', 'e2e'));
 
-  if (isElectron) {
-    const spec = 'tests/e2e/app.e2e.ts';
-    await copyIfMissing(templatePath('electron', spec), path.join(cwd, spec), spec);
-  } else {
-    const specFile = projectType === 'frontend' ? 'tests/e2e/welcome.spec.ts' : 'tests/e2e/example.spec.ts';
-    await copyIfMissing(templatePath('playwright', specFile), path.join(cwd, specFile), specFile);
-  }
+  const specFile = projectType === 'frontend' ? 'tests/e2e/welcome.spec.ts' : 'tests/e2e/example.spec.ts';
+  await copyIfMissing(templatePath('playwright', specFile), path.join(cwd, specFile), specFile);
 
   await appendGitignoreEntries(cwd);
-  await addPlaywrightScripts(path.join(cwd, 'package.json'), isElectron);
+  await addPlaywrightScripts(path.join(cwd, 'package.json'));
 }
