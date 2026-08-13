@@ -6,7 +6,7 @@ function fromEnv() {
 }
 
 export async function askPlaywrightQuestion(projectType) {
-  if (projectType !== 'frontend') {
+  if (projectType !== 'frontend' && projectType !== 'electron') {
     return { setupPlaywright: false };
   }
 

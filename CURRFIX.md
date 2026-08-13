@@ -71,6 +71,7 @@ tier is **16/16 green on Linux CI**.
 ## Post-Phase-F fixes (surfaced after the electron PR / by the full Tier-2 verify sweep)
 
 - [ ] CF-047 | APP/PUBLISH | app scaffold crashes with ENOENT — npm strips `src/templates/app/.npmrc` from the published tarball; ship it as `_npmrc` (mirrors `_gitignore`) | STATUS=OPEN | reported_by=jeportie | GH=#86
+- [ ] CF-049 | ELECTRON/TEST | electron did not offer Vitest (+coverage) or Playwright in the wizard (modeled on app, not frontend) | STATUS=OPEN | reported_by=jeportie | GH=#105
 
 ## Issue Entry Template
 
