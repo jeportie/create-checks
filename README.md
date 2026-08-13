@@ -26,9 +26,10 @@ The CLI first asks what you're building, then tailors everything to that choice:
 | **CLI tool**        | Commander/Inquirer/Clack templates + `bin` wiring + unit tests  |
 | **backend service** | Hono/Fastify/Express/Elysia templates + optional Docker + tests |
 | **frontend app**    | React + Vite + Tailwind CSS v4 starter with component tests     |
+| **desktop app**     | Electron + electron-vite + React, with optional Vitest + Playwright (`_electron`) |
 | **mobile app**      | React Native + Expo starter with optional Jest and Detox        |
 
-All project types share a common foundation: ESLint 9 flat config, Prettier, TypeScript strict mode, and optional tooling (Vitest, Husky, CSpell, Secretlint, Commitlint).
+All project types share a common foundation: your **choice of linter + formatter** (ESLint 9 + Prettier, Biome, or oxlint + oxfmt), TypeScript strict mode, and optional tooling (Vitest, a **pre-commit hook via Husky or hk**, CSpell, Secretlint, Commitlint). **Node 22** is the standardized runtime.
 
 ### npm library
 
@@ -64,6 +65,16 @@ All project types share a common foundation: ESLint 9 flat config, Prettier, Typ
 - **E2E:** optional Playwright with `tests/e2e/` starter spec
 - **ESLint:** React Hooks + React Refresh plugins added to the common config
 
+### Desktop app (Electron)
+
+- **Stack:** Electron + [electron-vite](https://electron-vite.org/) + React 19 + TypeScript
+- **Three processes:** a Node **main** process (`src/main/`), a **preload** bridge (`contextBridge.exposeInMainWorld`, `contextIsolation: true`), and a React **renderer** (`src/renderer/`)
+- **Build:** `electron-vite` bundles all three processes to `out/`; `electron-builder` packages installers (`npm run dist`)
+- **Security:** context isolation on, no `nodeIntegration`, `setWindowOpenHandler` → deny + `openExternal`, restrictive CSP `<meta>`
+- **Typecheck:** dual config — `tsconfig.node.json` (main + preload) and `tsconfig.web.json` (renderer)
+- **Tests:** optional Vitest (happy-dom renderer tests) and Playwright E2E via the official `_electron.launch()` API (launches the built app)
+- **Defaults:** oxlint + oxfmt for linting and hk for the pre-commit hook — both overridable in the wizard
+
 ### Mobile app
 
 - **Framework:** React Native with Expo (managed or bare workflow)
@@ -74,11 +85,33 @@ All project types share a common foundation: ESLint 9 flat config, Prettier, Typ
 
 ---
 
+## Linters & formatters
+
+Pick one at scaffold time (the **Linter & formatter?** prompt, or the `LINTER` env var). Every generated project's `lint` / `format` / `check` scripts and its pre-commit hook adapt to your choice — the tooling is linter-agnostic.
+
+| Choice | Lint | Format | Config |
+| --- | --- | --- | --- |
+| **ESLint + Prettier** (default) | `eslint .` | `prettier . --write` | `eslint.config.js` (flat, type-checked) + `prettier.config.js` |
+| **Biome** | `biome check .` | `biome format --write .` | `biome.json` |
+| **oxlint + oxfmt** | `oxlint .` | `oxfmt .` | `.oxlintrc.json` + `.oxfmtrc.json` |
+
+`oxlint` / `oxfmt` are Rust-based and dramatically faster; they are the default for the **desktop (Electron)** type.
+
+## Pre-commit hooks
+
+Choose **Husky**, **hk**, or **none** (the **Pre-commit hooks?** prompt, or `SETUP_PRECOMMIT`):
+
+- **Husky + lint-staged** (default) — installed as devDependencies; `.husky/pre-commit` runs `lint-staged` + `typecheck` (+ `test` when a Vitest preset is set) and `.husky/commit-msg` runs commitlint. Self-activates on `npm install`.
+- **hk** ([jdx/hk](https://hk.jdx.dev/)) — a Rust git-hook manager installed via **mise**, not npm. Generates `hk.pkl` (running `format` + `lint` + `typecheck`, plus `spellcheck` / `secretlint` when selected) and pins `hk` + `pkl` in `.mise.toml`. Activate the hooks with `mise install`.
+- **None** — no hook wiring.
+
+---
+
 ## What it does
 
 Running `npm create @jeportie/tskickstart` inside a project directory will:
 
-1. **Ask your project type** — npm library, CLI tool, backend, frontend, or mobile
+1. **Ask your project type** — npm library, CLI tool, backend, frontend, desktop (Electron), or mobile
 2. **Ensure `package.json` exists** — creates one with `npm init -y` if missing, or patches `"type": "module"`
 3. **Install** all required dev dependencies for your selections
 4. **Copy** config files and starter templates into your project root
@@ -90,13 +123,14 @@ Running `npm create @jeportie/tskickstart` inside a project directory will:
 
 | Prompt | What it sets up |
 | --- | --- |
-| **What are you building?** | Project type — determines which templates and dependencies are used |
+| **What are you building?** | Project type — npm library, CLI, backend, frontend, **desktop (Electron)**, or mobile |
 | **Configure \<type\>** | Type-specific questions (framework, Docker, semantic-release, etc.) |
+| **Linter & formatter?** | **ESLint + Prettier** (default), **Biome**, or **oxlint + oxfmt** (fast, Rust) |
 | **Your name** | Reads from `git config github.user` (then `user.name`); added to `package.json` and cspell |
 | **Select more lint options** | Multi-select: `cspell`, `secretlint`, `commitlint` |
 | **Set up Vitest?** | Optional test runner — choose Native or Coverage preset |
-| **Set up pre-commit hook?** | Husky + lint-staged wired to your selected tools |
-| **Set up Playwright?** | E2E testing with Playwright (frontend only) |
+| **Pre-commit hooks?** | **Husky + lint-staged**, **hk** (Rust hook manager, via mise), or **None** |
+| **Set up Playwright?** | E2E testing with Playwright (frontend + **desktop/Electron**) |
 
 All existing files are left untouched (the CLI skips them with a notice). The wizard supports `← Back` navigation to revisit previous choices.
 
@@ -184,15 +218,10 @@ The frontend gets its own `eslint.config.js` with:
 
 ## Playwright E2E testing
 
-Available for **frontend** project types. When enabled:
+Available for **frontend** and **desktop (Electron)** project types. When enabled it installs `@playwright/test`, drops a `playwright.config.ts` + starter spec into `tests/e2e/`, appends `playwright-report/` and `test-results/` to `.gitignore`, and adds `test:e2e` / `test:e2e:ui` scripts.
 
-- Installs `@playwright/test`
-- Copies `playwright.config.ts` (configured with `testDir: 'tests/e2e'`, `baseURL: 'http://localhost:5173'`)
-- Creates `tests/e2e/` with a starter spec file
-- Appends `playwright-report/` and `test-results/` to `.gitignore`
-- Adds `test:e2e` and `test:e2e:ui` scripts
-
-The frontend starter includes a `welcome.spec.ts` that validates the Welcome page renders correctly.
+- **Frontend** — a browser config (chromium/firefox/webkit) with a dev-server `webServer`, and a `welcome.spec.ts` that validates the Welcome page.
+- **Electron** — the official [`_electron`](https://playwright.dev/docs/api/class-electron) API instead: the config sets `testMatch: '**/*.e2e.ts'`, and `tests/e2e/app.e2e.ts` calls `_electron.launch(['out/main/index.js'])` to boot the built app and assert its window. Its `test:e2e` builds first (`electron-vite build && npx playwright test`).
 
 ---
 
@@ -219,20 +248,21 @@ npm create @jeportie/tskickstart
         └──▶ npm downloads the create-tskickstart package
             └──▶ node runs ./src/index.js
                 │
-                ├─ 1. prompt — project type (npm-lib / cli / backend / frontend / app)
+                ├─ 1. prompt — project type (npm-lib / cli / backend / frontend / electron / app)
                 ├─ 2. prompt — type-specific options (framework, Docker, semantic-release, etc.)
-                ├─ 3. prompt — author name (git config → prompt)
-                ├─ 4. prompt — lint options (cspell / secretlint / commitlint)
-                ├─ 5. prompt — Vitest preset (none / native / coverage)
-                ├─ 6. prompt — pre-commit hook (husky + lint-staged)
-                ├─ 7. prompt — Playwright E2E (frontend only)
-                ├─ 8. ensure package.json + "type": "module"
-                ├─ 9. npm install all selected dependencies
-                ├─ 10. copy common config templates → project root
-                ├─ 11. copy project-type-specific templates
-                ├─ 12. copy Playwright templates (if selected)
-                ├─ 13. inject scripts + author + lint-staged → package.json
-                └─ 14. generate README.md tailored to selections
+                ├─ 3. prompt — linter & formatter (eslint / biome / oxlint)
+                ├─ 4. prompt — author name (git config → prompt)
+                ├─ 5. prompt — lint options (cspell / secretlint / commitlint)
+                ├─ 6. prompt — Vitest preset (none / native / coverage)
+                ├─ 7. prompt — pre-commit hook (husky / hk / none)
+                ├─ 8. prompt — Playwright E2E (frontend / electron)
+                ├─ 9. ensure package.json + "type": "module"
+                ├─ 10. npm install all selected dependencies
+                ├─ 11. copy common config templates → project root
+                ├─ 12. copy project-type-specific templates
+                ├─ 13. copy Playwright templates (if selected)
+                ├─ 14. inject scripts + author + lint-staged → package.json
+                └─ 15. generate README.md tailored to selections
 ```
 
 ### Modular architecture
@@ -471,17 +501,20 @@ Coverage reports are written to `coverage/` and include HTML, JSON, and a JSON s
 Control behavior via environment variables to bypass interactive prompts:
 
 ```sh
-# Project type
-PROJECT_TYPE=frontend node ./src/index.js
+# Project type — npm-lib | cli | backend | frontend | electron | app
+PROJECT_TYPE=electron node ./src/index.js
 
-# Vitest preset
+# Linter & formatter — eslint | biome | oxlint
+LINTER=oxlint node ./src/index.js
+
+# Vitest preset — native | coverage | none
 VITEST_PRESET=native node ./src/index.js
-VITEST_PRESET=coverage node ./src/index.js
-VITEST_PRESET=none node ./src/index.js
 
-# Playwright (frontend only)
+# Pre-commit hook — husky | hk | 0 (none) | 1 (husky)
+SETUP_PRECOMMIT=hk node ./src/index.js
+
+# Playwright E2E (frontend + electron)
 PLAYWRIGHT=1 node ./src/index.js
-PLAYWRIGHT=0 node ./src/index.js
 
 # Author name
 AUTHOR_NAME="Jane Doe" node ./src/index.js
@@ -490,7 +523,7 @@ AUTHOR_NAME="Jane Doe" node ./src/index.js
 NO_INSTALL=1 node ./src/index.js
 
 # Combine them
-PROJECT_TYPE=frontend VITEST_PRESET=coverage PLAYWRIGHT=1 NO_INSTALL=1 node ./src/index.js
+PROJECT_TYPE=electron LINTER=oxlint VITEST_PRESET=coverage PLAYWRIGHT=1 SETUP_PRECOMMIT=hk NO_INSTALL=1 node ./src/index.js
 ```
 
 ---
@@ -576,6 +609,7 @@ tskickstart/
 │   │   ├── cli.js                  # CLI options (framework, semantic-release)
 │   │   ├── backend.js              # Backend options (framework, Docker, Zod)
 │   │   ├── frontend.js             # Frontend-specific prompts
+│   │   ├── electron.js             # Desktop (Electron) options
 │   │   ├── app.js                  # Mobile app options (workflow, testing)
 │   │   └── playwright.js           # "Set up Playwright?" prompt
 │   ├── generators/
@@ -584,6 +618,7 @@ tskickstart/
 │   │   ├── cli.js                  # bin wiring, command templates
 │   │   ├── backend.js              # Server, Docker templates
 │   │   ├── frontend.js             # React + Vite + Tailwind generation
+│   │   ├── electron.js             # electron-vite scaffold generation
 │   │   ├── app.js                  # Expo + React Native generation
 │   │   └── playwright.js           # Playwright config and spec generation
 │   ├── templates/
@@ -592,6 +627,7 @@ tskickstart/
 │   │   ├── cli/                    # Command and test templates
 │   │   ├── backend/                # Server, Docker templates
 │   │   ├── frontend/               # React starter (components, tests, configs)
+│   │   ├── electron/               # electron-vite starter (main/preload/renderer)
 │   │   ├── app/                    # Expo starter (screens, navigation, configs)
 │   │   └── playwright/             # Playwright config and example specs
 │   └── utils/
@@ -609,6 +645,7 @@ tskickstart/
 │       ├── cli.int.test.js         # CLI scaffold tests
 │       ├── backend.int.test.js     # Backend scaffold tests
 │       ├── frontend.int.test.js    # Frontend scaffold tests
+│       ├── electron.int.test.js    # Desktop (Electron) scaffold tests
 │       ├── app.int.test.js         # Mobile app scaffold tests
 │       ├── playwright.int.test.js  # Playwright scaffold tests
 │       ├── cspell.int.test.js      # CSpell integration tests
