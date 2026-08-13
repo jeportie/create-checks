@@ -18,6 +18,7 @@ async function copyNpmLibFile(file, cwd) {
 export async function generateNpmLib(answers, cwd) {
   console.log(pc.green('→') + '  copying npm-lib files...');
 
+  await copyNpmLibFile('.nvmrc', cwd);
   await copyNpmLibFile('tsup.config.ts', cwd);
 
   if (answers.setupSemanticRelease) {

@@ -44,6 +44,22 @@ async function installWithRetry(args, startText, successText, failureText) {
   console.log(pc.green('✔') + `  ${successText}`);
 }
 
+// Install a dev dependency pinned to the exact version of an already-installed
+// package (e.g. an Expo-pinned one), falling back to the unpinned latest.
+async function installDevPinnedTo(sourcePkg, targetName, startText, doneText) {
+  const stop = startSpinner(startText);
+  try {
+    const { stdout: version } = await execa('node', [
+      '-e',
+      `process.stdout.write(require('${sourcePkg}/package.json').version)`,
+    ]);
+    await execa('npm', ['install', '-D', `${targetName}@${version}`], { stdio: 'pipe' });
+  } catch {
+    await execa('npm', ['install', '-D', targetName], { stdio: 'pipe' });
+  }
+  stop(doneText);
+}
+
 export async function installDeps(answers, options = {}) {
   if (shouldSkipInstall()) return;
 
@@ -54,6 +70,8 @@ export async function installDeps(answers, options = {}) {
 
   if (linter === 'biome') {
     devDeps.push('@biomejs/biome');
+  } else if (linter === 'oxlint') {
+    devDeps.push('oxlint@~1.51.0', 'oxfmt@^0.36.0');
   } else {
     devDeps.push(
       'eslint@^9',
@@ -72,7 +90,7 @@ export async function installDeps(answers, options = {}) {
   }
 
   if (lintOption.includes('cspell')) {
-    if (linter !== 'biome') {
+    if (linter === 'eslint') {
       devDeps.push('@cspell/eslint-plugin');
     }
     devDeps.push('cspell@^8');
@@ -85,7 +103,7 @@ export async function installDeps(answers, options = {}) {
     }
   }
 
-  if (setupPrecommit) {
+  if (setupPrecommit && answers.precommitTool !== 'hk') {
     devDeps.push('husky', 'lint-staged');
   }
 
@@ -111,6 +129,34 @@ export async function installDeps(answers, options = {}) {
       'eslint-plugin-react-hooks',
       'eslint-plugin-react-refresh',
       'globals',
+      '@vitest/coverage-v8@^2',
+    );
+  }
+
+  if (projectType === 'electron') {
+    devDeps.push(
+      'electron@^39',
+      'electron-vite@^5',
+      'electron-builder@^26',
+      'vite@^7',
+      '@vitejs/plugin-react@^5',
+      '@electron-toolkit/tsconfig@^2',
+      '@types/react@^19',
+      '@types/react-dom@^19',
+    );
+  }
+
+  if (projectType === 'electron' && linter === 'eslint') {
+    devDeps.push('eslint-plugin-react-hooks', 'eslint-plugin-react-refresh', 'globals');
+  }
+
+  if (projectType === 'electron' && (vitestPreset === 'native' || vitestPreset === 'coverage')) {
+    devDeps.push(
+      'happy-dom',
+      '@testing-library/react',
+      '@testing-library/jest-dom',
+      '@testing-library/user-event',
+      '@testing-library/dom',
       '@vitest/coverage-v8@^2',
     );
   }
@@ -192,7 +238,6 @@ export async function installDeps(answers, options = {}) {
       devDeps.push(
         'jest@~29.7.0',
         'jest-expo',
-        '@react-native/jest-preset',
         '@jest/globals',
         '@types/jest@^29.5.14',
         '@testing-library/react-native@^12',
@@ -249,6 +294,10 @@ export async function installDeps(answers, options = {}) {
     );
   }
 
+  if (projectType === 'electron') {
+    prodDeps.push('react@^19', 'react-dom@^19', '@electron-toolkit/preload@^3', '@electron-toolkit/utils@^4');
+  }
+
   const finalProdDeps = unique(prodDeps);
   const finalDevDeps = unique([...devDeps, ...extraDeps]);
 
@@ -295,18 +344,22 @@ export async function installDeps(answers, options = {}) {
     stopSpinner('Expo-compatible versions installed');
 
     if (answers.setupAppJest) {
-      // react-test-renderer must exactly match the Expo-pinned react version
-      const stopRtr = startSpinner('Installing react-test-renderer...');
-      try {
-        const { stdout: reactVersion } = await execa('node', [
-          '-e',
-          "process.stdout.write(require('react/package.json').version)",
-        ]);
-        await execa('npm', ['install', '-D', `react-test-renderer@${reactVersion}`], { stdio: 'pipe' });
-      } catch {
-        await execa('npm', ['install', '-D', 'react-test-renderer'], { stdio: 'pipe' });
-      }
-      stopRtr('react-test-renderer installed');
+      // Both packages must exactly match the Expo-pinned versions. The unpinned
+      // latest @react-native/jest-preset expects a newer react-native internal
+      // layout (react-native/setup-env) and breaks the jest-expo preset (CF-048);
+      // react-test-renderer must line up with react.
+      await installDevPinnedTo(
+        'react-native',
+        '@react-native/jest-preset',
+        'Installing @react-native/jest-preset...',
+        '@react-native/jest-preset installed',
+      );
+      await installDevPinnedTo(
+        'react',
+        'react-test-renderer',
+        'Installing react-test-renderer...',
+        'react-test-renderer installed',
+      );
     }
   }
 }

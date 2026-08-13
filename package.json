@@ -37,6 +37,8 @@
     "test": "vitest --run",
     "test:coverage": "vitest --coverage --run",
     "test:integration": "vitest int --run",
+    "check": "npm run lint && npm run secretlint && npm run spellcheck && npm test",
+    "try:cli": "node scripts/try.mjs",
     "e2e": "node scripts/e2e/run.mjs --tier=all",
     "e2e:gen": "node scripts/e2e/run.mjs --tier=gen",
     "e2e:verify": "node scripts/e2e/run.mjs --tier=verify",

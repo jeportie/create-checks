@@ -13,7 +13,7 @@ Tiers:
 Filters (combine freely; all are AND-ed):
   --type=<t>        npm-lib | cli | backend | frontend | app
   --group=<g>       group id prefix, e.g. backend-db, common-toggles
-  --linter=<l>      eslint | biome
+  --linter=<l>      eslint | biome | oxlint
   --framework=<f>   backend or cli framework (hono/fastify/express/elysia/commander/...)
   --db-engine=<e>   postgresql | mysql | mariadb | sqlite | mongodb
   --orm=<o>         none | drizzle | prisma | mongoose

@@ -66,6 +66,11 @@ tier is **16/16 green on Linux CI**.
 - [x] CF-044 | E2E/DB | DB-connectivity test skips without `DATABASE_URL` and lazy-imports the db module — fixes CI-without-a-database failures (`ECONNREFUSED` / mongo timeout) | STATUS=DONE | reported_by=assistant | commit ee0c9d4
 - [x] CF-045 | E2E/DB | `better-sqlite3` native addon crashed the vitest worker on teardown (darwin-arm64); resolved by CF-044's lazy-import (native addon no longer loads when the test skips) — 16/16 green on Linux CI | STATUS=DONE | reported_by=assistant | commit ee0c9d4
 - [x] CF-046 | E2E/TEST | Exclude `dist/**` from vitest (compiled tests double-ran); pin generated `cspell` `^8` (cspell ≥9 requires Node ≥22.18; scaffolds target Node 20) | STATUS=DONE | reported_by=assistant | commit fbb1375
+## Post-Phase-F fixes (surfaced after the electron PR / by the full Tier-2 verify sweep)
+
+- [x] CF-047 | APP/PUBLISH | app scaffold crashes with ENOENT — npm strips `src/templates/app/.npmrc` from the published tarball; ship it as `_npmrc` (mirrors `_gitignore`) | STATUS=DONE | reported_by=jeportie | GH=#86 | PR=#103 merged to dev
+- [x] CF-048 | E2E/APP | app managed+jest: unpinned @react-native/jest-preset mismatches the Expo-pinned react-native (cannot resolve react-native/setup-env) | STATUS=DONE | reported_by=jeportie | GH=#102 | PR=#104 merged to dev
+- [x] CF-049 | ELECTRON/TEST | electron did not offer Vitest (+coverage) or Playwright in the wizard (modeled on app, not frontend) | STATUS=DONE | reported_by=jeportie | GH=#105 | PR=#106 merged to dev
 
 ## Issue Entry Template
 
