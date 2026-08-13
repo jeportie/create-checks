@@ -5,7 +5,6 @@ import path from 'node:path';
 import { copyIfMissing, templatePath } from '../utils/file-system.js';
 
 const APP_CORE_FILES = [
-  '.npmrc',
   'index.ts',
   'app.json',
   'babel.config.cjs',
@@ -22,7 +21,7 @@ const APP_JEST_FILES = ['jest.config.cjs', 'tests/setup.ts', 'tests/unit/HomeScr
 const APP_DETOX_FILES = ['.detoxrc.cjs', 'tests/e2e/jest.config.cjs', 'tests/e2e/firstTest.e2e.ts'];
 
 const APP_OVERWRITE_FILES = new Set([
-  ...APP_CORE_FILES.filter((file) => file !== '.npmrc'),
+  ...APP_CORE_FILES,
   ...APP_JEST_FILES,
   ...APP_DETOX_FILES,
 ]);
@@ -54,7 +53,7 @@ export async function generateApp(answers, cwd) {
     await copyAppFile(file, cwd, { overwrite: APP_OVERWRITE_FILES.has(file) });
   }
 
-  if (answers.linter !== 'biome') {
+  if (answers.linter === 'eslint') {
     await copyAppFile('eslint.config.js', cwd, { overwrite: true });
   }
 

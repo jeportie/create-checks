@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": { "node": true, "browser": true },
+  "plugins": ["eslint", "typescript", "import", "unicorn", "oxc", "react", "jsx-a11y"],
+  "categories": { "correctness": "error", "suspicious": "warn", "pedantic": "off" },
+  "ignorePatterns": ["node_modules", "dist", "out", "coverage"],
+  "rules": {
+    "eslint/no-unused-vars": "warn",
+    "eslint/no-empty-pattern": "warn",
+    "import/no-duplicates": "error",
+    "typescript/no-explicit-any": "warn"
+  }
+}

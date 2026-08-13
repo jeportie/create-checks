@@ -36,6 +36,13 @@ describe('npm-lib project scaffold', () => {
     expect(existsSync(join(tmpDir, 'tsup.config.ts'))).toBe(true);
   });
 
+  it('pins Node 22 via .nvmrc', () => {
+    tmpDir = createTmpProject();
+    runCli(tmpDir, { SEMANTIC_RELEASE: '0' });
+    expect(existsSync(join(tmpDir, '.nvmrc'))).toBe(true);
+    expect(readFileSync(join(tmpDir, '.nvmrc'), 'utf-8').trim()).toBe('22');
+  });
+
   it('tsup.config.ts has dual format (cjs, esm) and dts enabled', () => {
     tmpDir = createTmpProject();
     runCli(tmpDir, { SEMANTIC_RELEASE: '1' });

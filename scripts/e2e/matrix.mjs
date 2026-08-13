@@ -10,7 +10,7 @@
  * The engine/ORM pairs mirror `ormChoicesByEngine` in src/prompts/database.js.
  */
 
-const linter = { eslint: { LINTER: 'eslint' }, biome: { LINTER: 'biome' } };
+const linter = { eslint: { LINTER: 'eslint' }, biome: { LINTER: 'biome' }, oxlint: { LINTER: 'oxlint' } };
 
 // engine + ORM pairs (ORM choices are constrained by engine — see src/prompts/database.js)
 const dbPairs = {
@@ -61,6 +61,19 @@ export const GROUPS = [
     type: 'frontend',
     dims: {
       linter,
+      e2e: { 'pw-off': { PLAYWRIGHT: '0' }, 'pw-on': { PLAYWRIGHT: '1' } },
+    },
+  },
+  {
+    id: 'electron',
+    type: 'electron',
+    dims: {
+      linter,
+      vitest: {
+        'v-none': { VITEST_PRESET: 'none' },
+        'v-native': { VITEST_PRESET: 'native' },
+        'v-coverage': { VITEST_PRESET: 'coverage' },
+      },
       e2e: { 'pw-off': { PLAYWRIGHT: '0' }, 'pw-on': { PLAYWRIGHT: '1' } },
     },
   },
@@ -129,7 +142,11 @@ export const GROUPS = [
         'lo-cspell': { LINT_OPTIONS: 'cspell' },
         'lo-all': { LINT_OPTIONS: 'cspell,secretlint,commitlint' },
       },
-      precommit: { husky: { SETUP_PRECOMMIT: '1' }, nohusky: { SETUP_PRECOMMIT: '0' } },
+      precommit: {
+        husky: { SETUP_PRECOMMIT: '1' },
+        hk: { SETUP_PRECOMMIT: 'hk' },
+        nohusky: { SETUP_PRECOMMIT: '0' },
+      },
       cicd: { 'cicd-off': { SETUP_CICD: '0' }, 'cicd-on': { SETUP_CICD: '1' } },
     },
   },
@@ -178,12 +195,23 @@ export const MANIFESTS = {
   backend: ['src/index.ts', 'tsconfig.json'],
   frontend: ['vite.config.ts', 'src/main.tsx'],
   app: ['app.json', 'src/App.tsx'],
+  electron: ['electron.vite.config.ts', 'src/main/index.ts'],
 };
 
-export const LINTER_FILES = { eslint: 'eslint.config.js', biome: 'biome.json' };
+export const LINTER_FILES = { eslint: 'eslint.config.js', biome: 'biome.json', oxlint: '.oxlintrc.json' };
 
+// Some files are conditional on env toggles rather than always present for a
+// type, so they cannot live in the static MANIFESTS. electron ships renderer
+// vitest files only when a preset is selected (no preset ⇒ they must be absent).
 export function expectedFiles(combo) {
-  return [...MANIFESTS.common, ...(MANIFESTS[combo.type] || [])];
+  const files = [...MANIFESTS.common, ...(MANIFESTS[combo.type] || [])];
+  if (combo.type === 'electron' && ['native', 'coverage'].includes(combo.env.VITEST_PRESET)) {
+    files.push('vitest.config.ts', 'tests/setup.ts', 'tests/unit/App.unit.test.tsx');
+  }
+  if (combo.type === 'electron' && combo.env.PLAYWRIGHT === '1') {
+    files.push('playwright.config.ts', 'tests/e2e/app.e2e.ts');
+  }
+  return files;
 }
 
 function verifyCombo(type, name, env) {
@@ -214,6 +242,7 @@ export const VERIFY = [
     LINT_OPTIONS: 'cspell,secretlint,commitlint',
   }),
   verifyCombo('npm-lib', 'biome-sr', { LINTER: 'biome', PKG_MANAGER: 'npm', SEMANTIC_RELEASE: '1' }),
+  verifyCombo('npm-lib', 'oxlint-npm', { LINTER: 'oxlint', PKG_MANAGER: 'npm', SEMANTIC_RELEASE: '0' }),
   verifyCombo('cli', 'commander', { LINTER: 'eslint', CLI_FRAMEWORK: 'commander', SEMANTIC_RELEASE: '0', VITEST_PRESET: 'native' }),
   verifyCombo('cli', 'inquirer', { LINTER: 'eslint', CLI_FRAMEWORK: 'inquirer', SEMANTIC_RELEASE: '0' }),
   verifyCombo('cli', 'clack-biome', { LINTER: 'biome', CLI_FRAMEWORK: 'clack', SEMANTIC_RELEASE: '0' }),
@@ -228,6 +257,7 @@ export const VERIFY = [
     SETUP_DATABASE: '0',
     VITEST_PRESET: 'native',
   }),
+  verifyCombo('backend', 'hono-hk', { LINTER: 'eslint', BACKEND_FRAMEWORK: 'hono', SETUP_PRECOMMIT: 'hk', VITEST_PRESET: 'native' }),
   verifyCombo('backend', 'fastify', { LINTER: 'eslint', BACKEND_FRAMEWORK: 'fastify', BACKEND_ZOD: '1', DOCKER: '0', SETUP_DATABASE: '0' }),
   verifyCombo('backend', 'express', { LINTER: 'eslint', BACKEND_FRAMEWORK: 'express', BACKEND_ZOD: '1', DOCKER: '0', SETUP_DATABASE: '0' }),
   verifyCombo('backend', 'elysia', { LINTER: 'eslint', BACKEND_FRAMEWORK: 'elysia', BACKEND_ZOD: '1', DOCKER: '0', SETUP_DATABASE: '0' }),
@@ -267,4 +297,9 @@ export const VERIFY = [
     SETUP_REDIS: '0',
     DOCKER: '1',
   }),
+  verifyCombo('electron', 'oxlint', { LINTER: 'oxlint', VITEST_PRESET: 'none' }),
+  verifyCombo('electron', 'eslint', { LINTER: 'eslint', VITEST_PRESET: 'none' }),
+  verifyCombo('electron', 'vitest', { LINTER: 'oxlint', VITEST_PRESET: 'native' }),
+  verifyCombo('electron', 'coverage', { LINTER: 'oxlint', VITEST_PRESET: 'coverage' }),
+  verifyCombo('electron', 'playwright', { LINTER: 'oxlint', VITEST_PRESET: 'none', PLAYWRIGHT: '1' }),
 ];
