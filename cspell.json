@@ -91,25 +91,13 @@
     "opencode",
     "frontmatter",
     "backlog",
-    "oxlint",
-    "oxfmt",
-    "oxc",
-    "oxlintrc",
-    "oxfmtrc",
-    "Groq",
-    "ECONNREFUSED",
-    "ENOENT",
-    "rspack",
-    "nsis",
-    "agentic",
-    "portier",
     "Jira",
+    "Groq",
     "cron",
     "autofix",
-    "Slack",
-    "Gmail",
-    "Obsidian",
-    "OAuth"
+    "ECONNREFUSED",
+    "oxlint",
+    "oxfmt"
   ],
   "ignorePaths": [
     ".vscode/",
@@ -123,9 +111,7 @@
     "package-lock.json",
     "pnpm-lock.yaml",
     "tests/data",
-    "scripts",
-    "e2e-report.json",
-    "docs/superpowers/"
+    "scripts"
   ],
   "languageSettings": [
     {

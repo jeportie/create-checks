@@ -3,11 +3,9 @@ import { execa } from 'execa';
 import { prompt } from '../utils/prompt.js';
 import { askCicdQuestions } from './cicd.js';
 import { askPlaywrightQuestion } from './playwright.js';
-import { askAgentCrewQuestion } from './agentCrew.js';
 
 export async function askCommonQuestions(projectType) {
-  let linter = ['biome', 'oxlint', 'eslint'].includes(process.env.LINTER) ? process.env.LINTER : undefined;
-  if (linter === undefined) linter = projectType === 'electron' ? 'oxlint' : 'eslint';
+  let linter = process.env.LINTER === 'biome' ? 'biome' : 'eslint';
   if (!process.env.LINTER && process.stdin.isTTY) {
     const result = await prompt([
       {
@@ -17,7 +15,6 @@ export async function askCommonQuestions(projectType) {
         choices: [
           { name: 'ESLint + Prettier', value: 'eslint' },
           { name: 'Biome', value: 'biome' },
-          { name: 'oxlint + oxfmt (fast, Rust)', value: 'oxlint' },
         ],
         default: 'eslint',
       },
@@ -72,35 +69,22 @@ export async function askCommonQuestions(projectType) {
   }
 
   const { setupPlaywright } = await askPlaywrightQuestion(projectType);
-  const { includeAgentCrew } = await askAgentCrewQuestion();
 
   let setupPrecommit = true;
-  let precommitTool = 'husky';
-  const sp = process.env.SETUP_PRECOMMIT;
-  if (sp === '0') {
+  if (process.env.SETUP_PRECOMMIT === '1') {
+    setupPrecommit = true;
+  } else if (process.env.SETUP_PRECOMMIT === '0') {
     setupPrecommit = false;
-  } else if (sp === 'hk') {
-    precommitTool = 'hk';
-  } else if (sp === '1' || sp === 'husky') {
-    precommitTool = 'husky';
-  } else if (sp === undefined && process.stdin.isTTY) {
+  } else if (process.stdin.isTTY) {
     const result = await prompt([
       {
-        type: 'list',
-        name: 'precommit',
-        message: 'Pre-commit hooks?',
-        choices: [
-          { name: 'Husky + lint-staged', value: 'husky' },
-          { name: 'hk (Ledger-style, needs mise)', value: 'hk' },
-          { name: 'None', value: 'none' },
-        ],
-        default: 'husky',
+        type: 'confirm',
+        name: 'setupPrecommit',
+        message: 'Do you want to set up pre-commit hook (husky + lint-staged)?',
+        default: true,
       },
     ]);
-    if (result.precommit === 'none') setupPrecommit = false;
-    else precommitTool = result.precommit;
-  } else if (sp === undefined && !process.stdin.isTTY) {
-    precommitTool = projectType === 'electron' ? 'hk' : 'husky';
+    setupPrecommit = result.setupPrecommit;
   }
 
   const cicdAnswers = await askCicdQuestions(projectType);
@@ -176,10 +160,8 @@ export async function askCommonQuestions(projectType) {
     lintOption,
     vitestPreset,
     setupPlaywright,
-    includeAgentCrew,
     ...cicdAnswers,
     setupPrecommit,
-    precommitTool,
     authorName,
     captureSecrets,
     secretValues,
