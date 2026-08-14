@@ -54,7 +54,7 @@
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
     "@eslint/js": "^9.0.0",
-    "@secretlint/secretlint-rule-pattern": "^8.2.4",
+    "@secretlint/secretlint-rule-pattern": "^13.0.4",
     "@secretlint/secretlint-rule-preset-recommend": "^8.2.4",
     "@vitest/coverage-v8": "^2.0.4",
     "commitlint-plugin-cspell": "^0.9.4",
