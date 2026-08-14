@@ -59,7 +59,7 @@
     "@vitest/coverage-v8": "^2.0.4",
     "commitlint-plugin-cspell": "^0.9.4",
     "conventional-changelog-conventionalcommits": "~8.0.0",
-    "cspell": "^8.12.1",
+    "cspell": "^9.8.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.1.0",
     "husky": "^9.1.1",
